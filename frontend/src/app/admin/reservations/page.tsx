@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import s from "./admin.module.scss";
+import { useSearchParams } from "next/navigation";
+import { RESERVATION_TABS } from "../../routes";
+import s from "../admin.module.scss";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
@@ -82,18 +83,6 @@ const btn = (color = "#3b82f6", disabled = false): React.CSSProperties => ({
   fontWeight: 600,
   opacity: disabled ? 0.6 : 1,
 });
-const tabStyle = (active: boolean): React.CSSProperties => ({
-  fontSize: "14px",
-  padding: "8px 16px",
-  borderRadius: "8px 8px 0 0",
-  border: active ? "1px solid #e5e7eb" : "1px solid transparent",
-  borderBottom: active ? "1px solid #fff" : "1px solid #e5e7eb",
-  backgroundColor: active ? "#fff" : "#f9fafb",
-  cursor: "pointer",
-  fontWeight: active ? 700 : 400,
-  marginRight: "4px",
-});
-
 const TAB_KEYS: Tab[] = ["classTypes", "events", "credits", "reservations"];
 
 function parseTab(value: string | null): Tab {
@@ -102,7 +91,6 @@ function parseTab(value: string | null): Tab {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromUrl = parseTab(searchParams.get("tab"));
 
@@ -112,19 +100,10 @@ export default function AdminPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  // URL と同期（リロード時や直接 /admin?tab=events で開いた時）
+  // URL と同期（サイドバーのリンクで遷移するため）
   useEffect(() => {
     setTabState(tabFromUrl);
   }, [tabFromUrl]);
-
-  const setTab = useCallback(
-    (next: Tab) => {
-      setTabState(next);
-      const url = next === "classTypes" ? "/admin/reservations" : `/admin/reservations?tab=${next}`;
-      router.replace(url, { scroll: false });
-    },
-    [router],
-  );
 
   const loadClassTypes = useCallback(() => {
     fetch(`${API_BASE}/admin/class-types`)
@@ -147,15 +126,9 @@ export default function AdminPage() {
 
   return (
     <>
-      {msg && <div style={{ padding: "8px 12px", borderRadius: "4px", backgroundColor: "#ecfdf5", color: "#065f46", marginBottom: "12px", fontSize: "13px" }}>{msg}</div>}
-      {err && <div style={{ padding: "8px 12px", borderRadius: "4px", backgroundColor: "#fee2e2", color: "#991b1b", marginBottom: "12px", fontSize: "13px" }}>{err}</div>}
-
-      <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", marginBottom: "16px", flexWrap: "wrap" }}>
-        <button type="button" style={tabStyle(tab === "classTypes")} onClick={() => setTab("classTypes")}>クラス種別管理</button>
-        <button type="button" style={tabStyle(tab === "events")} onClick={() => setTab("events")}>イベント / 休講管理</button>
-        <button type="button" style={tabStyle(tab === "credits")} onClick={() => setTab("credits")}>振替権利管理</button>
-        <button type="button" style={tabStyle(tab === "reservations")} onClick={() => setTab("reservations")}>予約管理 / 代理操作</button>
-      </div>
+      <h1 className={s.pageTitle}>{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
+      {msg && <div className={`${s.flash} ${s.flashSuccess}`}>{msg}</div>}
+      {err && <div className={`${s.flash} ${s.flashError}`}>{err}</div>}
 
       {tab === "classTypes" && <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />}
       {tab === "events" && <EventsTab classTypes={classTypes} flash={flash} flashErr={flashErr} />}
@@ -951,32 +924,33 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
         </div>
       )}
 
-      {/* テーブル表示 */}
+      {/* テーブル表示（共通 tableCard モジュール） */}
       {viewMode === "table" && (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f9fafb", textAlign: "left" }}>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb", width: "30px" }}>
-                <input type="checkbox" checked={selectedIds.size === events.length && events.length > 0} onChange={() => selectedIds.size === events.length ? deselectAll() : selectAll()} />
-              </th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ID</th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>クラス</th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>日時</th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>定員</th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>予約数</th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ステータス</th>
-              <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((ev) => (
-              <tr key={ev.id} style={{ borderBottom: "1px solid #f3f4f6", backgroundColor: selectedIds.has(ev.id) ? "#eff6ff" : undefined }}>
-                <td style={{ padding: "6px 8px" }}>
-                  <input type="checkbox" checked={selectedIds.has(ev.id)} onChange={() => toggleSelect(ev.id)} />
-                </td>
-                <td style={{ padding: "6px 8px" }}>{ev.id}</td>
-                <td style={{ padding: "6px 8px" }}>{ev.class_type_name}</td>
-                <td style={{ padding: "6px 8px" }}>
+        <div className={s.tableCard}>
+          <table className={`${s.tableCardTable} ${s.tableCardTableAuto}`}>
+            <thead>
+              <tr>
+                <th style={{ width: "36px" }}>
+                  <input type="checkbox" checked={selectedIds.size === events.length && events.length > 0} onChange={() => selectedIds.size === events.length ? deselectAll() : selectAll()} />
+                </th>
+                <th style={{ width: "48px" }}>ID</th>
+                <th>クラス</th>
+                <th>日時</th>
+                <th style={{ width: "64px" }}>定員</th>
+                <th style={{ width: "64px" }}>予約数</th>
+                <th style={{ width: "90px" }}>ステータス</th>
+                <th style={{ minWidth: "200px" }}>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((ev) => (
+                <tr key={ev.id} className={selectedIds.has(ev.id) ? s.trSelected : undefined}>
+                  <td>
+                    <input type="checkbox" checked={selectedIds.has(ev.id)} onChange={() => toggleSelect(ev.id)} />
+                  </td>
+                  <td>{ev.id}</td>
+                  <td>{ev.class_type_name}</td>
+                  <td>
                   {editTimeId === ev.id ? (
                     <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
                       <input type="datetime-local" style={{ ...input, width: "170px", fontSize: "12px" }} value={editStart} onChange={(e) => setEditStart(e.target.value)} />
@@ -1005,7 +979,7 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                     </span>
                   )}
                 </td>
-                <td style={{ padding: "6px 8px" }}>
+                <td>
                   <input
                     type="number"
                     min={0}
@@ -1017,8 +991,8 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                     }}
                   />
                 </td>
-                <td style={{ padding: "6px 8px" }}>{ev.reserved_count}</td>
-                <td style={{ padding: "6px 8px" }}>
+                <td>{ev.reserved_count}</td>
+                <td>
                   <span style={{
                     display: "inline-block",
                     padding: "3px 10px",
@@ -1032,27 +1006,30 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                     {ev.status === "scheduled" ? "● 開催" : ev.status === "holiday" ? "■ 通常休み" : "▲ 休講"}
                   </span>
                 </td>
-                <td style={{ padding: "6px 8px", display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                  <button type="button" disabled={ev.status === "scheduled"} style={btn("#059669", ev.status === "scheduled")} onClick={() => handleStatusChange(ev.id, "scheduled")}>
-                    開催に戻す
-                  </button>
-                  <button type="button" disabled={ev.status === "holiday"} style={btn("#6b7280", ev.status === "holiday")} onClick={() => handleStatusChange(ev.id, "holiday")}>
-                    通常休みに
-                  </button>
-                  <button type="button" disabled={ev.status === "canceled_by_admin"} style={btn("#dc2626", ev.status === "canceled_by_admin")} onClick={() => handleStatusChange(ev.id, "canceled_by_admin")}>
-                    休講に
-                  </button>
-                  <button type="button" style={btn("#991b1b")} onClick={() => handleDeleteEvent(ev.id)}>
-                    削除
-                  </button>
+                <td>
+                  <span className={s.tableCardActions}>
+                    <button type="button" disabled={ev.status === "scheduled"} style={btn("#059669", ev.status === "scheduled")} onClick={() => handleStatusChange(ev.id, "scheduled")}>
+                      開催に戻す
+                    </button>
+                    <button type="button" disabled={ev.status === "holiday"} style={btn("#6b7280", ev.status === "holiday")} onClick={() => handleStatusChange(ev.id, "holiday")}>
+                      通常休みに
+                    </button>
+                    <button type="button" disabled={ev.status === "canceled_by_admin"} style={btn("#dc2626", ev.status === "canceled_by_admin")} onClick={() => handleStatusChange(ev.id, "canceled_by_admin")}>
+                      休講に
+                    </button>
+                    <button type="button" style={btn("#991b1b")} onClick={() => handleDeleteEvent(ev.id)}>
+                      削除
+                    </button>
+                  </span>
                 </td>
               </tr>
             ))}
-            {events.length === 0 && (
-              <tr><td colSpan={8} style={{ padding: "16px", textAlign: "center", color: "#9ca3af" }}>イベントがありません</td></tr>
-            )}
-          </tbody>
-        </table>
+              {events.length === 0 && (
+                <tr><td colSpan={8} className={s.tableCardEmpty}>イベントがありません</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -1176,60 +1153,64 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
         <button type="button" style={btn()} onClick={loadCredits}>検索</button>
       </div>
 
-      {/* 一覧 */}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-        <thead>
-          <tr style={{ backgroundColor: "#f9fafb", textAlign: "left" }}>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ID</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ユーザー</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>クラス</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>付与日</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>有効期限</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ステータス</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>由来</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>備考</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {credits.map((c) => (
-            <tr key={c.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-              <td style={{ padding: "6px 8px" }}>{c.id}</td>
-              <td style={{ padding: "6px 8px" }}>{c.user_name} (ID:{c.user_id})</td>
-              <td style={{ padding: "6px 8px" }}>{c.class_type_name ?? "制限なし"}</td>
-              <td style={{ padding: "6px 8px" }}>{c.granted_at?.slice(0, 10)}</td>
-              <td style={{ padding: "6px 8px" }}>
-                <input
-                  type="date"
-                  defaultValue={c.expires_at?.slice(0, 10) ?? ""}
-                  style={{ ...input, width: "130px" }}
-                  onBlur={(e) => {
-                    const v = e.target.value;
-                    const old = c.expires_at?.slice(0, 10) ?? "";
-                    if (v !== old) handleUpdateExpiry(c.id, v);
-                  }}
-                />
-              </td>
-              <td style={{ padding: "6px 8px", fontWeight: 600, color: c.status === "granted" ? "#059669" : c.status === "revoked" ? "#dc2626" : "#6b7280" }}>
-                {c.status}
-              </td>
-              <td style={{ padding: "6px 8px" }}>{c.source}</td>
-              <td style={{ padding: "6px 8px", fontSize: "12px" }}>{c.note}</td>
-              <td style={{ padding: "6px 8px", display: "flex", gap: "4px" }}>
-                {c.status === "granted" && (
-                  <button type="button" style={btn("#dc2626")} onClick={() => handleRevoke(c.id)}>取消</button>
-                )}
-                {(c.status === "revoked" || c.status === "consumed") && (
-                  <button type="button" style={btn("#059669")} onClick={() => handleRestore(c.id)}>復活</button>
-                )}
-              </td>
+      {/* 一覧（共通 tableCard モジュール） */}
+      <div className={s.tableCard}>
+        <table className={`${s.tableCardTable} ${s.tableCardTableAuto}`}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>ユーザー</th>
+              <th>クラス</th>
+              <th>付与日</th>
+              <th>有効期限</th>
+              <th>ステータス</th>
+              <th>由来</th>
+              <th>備考</th>
+              <th>操作</th>
             </tr>
-          ))}
-          {credits.length === 0 && (
-            <tr><td colSpan={9} style={{ padding: "16px", textAlign: "center", color: "#9ca3af" }}>振替権利がありません</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {credits.map((c) => (
+              <tr key={c.id}>
+                <td>{c.id}</td>
+                <td>{c.user_name} (ID:{c.user_id})</td>
+                <td>{c.class_type_name ?? "制限なし"}</td>
+                <td>{c.granted_at?.slice(0, 10)}</td>
+                <td>
+                  <input
+                    type="date"
+                    defaultValue={c.expires_at?.slice(0, 10) ?? ""}
+                    style={{ ...input, width: "130px" }}
+                    onBlur={(e) => {
+                      const v = e.target.value;
+                      const old = c.expires_at?.slice(0, 10) ?? "";
+                      if (v !== old) handleUpdateExpiry(c.id, v);
+                    }}
+                  />
+                </td>
+                <td style={{ fontWeight: 600, color: c.status === "granted" ? "#059669" : c.status === "revoked" ? "#dc2626" : "#6b7280" }}>
+                  {c.status}
+                </td>
+                <td>{c.source}</td>
+                <td style={{ fontSize: "12px" }}>{c.note}</td>
+                <td>
+                  <span className={s.tableCardActions}>
+                    {c.status === "granted" && (
+                      <button type="button" style={btn("#dc2626")} onClick={() => handleRevoke(c.id)}>取消</button>
+                    )}
+                    {(c.status === "revoked" || c.status === "consumed") && (
+                      <button type="button" style={btn("#059669")} onClick={() => handleRestore(c.id)}>復活</button>
+                    )}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {credits.length === 0 && (
+              <tr><td colSpan={9} className={s.tableCardEmpty}>振替権利がありません</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1339,46 +1320,50 @@ function ReservationsTab({ users, flash, flashErr }: { users: User[]; flash: (m:
         <button type="button" style={btn()} onClick={loadReservations}>検索</button>
       </div>
 
-      {/* 一覧 */}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-        <thead>
-          <tr style={{ backgroundColor: "#f9fafb", textAlign: "left" }}>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ID</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ユーザー</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>イベント</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>日時</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>種別</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ステータス</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reservations.map((r) => (
-            <tr key={r.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-              <td style={{ padding: "6px 8px" }}>{r.id}</td>
-              <td style={{ padding: "6px 8px" }}>{r.user_name} (ID:{r.user_id})</td>
-              <td style={{ padding: "6px 8px" }}>#{r.event_id} {r.class_type_name}</td>
-              <td style={{ padding: "6px 8px" }}>{r.starts_at?.slice(0, 16)}</td>
-              <td style={{ padding: "6px 8px" }}>
-                <span style={{ padding: "2px 6px", borderRadius: "9999px", fontSize: "11px", backgroundColor: r.reservation_type === "makeup" ? "#ecfdf3" : "#f3f4f6" }}>
-                  {r.reservation_type === "makeup" ? "振替" : "通常"}
-                </span>
-              </td>
-              <td style={{ padding: "6px 8px", fontWeight: 600, color: r.status === "booked" ? "#3b82f6" : r.status === "attended" ? "#059669" : "#dc2626" }}>
-                {r.status}
-              </td>
-              <td style={{ padding: "6px 8px" }}>
-                {r.status === "booked" && (
-                  <button type="button" style={btn("#dc2626")} onClick={() => handleCancel(r.id)}>キャンセル</button>
-                )}
-              </td>
+      {/* 一覧（共通 tableCard モジュール） */}
+      <div className={s.tableCard}>
+        <table className={`${s.tableCardTable} ${s.tableCardTableAuto}`}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>ユーザー</th>
+              <th>イベント</th>
+              <th>日時</th>
+              <th>種別</th>
+              <th>ステータス</th>
+              <th>操作</th>
             </tr>
-          ))}
-          {reservations.length === 0 && (
-            <tr><td colSpan={7} style={{ padding: "16px", textAlign: "center", color: "#9ca3af" }}>予約がありません</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {reservations.map((r) => (
+              <tr key={r.id}>
+                <td>{r.id}</td>
+                <td>{r.user_name} (ID:{r.user_id})</td>
+                <td>#{r.event_id} {r.class_type_name}</td>
+                <td>{r.starts_at?.slice(0, 16)}</td>
+                <td>
+                  <span style={{ padding: "2px 6px", borderRadius: "9999px", fontSize: "11px", backgroundColor: r.reservation_type === "makeup" ? "#ecfdf3" : "#f3f4f6" }}>
+                    {r.reservation_type === "makeup" ? "振替" : "通常"}
+                  </span>
+                </td>
+                <td style={{ fontWeight: 600, color: r.status === "booked" ? "#3b82f6" : r.status === "attended" ? "#059669" : "#dc2626" }}>
+                  {r.status}
+                </td>
+                <td>
+                  <span className={s.tableCardActions}>
+                    {r.status === "booked" && (
+                      <button type="button" style={btn("#dc2626")} onClick={() => handleCancel(r.id)}>キャンセル</button>
+                    )}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {reservations.length === 0 && (
+              <tr><td colSpan={7} className={s.tableCardEmpty}>予約がありません</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1396,6 +1381,9 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
   const [editCode, setEditCode] = useState("");
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+
+  // 削除確認モーダル
+  const [deleteTarget, setDeleteTarget] = useState<ClassType | null>(null);
 
   const handleCreate = async () => {
     if (!newCode || !newName) { flashErr("code と name は必須です"); return; }
@@ -1433,8 +1421,14 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
     reload();
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(`クラス種別 #${id} を削除しますか？`)) return;
+  const requestDelete = (ct: ClassType) => {
+    setDeleteTarget(ct);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
     const res = await fetch(`${API_BASE}/admin/class-types/${id}`, { method: "DELETE" });
     if (!res.ok) { flashErr((await res.json()).error); return; }
     flash(`クラス種別 #${id} を削除しました`);
@@ -1443,6 +1437,20 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
 
   return (
     <div>
+      {/* 削除確認モーダル */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="クラス種別の削除"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmLabel="削除する"
+        confirmColor="#991b1b"
+      >
+        {deleteTarget && (
+          <>クラス種別「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。この操作は取り消せません。</>
+        )}
+      </ConfirmModal>
+
       {/* 新規作成フォーム */}
       <div style={card}>
         <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>クラス種別を追加</h3>
@@ -1463,55 +1471,61 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
         </div>
       </div>
 
-      {/* 一覧テーブル */}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-        <thead>
-          <tr style={{ backgroundColor: "#f9fafb", textAlign: "left" }}>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>ID</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>コード</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>名前</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>説明</th>
-            <th style={{ padding: "6px 8px", borderBottom: "1px solid #e5e7eb" }}>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {classTypes.map((ct) => (
-            <tr key={ct.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-              <td style={{ padding: "6px 8px" }}>{ct.id}</td>
-              {editId === ct.id ? (
-                <>
-                  <td style={{ padding: "6px 8px" }}>
-                    <input type="text" style={{ ...input, width: "120px" }} value={editCode} onChange={(e) => setEditCode(e.target.value)} />
-                  </td>
-                  <td style={{ padding: "6px 8px" }}>
-                    <input type="text" style={input} value={editName} onChange={(e) => setEditName(e.target.value)} />
-                  </td>
-                  <td style={{ padding: "6px 8px" }}>
-                    <input type="text" style={input} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
-                  </td>
-                  <td style={{ padding: "6px 8px", display: "flex", gap: "4px" }}>
-                    <button type="button" style={btn("#059669")} onClick={handleUpdate}>保存</button>
-                    <button type="button" style={btn("#6b7280")} onClick={cancelEdit}>取消</button>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td style={{ padding: "6px 8px" }}>{ct.code}</td>
-                  <td style={{ padding: "6px 8px", fontWeight: 600 }}>{ct.name}</td>
-                  <td style={{ padding: "6px 8px", fontSize: "12px", color: "#6b7280" }}>{ct.description ?? "—"}</td>
-                  <td style={{ padding: "6px 8px", display: "flex", gap: "4px" }}>
-                    <button type="button" style={btn("#3b82f6")} onClick={() => startEdit(ct)}>編集</button>
-                    <button type="button" style={btn("#dc2626")} onClick={() => handleDelete(ct.id)}>削除</button>
-                  </td>
-                </>
-              )}
+      {/* 一覧テーブル（共通 tableCard モジュール） */}
+      <div className={s.tableCard}>
+        <table className={s.tableCardTable}>
+          <thead>
+            <tr>
+              <th style={{ width: "56px" }}>ID</th>
+              <th style={{ width: "140px" }}>コード</th>
+              <th style={{ minWidth: "120px" }}>名前</th>
+              <th>説明</th>
+              <th style={{ width: "160px" }}>操作</th>
             </tr>
-          ))}
-          {classTypes.length === 0 && (
-            <tr><td colSpan={5} style={{ padding: "16px", textAlign: "center", color: "#9ca3af" }}>クラス種別がありません</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {classTypes.map((ct) => (
+              <tr key={ct.id} style={{ verticalAlign: editId === ct.id ? "top" : undefined }}>
+                <td>{ct.id}</td>
+                {editId === ct.id ? (
+                  <>
+                    <td>
+                      <input type="text" style={{ ...input, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editCode} onChange={(e) => setEditCode(e.target.value)} />
+                    </td>
+                    <td>
+                      <input type="text" style={{ ...input, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </td>
+                    <td>
+                      <input type="text" style={{ ...input, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <span className={s.tableCardActions}>
+                        <button type="button" style={btn("#059669")} onClick={handleUpdate}>保存</button>
+                        <button type="button" style={btn("#6b7280")} onClick={cancelEdit}>取消</button>
+                      </span>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{ct.code}</td>
+                    <td style={{ fontWeight: 600 }}>{ct.name}</td>
+                    <td style={{ fontSize: "12px", color: "#6b7280" }}>{ct.description ?? "—"}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <span className={s.tableCardActions}>
+                        <button type="button" style={btn("#3b82f6")} onClick={() => startEdit(ct)}>編集</button>
+                        <button type="button" style={btn("#dc2626")} onClick={() => requestDelete(ct)}>削除</button>
+                      </span>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+            {classTypes.length === 0 && (
+              <tr><td colSpan={5} className={s.tableCardEmpty}>クラス種別がありません</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

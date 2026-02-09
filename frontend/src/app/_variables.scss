@@ -2,11 +2,12 @@
 // カラーパレット
 // ================================================================
 
-// --- Primary / Accent ---
-$color-primary:       #3b82f6;
-$color-primary-light: #eff6ff;
+// --- Primary / Accent（青系メイン） ---
+$color-primary:       #2563eb;
+$color-primary-light: #dbeafe;
 $color-primary-dark:  #1d4ed8;
-$color-primary-bg:    #dbeafe;
+$color-primary-bg:    #bfdbfe;
+$color-primary-pale:  #f0f9ff;  /* ごく薄い青（背景用） */
 
 // --- Success (green) ---
 $color-success:       #059669;

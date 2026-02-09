@@ -1,18 +1,24 @@
 @use "variables" as v;
 
 .shell {
+  height: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: v.$space-6;
   padding: v.$space-3 v.$space-6;
   border-bottom: 1px solid v.$color-gray-200;
   background: v.$color-white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .logo {
@@ -55,4 +61,8 @@
 
 .main {
   flex: 1;
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

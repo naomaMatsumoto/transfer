@@ -20,3 +20,11 @@ export const MAIN_NAV: { path: RoutePath; label: string }[] = [
   { path: ROUTES.HOME, label: "カレンダー" },
   { path: ROUTES.ADMIN_RESERVATIONS, label: "管理" },
 ];
+
+/** 予約システムのサブメニュー（サイドバー子要素） */
+export const RESERVATION_TABS = [
+  { key: "classTypes", label: "クラス種別管理" },
+  { key: "events", label: "イベント / 休講管理" },
+  { key: "credits", label: "振替権利管理" },
+  { key: "reservations", label: "予約管理 / 代理操作" },
+] as const;

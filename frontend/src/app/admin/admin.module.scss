@@ -1,19 +1,160 @@
 @use "../variables" as v;
 
 // ================================================================
-// Admin 共通
+// Admin レイアウト（左サイドバー + メイン）青系配色
 // ================================================================
-.page {
-  padding: v.$space-6;
+$header-height: 52px;
+
+.adminLayout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
   font-family: v.$font-family-base;
+  background-color: v.$color-primary-pale;
+  overflow: hidden;
+}
+
+.adminSidebar {
+  width: 240px;
+  flex-shrink: 0;
+  min-height: 100%;
+  overflow-y: auto;
+  background: v.$color-white;
+  border-right: 1px solid v.$color-primary-light;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(37, 99, 235, 0.06);
+}
+
+.adminSidebarHeader {
+  padding: v.$space-4 v.$space-4;
+  border-bottom: 1px solid v.$color-primary-light;
+  background: v.$color-primary-pale;
+}
+
+.adminSidebarTitle {
+  font-size: v.$font-lg;
+  font-weight: 600;
+  color: v.$color-primary-dark;
+  letter-spacing: -0.01em;
+}
+
+.adminSidebarNav {
+  padding: v.$space-3 v.$space-3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 大項目・親ラベル・子項目で共通のサイズ感 */
+.adminSidebarLink {
+  display: block;
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$color-gray-700;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: v.$color-primary-light;
+    color: v.$color-primary-dark;
+  }
+}
+
+.adminSidebarLinkActive {
+  display: block;
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary;
+  background-color: v.$color-primary-bg;
+  text-decoration: none;
+  border-left: 3px solid v.$color-primary;
+  padding-left: calc(v.$space-3 - 3px);
+
+  &:hover {
+    color: v.$color-primary-dark;
+    background-color: v.$color-primary-bg;
+  }
+}
+
+.adminSidebarParent {
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary-dark;
+  padding: v.$space-2 v.$space-3 v.$space-1;
+  margin-top: v.$space-2;
+}
+
+.adminSidebarSubLink {
+  display: block;
+  padding: v.$space-2 v.$space-3 v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$color-gray-500;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: v.$color-primary-light;
+    color: v.$color-primary-dark;
+  }
+}
+
+.adminSidebarSubLinkActive {
+  display: block;
+  padding: v.$space-2 v.$space-3 v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary;
+  background-color: v.$color-primary-bg;
+  text-decoration: none;
+  border-left: 3px solid v.$color-primary;
+  padding-left: calc(v.$space-4 - 3px);
+
+  &:hover {
+    color: v.$color-primary-dark;
+    background-color: v.$color-primary-bg;
+  }
+}
+
+.adminSidebarDivider {
+  height: 1px;
+  background: v.$color-primary-light;
+  margin: v.$space-3 0;
+}
+
+.adminMain {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: v.$space-6;
+}
+
+.adminMainInner {
   max-width: 1100px;
   margin: 0 auto;
+}
+
+// 互換・共通
+.page {
+  padding: 0;
+  font-family: v.$font-family-base;
+  max-width: 100%;
 }
 
 .pageTitle {
   font-size: v.$font-3xl;
   font-weight: 700;
-  margin-bottom: v.$space-1;
+  margin-bottom: v.$space-4;
+  color: v.$color-gray-900;
+  letter-spacing: -0.02em;
 }
 
 .backLink {
@@ -24,101 +165,93 @@
   a { color: v.$color-primary; }
 }
 
-// 管理画面トップナビ（会員管理 | 予約システム | カレンダー）
-.adminNav {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: v.$space-2 v.$space-4;
-  margin-bottom: v.$space-4;
-  font-size: v.$font-base;
-}
-
-.adminNavLink {
-  color: v.$color-primary;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.adminNavLinkActive {
-  font-weight: 700;
-  color: v.$color-gray-700;
-  text-decoration: none;
-
-  &:hover {
-    color: v.$color-gray-700;
-  }
-}
-
-.adminNavSep {
-  color: v.$color-gray-300;
-  user-select: none;
-}
+// 旧ナビ（参照残し・未使用可）
+.adminNav { display: flex; align-items: center; gap: v.$space-2 v.$space-4; margin-bottom: v.$space-4; font-size: v.$font-base; }
+.adminNavLink { color: v.$color-primary; text-decoration: none; }
+.adminNavLinkActive { font-weight: 700; color: v.$color-gray-700; text-decoration: none; }
+.adminNavSep { color: v.$color-gray-300; user-select: none; }
 
 .flash {
-  padding: v.$space-2 v.$space-3;
-  border-radius: v.$radius-sm;
-  margin-bottom: v.$space-3;
+  padding: v.$space-3 v.$space-4;
+  border-radius: v.$radius-lg;
+  margin-bottom: v.$space-4;
   font-size: v.$font-base;
+  font-weight: 500;
 }
 
 .flashSuccess {
   background-color: v.$color-success-light;
   color: v.$color-success-dark;
+  border: 1px solid v.$color-success-border;
 }
 
 .flashError {
   background-color: v.$color-danger-light;
   color: v.$color-danger-dark;
+  border: 1px solid v.$color-danger-border;
 }
 
 // ================================================================
-// Tabs
+// Tabs（モダン）
 // ================================================================
 .tabBar {
   display: flex;
   border-bottom: 1px solid v.$color-gray-200;
-  margin-bottom: v.$space-4;
+  margin-bottom: v.$space-5;
   flex-wrap: wrap;
+  gap: v.$space-1;
 }
 
 .tab {
-  font-size: v.$font-lg;
-  padding: v.$space-2 v.$space-4;
+  font-size: v.$font-base;
+  padding: v.$space-3 v.$space-4;
   border-radius: v.$radius-lg v.$radius-lg 0 0;
   border: 1px solid transparent;
-  border-bottom: 1px solid v.$color-gray-200;
-  background-color: v.$color-gray-50;
+  border-bottom: none;
+  background-color: transparent;
   cursor: pointer;
-  font-weight: 400;
-  margin-right: v.$space-1;
+  font-weight: 500;
+  color: v.$color-gray-500;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: v.$color-gray-700;
+    background-color: v.$color-gray-50;
+  }
 }
 
 .tabActive {
-  border: 1px solid v.$color-gray-200;
-  border-bottom: 1px solid v.$color-white;
   background-color: v.$color-white;
-  font-weight: 700;
+  color: v.$color-primary;
+  font-weight: 600;
+  border-color: v.$color-gray-200;
+  border-bottom: 1px solid v.$color-white;
+  margin-bottom: -1px;
 }
 
 // ================================================================
-// Card / Form elements
+// Card / Form elements（モダン）
 // ================================================================
 .card {
   border: 1px solid v.$color-gray-200;
-  border-radius: v.$radius-lg;
-  padding: v.$space-4;
-  margin-bottom: v.$space-3;
+  border-radius: v.$radius-xl;
+  padding: v.$space-5;
+  margin-bottom: v.$space-4;
   background-color: v.$color-white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .cardTitle {
-  font-size: v.$font-xl - 1;
+  font-size: v.$font-lg;
   font-weight: 600;
-  margin-bottom: v.$space-2;
+  margin-bottom: v.$space-3;
+  color: v.$color-gray-900;
+}
+
+.mutedText {
+  color: v.$color-gray-500;
+  font-size: v.$font-base;
+  margin: 0;
 }
 
 .label {
@@ -173,8 +306,70 @@
 .btnSm         { font-size: v.$font-sm + 1; }
 
 // ================================================================
-// Table
+// Table（クラス種別・イベント等で共通のモジュール）
 // ================================================================
+.tableCard {
+  background-color: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.tableCardTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$font-base;
+  table-layout: fixed;
+}
+
+.tableCardTable th {
+  padding: v.$space-3 v.$space-3;
+  border-bottom: 1px solid v.$color-gray-200;
+  text-align: left;
+  font-weight: 600;
+  color: v.$color-gray-700;
+  background-color: v.$color-gray-50;
+}
+
+.tableCardTable td {
+  padding: v.$space-3 v.$space-3;
+  border-bottom: 1px solid v.$color-gray-100;
+  background-color: v.$color-white;
+  vertical-align: middle;
+}
+
+.tableCardTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tableCardTable tbody tr:hover td {
+  background-color: v.$color-gray-50;
+}
+
+.tableCardTable tbody tr.trSelected td,
+.tableCardTable tbody tr.trSelected:hover td {
+  background-color: v.$color-primary-light;
+}
+
+.tableCardTable.tableCardTableAuto {
+  table-layout: auto;
+}
+
+.tableCardEmpty {
+  padding: v.$space-6;
+  text-align: center;
+  color: v.$color-gray-400;
+  font-size: v.$font-base;
+}
+
+.tableCardActions {
+  display: inline-flex;
+  gap: v.$space-2;
+  flex-wrap: wrap;
+}
+
+// 互換用
 .table {
   width: 100%;
   border-collapse: collapse;
