@@ -1,0 +1,578 @@
+@use "../variables" as v;
+
+// ================================================================
+// Admin 共通
+// ================================================================
+.page {
+  padding: v.$space-6;
+  font-family: v.$font-family-base;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-size: v.$font-3xl;
+  font-weight: 700;
+  margin-bottom: v.$space-1;
+}
+
+.backLink {
+  font-size: v.$font-base;
+  color: v.$color-gray-500;
+  margin-bottom: v.$space-4;
+
+  a { color: v.$color-primary; }
+}
+
+.flash {
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-sm;
+  margin-bottom: v.$space-3;
+  font-size: v.$font-base;
+}
+
+.flashSuccess {
+  background-color: v.$color-success-light;
+  color: v.$color-success-dark;
+}
+
+.flashError {
+  background-color: v.$color-danger-light;
+  color: v.$color-danger-dark;
+}
+
+// ================================================================
+// Tabs
+// ================================================================
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid v.$color-gray-200;
+  margin-bottom: v.$space-4;
+  flex-wrap: wrap;
+}
+
+.tab {
+  font-size: v.$font-lg;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$radius-lg v.$radius-lg 0 0;
+  border: 1px solid transparent;
+  border-bottom: 1px solid v.$color-gray-200;
+  background-color: v.$color-gray-50;
+  cursor: pointer;
+  font-weight: 400;
+  margin-right: v.$space-1;
+}
+
+.tabActive {
+  border: 1px solid v.$color-gray-200;
+  border-bottom: 1px solid v.$color-white;
+  background-color: v.$color-white;
+  font-weight: 700;
+}
+
+// ================================================================
+// Card / Form elements
+// ================================================================
+.card {
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
+  padding: v.$space-4;
+  margin-bottom: v.$space-3;
+  background-color: v.$color-white;
+}
+
+.cardTitle {
+  font-size: v.$font-xl - 1;
+  font-weight: 600;
+  margin-bottom: v.$space-2;
+}
+
+.label {
+  display: block;
+  font-size: v.$font-md;
+  font-weight: 600;
+  color: v.$color-gray-700;
+  margin-bottom: v.$space-1 / 2;
+}
+
+.input {
+  width: 100%;
+  padding: v.$space-2;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  box-sizing: border-box;
+}
+
+.inputSmall {
+  composes: input;
+  width: auto;
+}
+
+// ================================================================
+// Buttons
+// ================================================================
+.btn {
+  font-size: v.$font-md;
+  padding: v.$space-2 v.$space-4 - 2;
+  border-radius: v.$radius-md;
+  border: none;
+  color: v.$color-white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+
+  &:hover { opacity: 0.85; }
+  &:disabled {
+    background-color: v.$color-gray-300;
+    color: v.$color-gray-400;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.btnPrimary    { composes: btn; background-color: v.$color-primary; }
+.btnSuccess    { composes: btn; background-color: v.$color-success; }
+.btnDanger     { composes: btn; background-color: v.$color-danger; }
+.btnDangerDark { composes: btn; background-color: v.$color-danger-dark; }
+.btnGray       { composes: btn; background-color: v.$color-gray-500; }
+.btnSm         { font-size: v.$font-sm + 1; }
+
+// ================================================================
+// Table
+// ================================================================
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$font-base;
+}
+
+.th {
+  padding: v.$space-2;
+  border-bottom: 1px solid v.$color-gray-200;
+  text-align: left;
+  background-color: v.$color-gray-50;
+}
+
+.td {
+  padding: v.$space-2;
+}
+
+.tr {
+  border-bottom: 1px solid v.$color-gray-100;
+}
+
+.trSelected {
+  background-color: v.$color-primary-light;
+}
+
+.emptyRow {
+  padding: v.$space-4;
+  text-align: center;
+  color: v.$color-gray-400;
+}
+
+// ================================================================
+// Status badges
+// ================================================================
+.statusBadge {
+  display: inline-block;
+  padding: v.$space-1 v.$space-3;
+  border-radius: v.$radius-full;
+  font-size: v.$font-sm + 1;
+  font-weight: 700;
+}
+
+.statusScheduled {
+  color: v.$color-success-dark;
+  background-color: v.$color-success-bg;
+  border: 1px solid v.$color-success-border;
+}
+
+.statusHoliday {
+  color: v.$color-gray-700;
+  background-color: v.$color-gray-200;
+  border: 1px solid v.$color-gray-300;
+}
+
+.statusCanceled {
+  color: v.$color-danger-dark;
+  background-color: v.$color-danger-light;
+  border: 1px solid v.$color-danger-border;
+}
+
+.statusBadgeSm {
+  padding: v.$space-1 / 2 v.$space-2;
+  border-radius: v.$radius-sm;
+  font-size: v.$font-sm;
+  font-weight: 700;
+}
+
+// ================================================================
+// Calendar (admin)
+// ================================================================
+.calNav {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  margin-bottom: v.$space-2;
+}
+
+.calNavLabel {
+  font-weight: 600;
+  font-size: v.$font-lg;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: v.$space-1;
+}
+
+.calWeekday {
+  text-align: center;
+  font-size: v.$font-md;
+  font-weight: 600;
+  padding-bottom: v.$space-1;
+}
+
+.calCell {
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-200;
+  padding: v.$space-1 v.$space-2;
+  min-height: 120px;
+  background-color: v.$color-white;
+  overflow: hidden;
+}
+
+.calCellToday {
+  border: 2px solid v.$color-primary;
+}
+
+.calCellOther {
+  opacity: 0.4;
+}
+
+.calDayNum {
+  font-weight: 700;
+  font-size: v.$font-base;
+  margin-bottom: v.$space-1;
+}
+
+.calEvent {
+  font-size: v.$font-md;
+  padding: v.$space-1 + 1 v.$space-2 - 1;
+  border-radius: v.$radius-md;
+  margin-bottom: v.$space-1;
+  border: 1px solid v.$color-gray-200;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.calEventSelected {
+  background-color: v.$color-primary-bg;
+  border: 2px solid v.$color-primary;
+}
+
+.calEventScheduled { background-color: v.$color-success-light; }
+.calEventHoliday   { background-color: v.$color-gray-100; }
+.calEventCanceled  { background-color: v.$color-danger-light; }
+
+.calEventRow1 {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1 + 1;
+  margin-bottom: v.$space-1 / 2;
+}
+
+.calEventRow2 {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+}
+
+.calEventTime {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.calEventName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-weight: 500;
+}
+
+.calEventCapacity {
+  color: v.$color-gray-500;
+  font-size: v.$font-sm + 1;
+}
+
+.calCheckbox {
+  width: v.$space-4 - 2;
+  height: v.$space-4 - 2;
+  flex-shrink: 0;
+}
+
+.calEmptyDay {
+  font-size: v.$font-sm;
+  color: v.$color-gray-300;
+}
+
+// ================================================================
+// Mode switch
+// ================================================================
+.modeSwitch {
+  display: flex;
+  gap: v.$space-2;
+  margin-bottom: v.$space-2;
+}
+
+.modeBtn {
+  font-size: v.$font-md;
+  padding: v.$space-1 + 1 v.$space-4 - 2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  color: v.$color-gray-700;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.modeBtnActive {
+  border: 2px solid v.$color-primary;
+  background-color: v.$color-primary-light;
+  color: v.$color-primary-dark;
+  font-weight: 700;
+}
+
+// ================================================================
+// Bulk bar
+// ================================================================
+.bulkBar {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: v.$space-3 v.$space-4 - 2;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+
+.bulkBarHidden {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 v.$space-4 - 2;
+  margin-bottom: 0;
+  border: 1px solid transparent;
+}
+
+.bulkBarVisible {
+  max-height: 200px;
+  opacity: 1;
+  padding: v.$space-3 v.$space-4 - 2;
+  margin-bottom: v.$space-3;
+  border: 1px solid v.$color-gray-200;
+}
+
+.bulkLabel {
+  font-size: v.$font-base;
+  font-weight: 600;
+}
+
+.bulkCount {
+  font-size: v.$font-md;
+  color: v.$color-gray-500;
+}
+
+.separator {
+  border-left: 1px solid v.$color-gray-300;
+  height: v.$space-5;
+  margin: 0 v.$space-1 / 2;
+}
+
+.weekdayBtn {
+  font-size: v.$font-sm + 1;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.weekdayBtnSun     { color: v.$color-sunday; }
+.weekdayBtnSat     { color: v.$color-saturday; }
+.weekdayBtnDefault { color: v.$color-gray-700; }
+
+// ================================================================
+// Modal
+// ================================================================
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: v.$overlay-bg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.modalContent {
+  background-color: v.$color-white;
+  border-radius: v.$radius-xl;
+  padding: v.$space-6;
+  min-width: 360px;
+  max-width: 500px;
+  box-shadow: v.$shadow-modal;
+  animation: slideUp 0.25s ease;
+}
+
+.modalContentWide {
+  composes: modalContent;
+  min-width: 420px;
+  max-width: 520px;
+}
+
+.modalTitle {
+  font-size: v.$font-xl;
+  font-weight: 700;
+  margin-bottom: v.$space-3;
+}
+
+.modalBody {
+  font-size: v.$font-base;
+  margin-bottom: v.$space-4;
+  color: v.$color-gray-700;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: v.$space-2;
+}
+
+.modalFooterSplit {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modalBtnCancel {
+  font-size: v.$font-base;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+}
+
+.modalBtnConfirm {
+  font-size: v.$font-base;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  border: none;
+  color: v.$color-white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+// ================================================================
+// Edit modal grid
+// ================================================================
+.editGrid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: v.$space-3 v.$space-3;
+  align-items: center;
+  font-size: v.$font-base;
+  margin-bottom: v.$space-4;
+}
+
+.editStatusGroup {
+  display: flex;
+  gap: v.$space-2;
+}
+
+.editStatusBtn {
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-3;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  color: v.$color-gray-500;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.editStatusBtnActive {
+  font-weight: 700;
+}
+
+// ================================================================
+// View toggle
+// ================================================================
+.viewToggle {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  margin-bottom: v.$space-2;
+  flex-wrap: wrap;
+}
+
+// ================================================================
+// Form layouts
+// ================================================================
+.formRow {
+  display: grid;
+  gap: v.$space-2;
+  align-items: end;
+}
+
+.formRow5       { grid-template-columns: 1fr 1fr 1fr 80px auto; }
+.formRow4       { grid-template-columns: 1fr 100px 100px 70px; }
+.formRow4auto   { grid-template-columns: 1fr 1fr 1fr auto; }
+.formRow5credit { grid-template-columns: 1fr 1fr 1fr 1fr auto; }
+.formRow5proxy  { grid-template-columns: 1fr 100px 100px 100px auto; }
+.formRowClassType { grid-template-columns: 150px 1fr 1fr auto; }
+
+.weekdayCheckGroup {
+  display: flex;
+  gap: v.$space-2;
+  flex-wrap: wrap;
+  margin-top: v.$space-1;
+}
+
+.weekdayCheck {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1;
+  font-size: v.$font-base;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+  user-select: none;
+
+  input { display: none; }
+}
+
+.weekdayCheckActive {
+  border: 2px solid v.$color-primary;
+  background-color: v.$color-primary-light;
+}
+
+// ================================================================
+// Misc colors
+// ================================================================
+.colorSun     { color: v.$color-sunday; }
+.colorSat     { color: v.$color-saturday; }
+.colorGray    { color: v.$color-gray-500; }
+.colorSuccess { color: v.$color-success; }
+.colorDanger  { color: v.$color-danger; }
+.colorPrimary { color: v.$color-primary; }
+.fontBold     { font-weight: 600; }

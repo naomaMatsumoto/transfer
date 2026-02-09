@@ -1,0 +1,95 @@
+// ================================================================
+// カラーパレット
+// ================================================================
+
+// --- Primary / Accent ---
+$color-primary:       #3b82f6;
+$color-primary-light: #eff6ff;
+$color-primary-dark:  #1d4ed8;
+$color-primary-bg:    #dbeafe;
+
+// --- Success (green) ---
+$color-success:       #059669;
+$color-success-dark:  #065f46;
+$color-success-light: #ecfdf5;
+$color-success-bg:    #d1fae5;
+$color-success-border:#6ee7b7;
+$color-success-pale:  #bbf7d0;
+$color-success-text:  #166534;
+$color-success-accent:#10b981;
+$color-success-deep:  #047857;
+
+// --- Danger (red) ---
+$color-danger:        #dc2626;
+$color-danger-dark:   #991b1b;
+$color-danger-darker: #b91c1c;
+$color-danger-light:  #fee2e2;
+$color-danger-border: #fca5a5;
+
+// --- Warning (orange) ---
+$color-warning:       #f97316;
+$color-warning-light: #fff7ed;
+$color-warning-text:  #c2410c;
+
+// --- Gray ---
+$color-gray-50:       #f9fafb;
+$color-gray-100:      #f3f4f6;
+$color-gray-200:      #e5e7eb;
+$color-gray-300:      #d1d5db;
+$color-gray-400:      #9ca3af;
+$color-gray-500:      #6b7280;
+$color-gray-700:      #374151;
+$color-gray-900:      #171717;
+
+// --- Sunday (red) / Saturday (blue) ---
+$color-sunday:        #dc2626;
+$color-saturday:      #2563eb;
+
+// --- Base ---
+$color-white:         #ffffff;
+$color-black:         #0a0a0a;
+
+// ================================================================
+// フォント
+// ================================================================
+$font-family-base: system-ui, sans-serif;
+
+// ================================================================
+// スペーシング（4px の倍数ベース）
+// ================================================================
+$space-1:  4px;   // 4
+$space-2:  8px;   // 8
+$space-3:  12px;  // 12
+$space-4:  16px;  // 16
+$space-5:  20px;  // 20
+$space-6:  24px;  // 24
+$space-8:  32px;  // 32
+$space-10: 40px;  // 40
+
+// ================================================================
+// フォントサイズ
+// ================================================================
+$font-xs:   8px;
+$font-sm:   10px;
+$font-md:   12px;
+$font-base: 13px;
+$font-lg:   14px;
+$font-xl:   16px;
+$font-2xl:  18px;
+$font-3xl:  22px;
+$font-4xl:  24px;
+
+// ================================================================
+// Border radius
+// ================================================================
+$radius-sm:   4px;
+$radius-md:   6px;
+$radius-lg:   8px;
+$radius-xl:   12px;
+$radius-full: 9999px;
+
+// ================================================================
+// Shadows
+// ================================================================
+$shadow-modal: 0 8px 30px rgba(0, 0, 0, 0.2);
+$overlay-bg:   rgba(0, 0, 0, 0.4);

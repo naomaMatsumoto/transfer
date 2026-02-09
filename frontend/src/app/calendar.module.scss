@@ -1,0 +1,222 @@
+@use "variables" as v;
+
+.page {
+  padding: v.$space-6;
+  font-family: v.$font-family-base;
+}
+
+.title {
+  font-size: v.$font-4xl;
+  font-weight: 700;
+  margin-bottom: v.$space-4;
+}
+
+.errorBanner {
+  margin-bottom: v.$space-4;
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-sm;
+  background-color: v.$color-danger-light;
+  color: v.$color-danger-dark;
+}
+
+.creditsSection {
+  margin-bottom: v.$space-6;
+  padding: v.$space-3 v.$space-4;
+  border-radius: v.$radius-lg;
+  border: 1px solid v.$color-gray-200;
+  background-color: v.$color-gray-50;
+}
+
+.sectionTitle {
+  font-size: v.$font-2xl;
+  font-weight: 600;
+  margin-bottom: v.$space-2;
+}
+
+.muted {
+  color: v.$color-gray-500;
+}
+
+.creditsList {
+  padding-left: v.$space-5;
+  margin: 0;
+}
+
+.creditItem {
+  margin-bottom: v.$space-1;
+  font-size: v.$font-lg;
+}
+
+.monthNav {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  margin-bottom: v.$space-2;
+}
+
+.monthBtn {
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-full;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: v.$space-2;
+  margin-top: v.$space-2;
+}
+
+.weekdayHeader {
+  text-align: center;
+  font-size: v.$font-md;
+  font-weight: 600;
+  padding-bottom: v.$space-1;
+}
+
+.weekdaySun     { color: v.$color-sunday; }
+.weekdaySat     { color: v.$color-saturday; }
+.weekdayDefault { color: v.$color-gray-500; }
+
+.dayCell {
+  border-radius: v.$radius-lg;
+  border: 1px solid v.$color-gray-200;
+  padding: v.$space-2 v.$space-3;
+  background-color: v.$color-white;
+  min-height: 110px;
+}
+
+.dayCellToday {
+  border: 2px solid v.$color-primary;
+}
+
+.dayCellPast {
+  background-color: v.$color-gray-100;
+  opacity: 0.6;
+}
+
+.dayCellOtherMonth {
+  opacity: 0.4;
+}
+
+.dayNumber {
+  font-weight: 600;
+  font-size: v.$font-base;
+  margin-bottom: v.$space-1;
+}
+
+.dayNumberSun { color: v.$color-sunday; }
+.dayNumberSat { color: v.$color-saturday; }
+
+.daySlotCount {
+  font-size: v.$font-sm + 1;
+  color: v.$color-gray-500;
+}
+
+.emptyDay {
+  font-size: v.$font-md;
+  color: v.$color-gray-400;
+}
+
+.eventList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-1;
+}
+
+.eventItem {
+  padding: v.$space-2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-200;
+  background-color: v.$color-white;
+}
+
+.eventItemReserved {
+  background-color: v.$color-success-light;
+}
+
+.eventItemInactive {
+  background-color: v.$color-gray-50;
+}
+
+.eventRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: v.$space-1;
+}
+
+.eventTime {
+  font-size: v.$font-base;
+  font-weight: 600;
+}
+
+.eventCapacity {
+  font-size: v.$font-sm + 1;
+}
+
+.eventCapacityFull      { color: v.$color-danger-darker; }
+.eventCapacityAvailable { color: v.$color-success; }
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$space-1;
+  align-items: center;
+}
+
+.badge {
+  font-size: v.$font-sm + 1;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-full;
+}
+
+.badgeHoliday  { background-color: v.$color-gray-200; }
+.badgeCanceled { background-color: v.$color-danger-light; color: v.$color-danger-darker; }
+.badgeReserved { background-color: v.$color-success-pale; color: v.$color-success-text; }
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$space-1;
+  margin-top: v.$space-1;
+}
+
+.btnNormal {
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-full;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+
+  &:disabled {
+    background-color: v.$color-gray-50;
+    cursor: not-allowed;
+  }
+}
+
+.btnMakeup {
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-full;
+  border: 1px solid v.$color-success-accent;
+  background-color: v.$color-success-light;
+  color: v.$color-success-deep;
+  cursor: pointer;
+}
+
+.btnAbsence {
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-full;
+  border: 1px solid v.$color-warning;
+  background-color: v.$color-warning-light;
+  color: v.$color-warning-text;
+  cursor: pointer;
+}
