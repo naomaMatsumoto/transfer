@@ -1,0 +1,58 @@
+@use "variables" as v;
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: v.$space-6;
+  padding: v.$space-3 v.$space-6;
+  border-bottom: 1px solid v.$color-gray-200;
+  background: v.$color-white;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: v.$font-xl;
+  color: v.$color-gray-900;
+
+  &:hover {
+    color: v.$color-primary;
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+}
+
+.navLink {
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$color-gray-700;
+
+  &:hover {
+    background: v.$color-gray-100;
+    color: v.$color-primary;
+  }
+}
+
+.navLinkActive {
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary;
+  background: v.$color-primary-bg;
+}
+
+.main {
+  flex: 1;
+}

@@ -24,6 +24,40 @@
   a { color: v.$color-primary; }
 }
 
+// 管理画面トップナビ（会員管理 | 予約システム | カレンダー）
+.adminNav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: v.$space-2 v.$space-4;
+  margin-bottom: v.$space-4;
+  font-size: v.$font-base;
+}
+
+.adminNavLink {
+  color: v.$color-primary;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.adminNavLinkActive {
+  font-weight: 700;
+  color: v.$color-gray-700;
+  text-decoration: none;
+
+  &:hover {
+    color: v.$color-gray-700;
+  }
+}
+
+.adminNavSep {
+  color: v.$color-gray-300;
+  user-select: none;
+}
+
 .flash {
   padding: v.$space-2 v.$space-3;
   border-radius: v.$radius-sm;
