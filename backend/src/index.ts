@@ -523,8 +523,11 @@ app.post(
       const end = new Date(dateTo + "T00:00:00");
 
       while (cursor <= end) {
-        const day = cursor.getDay(); // 0=日〜6=土
-        const dateStr = cursor.toISOString().slice(0, 10);
+        const day = cursor.getDay(); // 0=日〜6=土（ローカル）
+        const y = cursor.getFullYear();
+        const m = String(cursor.getMonth() + 1).padStart(2, "0");
+        const d = String(cursor.getDate()).padStart(2, "0");
+        const dateStr = `${y}-${m}-${d}`; // ローカル日付（toISOString は UTC で日曜/土曜がずれるため使わない）
 
         if (weekdays.includes(day) && !excludeSet.has(dateStr)) {
           const startsAt = `${dateStr} ${startTime}:00`;
