@@ -35,59 +35,6 @@ function isMemberEmailError(code: string): boolean {
   return code === "MEMBER_EMAIL_INVALID" || code === "MEMBER_EMAIL_DUPLICATE";
 }
 
-const card: React.CSSProperties = {
-  border: "1px solid #e5e7eb",
-  borderRadius: "8px",
-  padding: "16px",
-  marginBottom: "12px",
-  backgroundColor: "#fff",
-};
-const label: React.CSSProperties = {
-  display: "block",
-  fontSize: "12px",
-  fontWeight: 600,
-  color: "#374151",
-  marginBottom: "2px",
-};
-const input: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 8px",
-  border: "1px solid #d1d5db",
-  borderRadius: "6px",
-  fontSize: "13px",
-  boxSizing: "border-box",
-};
-const inputError: React.CSSProperties = {
-  ...input,
-  border: "1px solid #dc2626",
-  outline: "none",
-  boxShadow: "0 0 0 1px #dc2626",
-};
-const fieldErrorMsg: React.CSSProperties = {
-  color: "#dc2626",
-  fontSize: "11px",
-  marginTop: "2px",
-  display: "block",
-  minHeight: "14px",
-  lineHeight: 1.3,
-};
-const formFieldWrap: React.CSSProperties = {
-  minHeight: "58px",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-};
-const btn = (color = "#3b82f6", disabled = false): React.CSSProperties => ({
-  fontSize: "12px",
-  padding: "6px 14px",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: disabled ? "#9ca3af" : color,
-  color: "#fff",
-  cursor: disabled ? "not-allowed" : "pointer",
-  fontWeight: 500,
-});
-
 function ConfirmModal({
   open,
   title,
@@ -96,6 +43,7 @@ function ConfirmModal({
   onCancel,
   confirmLabel = "実行",
   confirmColor = "#3b82f6",
+  scss: s,
 }: {
   open: boolean;
   title: string;
@@ -104,66 +52,181 @@ function ConfirmModal({
   onCancel: () => void;
   confirmLabel?: string;
   confirmColor?: string;
+  scss: { [k: string]: string };
 }) {
   if (!open) return null;
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9999,
-        animation: "fadeIn 0.2s ease",
-      }}
-      onClick={onCancel}
-    >
-      <div
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "12px",
-          padding: "24px",
-          minWidth: "360px",
-          animation: "slideUp 0.25s ease",
-          maxWidth: "500px",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.2)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>{title}</h3>
-        <div style={{ fontSize: "13px", marginBottom: "16px", color: "#374151" }}>{children}</div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              fontSize: "13px",
-              padding: "6px 16px",
-              borderRadius: "6px",
-              border: "1px solid #d1d5db",
-              backgroundColor: "#fff",
-              cursor: "pointer",
-            }}
-          >
+    <div className={s.modalOverlay} onClick={onCancel}>
+      <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+        <h3 className={s.modalTitle}>{title}</h3>
+        <div className={s.modalBody}>{children}</div>
+        <div className={s.modalFooter}>
+          <button type="button" className={s.modalBtnCancel} onClick={onCancel}>
             キャンセル
           </button>
           <button
             type="button"
+            className={confirmColor === "#991b1b" ? s.modalBtnConfirmDanger : s.modalBtnConfirm}
             onClick={onConfirm}
-            style={{
-              fontSize: "13px",
-              padding: "6px 16px",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: confirmColor,
-              color: "#fff",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
           >
             {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const stageOptions = [
+  { value: "preschool", label: "未就学児" },
+  { value: "elementary", label: "小学生" },
+  { value: "junior_high", label: "中学生" },
+  { value: "high_school", label: "高校生" },
+  { value: "adult", label: "大人" },
+  { value: "other", label: "その他" },
+];
+
+function EditMemberModal({
+  open,
+  editId,
+  name,
+  setName,
+  furigana,
+  setFurigana,
+  email,
+  setEmail,
+  address,
+  setAddress,
+  phone,
+  setPhone,
+  courseType,
+  setCourseType,
+  stage,
+  setStage,
+  formError,
+  setFormError,
+  onSave,
+  onCancel,
+  scss: s,
+}: {
+  open: boolean;
+  editId: number | null;
+  name: string;
+  setName: (v: string) => void;
+  furigana: string;
+  setFurigana: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  address: string;
+  setAddress: (v: string) => void;
+  phone: string;
+  setPhone: (v: string) => void;
+  courseType: string;
+  setCourseType: (v: string) => void;
+  stage: string;
+  setStage: (v: string) => void;
+  formError: { field: string; message: string } | null;
+  setFormError: (v: { field: string; message: string } | null) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  scss: { [k: string]: string };
+}) {
+  if (!open || !editId) return null;
+  return (
+    <div className={s.modalOverlay} onClick={onCancel}>
+      <div className={s.membersEditModalContent} onClick={(e) => e.stopPropagation()}>
+        <h3 className={s.modalTitle}>会員を編集（#{editId}）</h3>
+        <div className={s.membersEditFormFields}>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>名前</span>
+            <input
+              type="text"
+              className={formError?.field === "name" ? s.membersInputError : s.membersInput}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (formError?.field === "name") setFormError(null);
+              }}
+              placeholder="山田 太郎"
+            />
+            <span className={s.membersFieldError}>{formError?.field === "name" ? formError.message : "\u00A0"}</span>
+          </div>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>フリガナ（任意）</span>
+            <input
+              type="text"
+              className={s.membersInput}
+              value={furigana}
+              onChange={(e) => setFurigana(e.target.value)}
+              placeholder="ヤマダ タロウ"
+            />
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          </div>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>メール（任意）</span>
+            <input
+              type="email"
+              className={formError?.field === "email" ? s.membersInputError : s.membersInput}
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (formError?.field === "email") setFormError(null);
+              }}
+              placeholder="user@example.com"
+            />
+            <span className={s.membersFieldError}>{formError?.field === "email" ? formError.message : "\u00A0"}</span>
+          </div>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>住所（任意）</span>
+            <input
+              type="text"
+              className={s.membersInput}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="〇〇市〇〇町1-2-3"
+            />
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          </div>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>電話番号（任意）</span>
+            <input
+              type="tel"
+              className={s.membersInput}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="090-1234-5678"
+            />
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          </div>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>コース種別</span>
+            <input
+              type="text"
+              className={s.membersInput}
+              value={courseType}
+              onChange={(e) => setCourseType(e.target.value)}
+              placeholder="—"
+            />
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          </div>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>ステータス</span>
+            <select className={s.membersInput} value={stage} onChange={(e) => setStage(e.target.value)}>
+              {stageOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          </div>
+        </div>
+        <div className={s.modalFooter}>
+          <button type="button" className={s.modalBtnCancel} onClick={onCancel}>
+            キャンセル
+          </button>
+          <button type="button" className={s.membersBtnSuccess} onClick={onSave}>
+            保存
           </button>
         </div>
       </div>
@@ -403,14 +466,6 @@ export default function AdminMembersPage() {
     loadMembers();
   };
 
-  const stageOptions = [
-    { value: "preschool", label: "未就学児" },
-    { value: "elementary", label: "小学生" },
-    { value: "junior_high", label: "中学生" },
-    { value: "high_school", label: "高校生" },
-    { value: "other", label: "その他" },
-  ];
-
   return (
     <>
       <h1 className={s.pageTitle}>会員管理</h1>
@@ -426,6 +481,30 @@ export default function AdminMembersPage() {
         </div>
       )}
 
+      <EditMemberModal
+        open={editId !== null}
+        editId={editId}
+        name={editName}
+        setName={setEditName}
+        furigana={editFurigana}
+        setFurigana={setEditFurigana}
+        email={editEmail}
+        setEmail={setEditEmail}
+        address={editAddress}
+        setAddress={setEditAddress}
+        phone={editPhone}
+        setPhone={setEditPhone}
+        courseType={editCourseType}
+        setCourseType={setEditCourseType}
+        stage={editStage}
+        setStage={setEditStage}
+        formError={editFormError}
+        setFormError={setEditFormError}
+        onSave={handleUpdate}
+        onCancel={cancelEdit}
+        scss={s}
+      />
+
       <ConfirmModal
         open={deleteTarget !== null}
         title="会員の削除"
@@ -433,6 +512,7 @@ export default function AdminMembersPage() {
         onCancel={() => setDeleteTarget(null)}
         confirmLabel="削除する"
         confirmColor="#991b1b"
+        scss={s}
       >
         {deleteTarget && (
           <>
@@ -442,21 +522,14 @@ export default function AdminMembersPage() {
       </ConfirmModal>
 
       {/* 新規追加 */}
-      <div style={card}>
-        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>会員を追加</h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "120px 120px 160px 180px 110px 100px 90px auto",
-            gap: "8px",
-            alignItems: "start",
-          }}
-        >
-          <div style={formFieldWrap}>
-            <span style={label}>名前</span>
+      <div className={s.membersCard}>
+        <h3 className={s.membersCardTitle}>会員を追加</h3>
+        <div className={s.membersFormGrid}>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>名前</span>
             <input
               type="text"
-              style={newFormError?.field === "name" ? inputError : input}
+              className={newFormError?.field === "name" ? s.membersInputError : s.membersInput}
               value={newName}
               onChange={(e) => {
                 setNewName(e.target.value);
@@ -464,26 +537,26 @@ export default function AdminMembersPage() {
               }}
               placeholder="山田 太郎"
             />
-            <span style={fieldErrorMsg}>
+            <span className={s.membersFieldError}>
               {newFormError?.field === "name" ? newFormError.message : "\u00A0"}
             </span>
           </div>
-          <div style={formFieldWrap}>
-            <span style={label}>フリガナ（任意）</span>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>フリガナ（任意）</span>
             <input
               type="text"
-              style={input}
+              className={s.membersInput}
               value={newFurigana}
               onChange={(e) => setNewFurigana(e.target.value)}
               placeholder="ヤマダ タロウ"
             />
-            <span style={fieldErrorMsg}>{"\u00A0"}</span>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
-          <div style={formFieldWrap}>
-            <span style={label}>メール（任意）</span>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>メール（任意）</span>
             <input
               type="email"
-              style={newFormError?.field === "email" ? inputError : input}
+              className={newFormError?.field === "email" ? s.membersInputError : s.membersInput}
               value={newEmail}
               onChange={(e) => {
                 setNewEmail(e.target.value);
@@ -491,47 +564,47 @@ export default function AdminMembersPage() {
               }}
               placeholder="user@example.com"
             />
-            <span style={fieldErrorMsg}>
+            <span className={s.membersFieldError}>
               {newFormError?.field === "email" ? newFormError.message : "\u00A0"}
             </span>
           </div>
-          <div style={formFieldWrap}>
-            <span style={label}>住所（任意）</span>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>住所（任意）</span>
             <input
               type="text"
-              style={input}
+              className={s.membersInput}
               value={newAddress}
               onChange={(e) => setNewAddress(e.target.value)}
               placeholder="〇〇市〇〇町1-2-3"
             />
-            <span style={fieldErrorMsg}>{"\u00A0"}</span>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
-          <div style={formFieldWrap}>
-            <span style={label}>電話番号（任意）</span>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>電話番号（任意）</span>
             <input
               type="tel"
-              style={input}
+              className={s.membersInput}
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
               placeholder="090-1234-5678"
             />
-            <span style={fieldErrorMsg}>{"\u00A0"}</span>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
-          <div style={formFieldWrap}>
-            <span style={label}>コース種別</span>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>コース種別</span>
             <input
               type="text"
-              style={input}
+              className={s.membersInput}
               value={newCourseType}
               onChange={(e) => setNewCourseType(e.target.value)}
               placeholder="—"
             />
-            <span style={fieldErrorMsg}>{"\u00A0"}</span>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
-          <div style={formFieldWrap}>
-            <span style={label}>ステータス</span>
+          <div className={s.membersFieldWrap}>
+            <span className={s.membersLabel}>ステータス</span>
             <select
-              style={input}
+              className={s.membersInput}
               value={newStage}
               onChange={(e) => setNewStage(e.target.value)}
             >
@@ -541,14 +614,14 @@ export default function AdminMembersPage() {
                 </option>
               ))}
             </select>
-            <span style={fieldErrorMsg}>{"\u00A0"}</span>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
-          <div style={{ ...formFieldWrap, justifyContent: "center", paddingTop: "20px" }}>
-            <span style={{ ...label, opacity: 0 }}>—</span>
-            <button type="button" style={btn()} onClick={handleCreate}>
+          <div className={`${s.membersFieldWrap} ${s.membersFieldWrapCenter}`}>
+            <span className={`${s.membersLabel} ${s.membersLabelInvisible}`}>—</span>
+            <button type="button" className={s.membersBtnPrimary} onClick={handleCreate}>
               追加
             </button>
-            <span style={fieldErrorMsg}>{"\u00A0"}</span>
+            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
         </div>
       </div>
@@ -558,159 +631,46 @@ export default function AdminMembersPage() {
         <table className={s.tableCardTable}>
           <thead>
             <tr>
-              <th style={{ width: "56px" }}>ID</th>
-              <th style={{ minWidth: "100px" }}>名前</th>
-              <th style={{ minWidth: "100px" }}>フリガナ</th>
-              <th style={{ minWidth: "140px" }}>メール</th>
-              <th style={{ minWidth: "140px" }}>住所</th>
-              <th style={{ width: "110px" }}>電話番号</th>
-              <th style={{ width: "90px" }}>コース種別</th>
-              <th style={{ width: "90px" }}>ステータス</th>
-              <th style={{ width: "140px" }}>操作</th>
+              <th className={s.membersThId}>ID</th>
+              <th className={s.membersThName}>名前</th>
+              <th className={s.membersThName}>フリガナ</th>
+              <th className={s.membersThEmail}>メール</th>
+              <th className={s.membersThEmail}>住所</th>
+              <th className={s.membersThPhone}>電話番号</th>
+              <th className={s.membersThCourse}>コース種別</th>
+              <th className={s.membersThCourse}>ステータス</th>
+              <th className={s.membersThActions}>操作</th>
             </tr>
           </thead>
           <tbody>
             {members.map((m) => (
-              <tr key={m.id} style={{ verticalAlign: editId === m.id ? "top" : undefined }}>
+              <tr key={m.id}>
                 <td>{m.id}</td>
-                {editId === m.id ? (
-                  <>
-                    <td style={{ verticalAlign: "top", minWidth: "120px" }}>
-                      <div style={{ minHeight: "52px", display: "flex", flexDirection: "column" }}>
-                        <input
-                          type="text"
-                          style={{
-                            ...(editFormError?.field === "name" ? inputError : input),
-                            width: "100%",
-                            boxSizing: "border-box",
-                          }}
-                          value={editName}
-                          onChange={(e) => {
-                            setEditName(e.target.value);
-                            if (editFormError?.field === "name") setEditFormError(null);
-                          }}
-                        />
-                        <span style={fieldErrorMsg}>
-                          {editFormError?.field === "name" ? editFormError.message : "\u00A0"}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ verticalAlign: "top" }}>
-                      <input
-                        type="text"
-                        style={{ ...input, width: "100%", boxSizing: "border-box" }}
-                        value={editFurigana}
-                        onChange={(e) => setEditFurigana(e.target.value)}
-                        placeholder="フリガナ"
-                      />
-                    </td>
-                    <td style={{ verticalAlign: "top", minWidth: "160px" }}>
-                      <div style={{ minHeight: "52px", display: "flex", flexDirection: "column" }}>
-                        <input
-                          type="email"
-                          style={{
-                            ...(editFormError?.field === "email" ? inputError : input),
-                            width: "100%",
-                            boxSizing: "border-box",
-                          }}
-                          value={editEmail}
-                          onChange={(e) => {
-                            setEditEmail(e.target.value);
-                            if (editFormError?.field === "email") setEditFormError(null);
-                          }}
-                        />
-                        <span style={fieldErrorMsg}>
-                          {editFormError?.field === "email" ? editFormError.message : "\u00A0"}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ verticalAlign: "top" }}>
-                      <input
-                        type="text"
-                        style={{ ...input, width: "100%", boxSizing: "border-box" }}
-                        value={editAddress}
-                        onChange={(e) => setEditAddress(e.target.value)}
-                        placeholder="住所"
-                      />
-                    </td>
-                    <td style={{ verticalAlign: "top" }}>
-                      <input
-                        type="tel"
-                        style={{ ...input, width: "100%", boxSizing: "border-box" }}
-                        value={editPhone}
-                        onChange={(e) => setEditPhone(e.target.value)}
-                        placeholder="電話番号"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        style={{ ...input, width: "100%", boxSizing: "border-box" }}
-                        value={editCourseType}
-                        onChange={(e) => setEditCourseType(e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <select
-                        style={input}
-                        value={editStage}
-                        onChange={(e) => setEditStage(e.target.value)}
-                      >
-                        {stageOptions.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <span className={s.tableCardActions}>
-                        <button type="button" style={btn("#059669")} onClick={handleUpdate}>
-                          保存
-                        </button>
-                        <button type="button" style={btn("#6b7280")} onClick={cancelEdit}>
-                          取消
-                        </button>
-                      </span>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td style={{ fontWeight: 600 }}>{m.name}</td>
-                    <td style={{ fontSize: "12px", color: "#6b7280" }}>{m.furigana ?? "—"}</td>
-                    <td style={{ fontSize: "12px", color: "#6b7280" }}>{m.email ?? "—"}</td>
-                    <td style={{ fontSize: "12px", color: "#6b7280" }}>{m.address ?? "—"}</td>
-                    <td style={{ fontSize: "12px", color: "#6b7280" }}>{m.phone ?? "—"}</td>
-                    <td style={{ fontSize: "12px" }}>{m.course_type ?? "—"}</td>
-                    <td>
-                      <span
-                        style={{
-                          padding: "2px 6px",
-                          borderRadius: "9999px",
-                          fontSize: "11px",
-                          backgroundColor: "#ecfdf5",
-                          color: "#047857",
-                        }}
-                      >
-                        {stageOptions.find((o) => o.value === m.stage)?.label ?? m.stage ?? "—"}
-                      </span>
-                    </td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <span className={s.tableCardActions}>
-                        <button type="button" style={btn("#3b82f6")} onClick={() => startEdit(m)}>
-                          編集
-                        </button>
-                        <button
-                          type="button"
-                          style={btn("#dc2626")}
-                          onClick={() => setDeleteTarget(m)}
-                        >
-                          削除
-                        </button>
-                      </span>
-                    </td>
-                  </>
-                )}
+                <td className={s.membersTableName}>{m.name}</td>
+                <td className={s.membersTableMuted}>{m.furigana ?? "—"}</td>
+                <td className={s.membersTableMuted}>{m.email ?? "—"}</td>
+                <td className={s.membersTableMuted}>{m.address ?? "—"}</td>
+                <td className={s.membersTableMuted}>{m.phone ?? "—"}</td>
+                <td className={s.membersTableMuted}>{m.course_type ?? "—"}</td>
+                <td>
+                  <span className={s.membersStageBadge}>
+                    {stageOptions.find((o) => o.value === m.stage)?.label ?? m.stage ?? "—"}
+                  </span>
+                </td>
+                <td className={s.membersTdActions}>
+                  <span className={s.tableCardActions}>
+                    <button type="button" className={s.membersBtnPrimary} onClick={() => startEdit(m)}>
+                      編集
+                    </button>
+                    <button
+                      type="button"
+                      className={s.membersBtnDanger}
+                      onClick={() => setDeleteTarget(m)}
+                    >
+                      削除
+                    </button>
+                  </span>
+                </td>
               </tr>
             ))}
             {members.length === 0 && (

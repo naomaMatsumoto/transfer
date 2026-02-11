@@ -1,0 +1,416 @@
+@use "../variables" as v;
+
+// ================================================================
+// Tabs（モダン）
+// ================================================================
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid v.$color-gray-200;
+  margin-bottom: v.$space-5;
+  flex-wrap: wrap;
+  gap: v.$space-1;
+}
+
+.tab {
+  font-size: v.$font-base;
+  padding: v.$space-3 v.$space-4;
+  border-radius: v.$radius-lg v.$radius-lg 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background-color: transparent;
+  cursor: pointer;
+  font-weight: 500;
+  color: v.$color-gray-500;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: v.$color-gray-700;
+    background-color: v.$color-gray-50;
+  }
+}
+
+.tabActive {
+  background-color: v.$color-white;
+  color: v.$color-primary;
+  font-weight: 600;
+  border-color: v.$color-gray-200;
+  border-bottom: 1px solid v.$color-white;
+  margin-bottom: -1px;
+}
+
+// ================================================================
+// Card / Form elements（モダン）
+// ================================================================
+.card {
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-xl;
+  padding: v.$space-5;
+  margin-bottom: v.$space-4;
+  background-color: v.$color-white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cardTitle {
+  font-size: v.$font-lg;
+  font-weight: 600;
+  margin-bottom: v.$space-3;
+  color: v.$color-gray-900;
+}
+
+.mutedText {
+  color: v.$color-gray-500;
+  font-size: v.$font-base;
+  margin: 0;
+}
+
+.label {
+  display: block;
+  font-size: v.$font-md;
+  font-weight: 600;
+  color: v.$color-gray-700;
+  margin-bottom: v.$space-1 / 2;
+}
+
+.input {
+  width: 100%;
+  padding: v.$space-2;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  box-sizing: border-box;
+}
+
+.inputSmall {
+  composes: input;
+  width: auto;
+}
+
+// ================================================================
+// Buttons
+// ================================================================
+.btn {
+  font-size: v.$font-md;
+  padding: v.$space-2 v.$space-4 - 2;
+  border-radius: v.$radius-md;
+  border: none;
+  color: v.$color-white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+
+  &:hover { opacity: 0.85; }
+  &:disabled {
+    background-color: v.$color-gray-300;
+    color: v.$color-gray-400;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.btnPrimary    { composes: btn; background-color: v.$color-primary; }
+.btnSuccess    { composes: btn; background-color: v.$color-success; }
+.btnDanger     { composes: btn; background-color: v.$color-danger; }
+.btnDangerDark { composes: btn; background-color: v.$color-danger-dark; }
+.btnGray       { composes: btn; background-color: v.$color-gray-500; }
+.btnSm         { font-size: v.$font-sm + 1; }
+
+// ================================================================
+// Table（クラス種別・イベント等で共通のモジュール）
+// ================================================================
+.tableCard {
+  background-color: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.tableCardTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$font-base;
+  table-layout: fixed;
+}
+
+.tableCardTable th {
+  padding: v.$space-3 v.$space-3;
+  border-bottom: 1px solid v.$color-gray-200;
+  text-align: left;
+  font-weight: 600;
+  color: v.$color-gray-700;
+  background-color: v.$color-gray-50;
+}
+
+.tableCardTable td {
+  padding: v.$space-3 v.$space-3;
+  border-bottom: 1px solid v.$color-gray-100;
+  background-color: v.$color-white;
+  vertical-align: middle;
+}
+
+.tableCardTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tableCardTable tbody tr:hover td {
+  background-color: v.$color-gray-50;
+}
+
+.tableCardTable tbody tr.trSelected td,
+.tableCardTable tbody tr.trSelected:hover td {
+  background-color: v.$color-primary-light;
+}
+
+.tableCardTable.tableCardTableAuto {
+  table-layout: auto;
+}
+
+.tableCardEmpty {
+  padding: v.$space-6;
+  text-align: center;
+  color: v.$color-gray-400;
+  font-size: v.$font-base;
+}
+
+.tableCardActions {
+  display: inline-flex;
+  gap: v.$space-2;
+  flex-wrap: wrap;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$font-base;
+}
+
+.th {
+  padding: v.$space-2;
+  border-bottom: 1px solid v.$color-gray-200;
+  text-align: left;
+  background-color: v.$color-gray-50;
+}
+
+.td {
+  padding: v.$space-2;
+}
+
+.tr {
+  border-bottom: 1px solid v.$color-gray-100;
+}
+
+.trSelected {
+  background-color: v.$color-primary-light;
+}
+
+.emptyRow {
+  padding: v.$space-4;
+  text-align: center;
+  color: v.$color-gray-400;
+}
+
+// ================================================================
+// Status badges
+// ================================================================
+.statusBadge {
+  display: inline-block;
+  padding: v.$space-1 v.$space-3;
+  border-radius: v.$radius-full;
+  font-size: v.$font-sm + 1;
+  font-weight: 700;
+}
+
+.statusScheduled {
+  color: v.$color-success-dark;
+  background-color: v.$color-success-bg;
+  border: 1px solid v.$color-success-border;
+}
+
+.statusHoliday {
+  color: v.$color-gray-700;
+  background-color: v.$color-gray-200;
+  border: 1px solid v.$color-gray-300;
+}
+
+.statusCanceled {
+  color: v.$color-danger-dark;
+  background-color: v.$color-danger-light;
+  border: 1px solid v.$color-danger-border;
+}
+
+.statusBadgeSm {
+  padding: v.$space-1 / 2 v.$space-2;
+  border-radius: v.$radius-sm;
+  font-size: v.$font-sm;
+  font-weight: 700;
+}
+
+// ================================================================
+// Modal
+// ================================================================
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: v.$overlay-bg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+.modalContent {
+  background-color: v.$color-white;
+  border-radius: v.$radius-xl;
+  padding: v.$space-6;
+  min-width: 360px;
+  max-width: 500px;
+  box-shadow: v.$shadow-modal;
+  animation: slideUp 0.25s ease;
+}
+
+.modalContentWide {
+  composes: modalContent;
+  min-width: 420px;
+  max-width: 520px;
+}
+
+.modalTitle {
+  font-size: v.$font-xl;
+  font-weight: 700;
+  margin-bottom: v.$space-3;
+}
+
+.modalBody {
+  font-size: v.$font-base;
+  margin-bottom: v.$space-4;
+  color: v.$color-gray-700;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: v.$space-2;
+}
+
+.modalFooterSplit {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modalBtnCancel {
+  font-size: v.$font-base;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+}
+
+.modalBtnConfirm {
+  font-size: v.$font-base;
+  padding: v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  border: none;
+  background-color: v.$color-primary;
+  color: v.$color-white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+// ================================================================
+// Edit modal grid
+// ================================================================
+.editGrid {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: v.$space-3 v.$space-3;
+  align-items: center;
+  font-size: v.$font-base;
+  margin-bottom: v.$space-4;
+}
+
+.editStatusGroup {
+  display: flex;
+  gap: v.$space-2;
+}
+
+.editStatusBtn {
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-3;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  color: v.$color-gray-500;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.editStatusBtnActive {
+  font-weight: 700;
+}
+
+// ================================================================
+// View toggle
+// ================================================================
+.viewToggle {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  margin-bottom: v.$space-2;
+  flex-wrap: wrap;
+}
+
+// ================================================================
+// Form layouts
+// ================================================================
+.formRow {
+  display: grid;
+  gap: v.$space-2;
+  align-items: end;
+}
+
+.formRow5          { grid-template-columns: 1fr 1fr 1fr 80px auto; }
+.formRow4          { grid-template-columns: 1fr 100px 100px 70px; }
+.formRow4auto      { grid-template-columns: 1fr 1fr 1fr auto; }
+.formRow5credit     { grid-template-columns: 1fr 1fr 1fr 1fr auto; }
+.formRow5proxy      { grid-template-columns: 1fr 100px 100px 100px auto; }
+.formRowClassType   { grid-template-columns: 150px 1fr 1fr auto; }
+
+.weekdayCheckGroup {
+  display: flex;
+  gap: v.$space-2;
+  flex-wrap: wrap;
+  margin-top: v.$space-1;
+}
+
+.weekdayCheck {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1;
+  font-size: v.$font-base;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+  user-select: none;
+
+  input { display: none; }
+}
+
+.weekdayCheckActive {
+  border: 2px solid v.$color-primary;
+  background-color: v.$color-primary-light;
+}
+
+// ================================================================
+// Misc colors
+// ================================================================
+.colorSun     { color: v.$color-sunday; }
+.colorSat     { color: v.$color-saturday; }
+.colorGray    { color: v.$color-gray-500; }
+.colorSuccess { color: v.$color-success; }
+.colorDanger  { color: v.$color-danger; }
+.colorPrimary { color: v.$color-primary; }
+.fontBold     { font-weight: 600; }

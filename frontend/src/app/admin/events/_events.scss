@@ -1,0 +1,201 @@
+@use "../../variables" as v;
+
+// ================================================================
+// Calendar (admin)
+// ================================================================
+.calNav {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  margin-bottom: v.$space-2;
+}
+
+.calNavLabel {
+  font-weight: 600;
+  font-size: v.$font-lg;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: v.$space-1;
+}
+
+.calWeekday {
+  text-align: center;
+  font-size: v.$font-md;
+  font-weight: 600;
+  padding-bottom: v.$space-1;
+}
+
+.calCell {
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-200;
+  padding: v.$space-1 v.$space-2;
+  min-height: 120px;
+  background-color: v.$color-white;
+  overflow: hidden;
+}
+
+.calCellToday {
+  border: 2px solid v.$color-primary;
+}
+
+.calCellOther {
+  opacity: 0.4;
+}
+
+.calDayNum {
+  font-weight: 700;
+  font-size: v.$font-base;
+  margin-bottom: v.$space-1;
+}
+
+.calEvent {
+  font-size: v.$font-md;
+  padding: v.$space-1 + 1 v.$space-2 - 1;
+  border-radius: v.$radius-md;
+  margin-bottom: v.$space-1;
+  border: 1px solid v.$color-gray-200;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.calEventSelected {
+  background-color: v.$color-primary-bg;
+  border: 2px solid v.$color-primary;
+}
+
+.calEventScheduled { background-color: v.$color-success-light; }
+.calEventHoliday   { background-color: v.$color-gray-100; }
+.calEventCanceled  { background-color: v.$color-danger-light; }
+
+.calEventRow1 {
+  display: flex;
+  align-items: center;
+  gap: v.$space-1 + 1;
+  margin-bottom: v.$space-1 / 2;
+}
+
+.calEventRow2 {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+}
+
+.calEventTime {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.calEventName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-weight: 500;
+}
+
+.calEventCapacity {
+  color: v.$color-gray-500;
+  font-size: v.$font-sm + 1;
+}
+
+.calCheckbox {
+  width: v.$space-4 - 2;
+  height: v.$space-4 - 2;
+  flex-shrink: 0;
+}
+
+.calEmptyDay {
+  font-size: v.$font-sm;
+  color: v.$color-gray-300;
+}
+
+// ================================================================
+// Mode switch
+// ================================================================
+.modeSwitch {
+  display: flex;
+  gap: v.$space-2;
+  margin-bottom: v.$space-2;
+}
+
+.modeBtn {
+  font-size: v.$font-md;
+  padding: v.$space-1 + 1 v.$space-4 - 2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  color: v.$color-gray-700;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.modeBtnActive {
+  border: 2px solid v.$color-primary;
+  background-color: v.$color-primary-light;
+  color: v.$color-primary-dark;
+  font-weight: 700;
+}
+
+// ================================================================
+// Bulk bar
+// ================================================================
+.bulkBar {
+  display: flex;
+  gap: v.$space-2;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: v.$space-3 v.$space-4 - 2;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+
+.bulkBarHidden {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 v.$space-4 - 2;
+  margin-bottom: 0;
+  border: 1px solid transparent;
+}
+
+.bulkBarVisible {
+  max-height: 200px;
+  opacity: 1;
+  padding: v.$space-3 v.$space-4 - 2;
+  margin-bottom: v.$space-3;
+  border: 1px solid v.$color-gray-200;
+}
+
+.bulkLabel {
+  font-size: v.$font-base;
+  font-weight: 600;
+}
+
+.bulkCount {
+  font-size: v.$font-md;
+  color: v.$color-gray-500;
+}
+
+.separator {
+  border-left: 1px solid v.$color-gray-300;
+  height: v.$space-5;
+  margin: 0 v.$space-1 / 2;
+}
+
+.weekdayBtn {
+  font-size: v.$font-sm + 1;
+  padding: v.$space-1 v.$space-2;
+  border-radius: v.$radius-md;
+  border: 1px solid v.$color-gray-300;
+  background-color: v.$color-white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.weekdayBtnSun     { color: v.$color-sunday; }
+.weekdayBtnSat     { color: v.$color-saturday; }
+.weekdayBtnDefault { color: v.$color-gray-700; }

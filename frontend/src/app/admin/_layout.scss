@@ -1,0 +1,176 @@
+@use "../variables" as v;
+
+// ================================================================
+// Admin レイアウト（左サイドバー + メイン）青系配色
+// ================================================================
+$header-height: 52px;
+
+.adminLayout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  font-family: v.$font-family-base;
+  background-color: v.$color-primary-pale;
+  overflow: hidden;
+}
+
+.adminSidebar {
+  width: 240px;
+  flex-shrink: 0;
+  min-height: 100%;
+  overflow-y: auto;
+  background: v.$color-white;
+  border-right: 1px solid v.$color-primary-light;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(37, 99, 235, 0.06);
+}
+
+.adminSidebarHeader {
+  padding: v.$space-4 v.$space-4;
+  border-bottom: 1px solid v.$color-primary-light;
+  background: v.$color-primary-pale;
+}
+
+.adminSidebarTitle {
+  font-size: v.$font-lg;
+  font-weight: 600;
+  color: v.$color-primary-dark;
+  letter-spacing: -0.01em;
+}
+
+.adminSidebarNav {
+  padding: v.$space-3 v.$space-3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adminSidebarLink {
+  display: block;
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$color-gray-700;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: v.$color-primary-light;
+    color: v.$color-primary-dark;
+  }
+}
+
+.adminSidebarLinkActive {
+  display: block;
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary;
+  background-color: v.$color-primary-bg;
+  text-decoration: none;
+  border-left: 3px solid v.$color-primary;
+  padding-left: calc(v.$space-3 - 3px);
+
+  &:hover {
+    color: v.$color-primary-dark;
+    background-color: v.$color-primary-bg;
+  }
+}
+
+.adminSidebarParent {
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary-dark;
+  padding: v.$space-2 v.$space-3 v.$space-1;
+  margin-top: v.$space-2;
+}
+
+.adminSidebarSubLink {
+  display: block;
+  padding: v.$space-2 v.$space-3 v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$color-gray-500;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: v.$color-primary-light;
+    color: v.$color-primary-dark;
+  }
+}
+
+.adminSidebarSubLinkActive {
+  display: block;
+  padding: v.$space-2 v.$space-3 v.$space-2 v.$space-4;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-primary;
+  background-color: v.$color-primary-bg;
+  text-decoration: none;
+  border-left: 3px solid v.$color-primary;
+  padding-left: calc(v.$space-4 - 3px);
+
+  &:hover {
+    color: v.$color-primary-dark;
+    background-color: v.$color-primary-bg;
+  }
+}
+
+.adminSidebarDivider {
+  height: 1px;
+  background: v.$color-primary-light;
+  margin: v.$space-3 0;
+}
+
+.adminMain {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: v.$space-6;
+}
+
+.adminMainInner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+// 互換・共通
+.page {
+  padding: 0;
+  font-family: v.$font-family-base;
+  max-width: 100%;
+}
+
+.pageTitle {
+  font-size: v.$font-3xl;
+  font-weight: 700;
+  margin-bottom: v.$space-4;
+  color: v.$color-gray-900;
+  letter-spacing: -0.02em;
+}
+
+.backLink {
+  font-size: v.$font-base;
+  color: v.$color-gray-500;
+  margin-bottom: v.$space-4;
+
+  a { color: v.$color-primary; }
+}
+
+.adminNav {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2 v.$space-4;
+  margin-bottom: v.$space-4;
+  font-size: v.$font-base;
+}
+.adminNavLink { color: v.$color-primary; text-decoration: none; }
+.adminNavLinkActive { font-weight: 700; color: v.$color-gray-700; text-decoration: none; }
+.adminNavSep { color: v.$color-gray-300; user-select: none; }

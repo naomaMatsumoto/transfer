@@ -42,7 +42,7 @@ export const ERR = {
   MEMBER_DELETE_HAS_REFERENCES: "MEMBER_DELETE_HAS_REFERENCES",
 } as const;
 
-export const STAGE_VALUES = ["preschool", "elementary", "junior_high", "high_school", "other"] as const;
+export const STAGE_VALUES = ["preschool", "elementary", "junior_high", "high_school", "adult", "other"] as const;
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function isValidEmail(s: string): boolean {
