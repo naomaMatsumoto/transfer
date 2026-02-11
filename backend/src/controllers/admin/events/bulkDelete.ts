@@ -7,8 +7,13 @@ export default async function bulkDeleteEvents(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const { ids } = req.body as { ids?: number[] };
-  if (!ids || ids.length === 0) {
+  const body = req.body as { ids?: unknown; force?: boolean };
+  const raw = body.ids;
+  const ids = Array.isArray(raw)
+    ? raw.map((id) => (typeof id === "string" ? parseInt(id, 10) : Number(id))).filter((n) => Number.isInteger(n) && n > 0)
+    : [];
+  const force = body.force === true;
+  if (ids.length === 0) {
     res.status(400).json({ error: ERR.EVENT_IDS_REQUIRED });
     return;
   }
@@ -16,14 +21,16 @@ export default async function bulkDeleteEvents(
   try {
     await conn.beginTransaction();
     const ph = ids.map(() => "?").join(",");
-    const q1 = "SELECT event_id, COUNT(*) AS cnt FROM reservations WHERE event_id IN (" + ph + ") AND status IN ('booked','attended') GROUP BY event_id";
-    const [activeRes] = await conn.query(q1, ids);
-    const activeEvents = activeRes as { event_id: number; cnt: number }[];
-    if (activeEvents.length > 0) {
-      await conn.rollback();
-      const details = activeEvents.map((r) => ({ eventId: r.event_id, count: r.cnt }));
-      res.status(400).json({ error: ERR.EVENT_BULK_DELETE_HAS_RESERVATIONS, details });
-      return;
+    if (!force) {
+      const q1 = "SELECT event_id, COUNT(*) AS cnt FROM reservations WHERE event_id IN (" + ph + ") AND status IN ('booked','attended') GROUP BY event_id";
+      const [activeRes] = await conn.query(q1, ids);
+      const activeEvents = activeRes as { event_id: number; cnt: number }[];
+      if (activeEvents.length > 0) {
+        await conn.rollback();
+        const details = activeEvents.map((r) => ({ eventId: r.event_id, count: r.cnt }));
+        res.status(400).json({ error: ERR.EVENT_BULK_DELETE_HAS_RESERVATIONS, details });
+        return;
+      }
     }
     await conn.query("DELETE FROM reservations WHERE event_id IN (" + ph + ")", ids);
     await conn.query("UPDATE makeup_credits SET source_event_id = NULL WHERE source_event_id IN (" + ph + ")", ids);

@@ -22,7 +22,8 @@ export default async function bulkTimeEvents(
     const [rows] = await pool.query("SELECT starts_at, ends_at FROM events WHERE id = ?", [id]);
     const row = (rows as { starts_at: string; ends_at: string }[])[0];
     if (!row) continue;
-    const dateStr = new Date(row.starts_at).toISOString().slice(0, 10);
+    const dateStr = (row.starts_at ?? "").toString().slice(0, 10);
+    if (!dateStr || dateStr.length < 10) continue;
     const newStart = `${dateStr} ${startTime}:00`;
     const newEnd = `${dateStr} ${endTime}:00`;
     await pool.query(

@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ROUTES, RESERVATION_TABS } from "../routes";
 
-const TAB_KEYS = ["classTypes", "events", "credits", "reservations"];
+const TAB_KEYS = ["classTypes", "events", "credits"];
 
 function AdminLayoutInner({
   children,
