@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ROUTES, RESERVATION_TABS } from "../routes";
-import s from "./admin.module.scss";
 
 const TAB_KEYS = ["classTypes", "events", "credits", "reservations"];
 
-export default function AdminLayout({
+function AdminLayoutInner({
   children,
 }: {
   children: React.ReactNode;
@@ -20,26 +20,26 @@ export default function AdminLayout({
   const activeTab = currentTab && TAB_KEYS.includes(currentTab) ? currentTab : "classTypes";
 
   return (
-    <div className={s.adminLayout}>
-      <aside className={s.adminSidebar}>
-        <div className={s.adminSidebarHeader}>
-          <span className={s.adminSidebarTitle}>管理画面</span>
+    <div className="d-flex flex-row vh-100 bg-light">
+      <aside className="d-flex flex-column flex-shrink-0 bg-white border-end shadow-sm" style={{ width: "240px" }}>
+        <div className="p-3 border-bottom bg-light">
+          <span className="fw-semibold text-primary">管理画面</span>
         </div>
-        <nav className={s.adminSidebarNav}>
+        <nav className="nav flex-column p-2 gap-1">
           <Link
             href={ROUTES.ADMIN_MEMBERS}
-            className={isMembers ? s.adminSidebarLinkActive : s.adminSidebarLink}
+            className={`nav-link rounded ${isMembers ? "active bg-primary text-white" : "text-secondary"}`}
           >
             会員管理
           </Link>
           {isReservations ? (
             <>
-              <div className={s.adminSidebarParent}>予約システム</div>
+              <div className="small fw-semibold text-primary px-2 py-1 mt-2">予約システム</div>
               {RESERVATION_TABS.map(({ key, label }) => (
                 <Link
                   key={key}
                   href={key === "classTypes" ? ROUTES.ADMIN_RESERVATIONS : `${ROUTES.ADMIN_RESERVATIONS}?tab=${key}`}
-                  className={activeTab === key ? s.adminSidebarSubLinkActive : s.adminSidebarSubLink}
+                  className={`nav-link rounded ps-3 ${activeTab === key ? "active bg-primary text-white" : "text-secondary"}`}
                 >
                   {label}
                 </Link>
@@ -48,20 +48,42 @@ export default function AdminLayout({
           ) : (
             <Link
               href={ROUTES.ADMIN_RESERVATIONS}
-              className={s.adminSidebarLink}
+              className="nav-link rounded text-secondary"
             >
               予約システム
             </Link>
           )}
-          <div className={s.adminSidebarDivider} />
-          <Link href={ROUTES.HOME} className={s.adminSidebarLink}>
+          <hr className="my-2" />
+          <Link href={ROUTES.HOME} className="nav-link rounded text-secondary">
             カレンダーに戻る
           </Link>
         </nav>
       </aside>
-      <main className={s.adminMain}>
-        <div className={s.adminMainInner}>{children}</div>
+      <main className="flex-grow-1 overflow-auto p-4">
+        <div className="container-fluid px-0" style={{ maxWidth: "1100px", minWidth: 0 }}>
+          {children}
+        </div>
       </main>
     </div>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={
+      <div className="d-flex flex-row vh-100 bg-light">
+        <aside className="flex-shrink-0 bg-white border-end p-3" style={{ width: "240px" }}>
+          <div className="fw-semibold text-primary">管理画面</div>
+          <nav className="small text-secondary mt-2">読み込み中…</nav>
+        </aside>
+        <main className="flex-grow-1 p-4">読み込み中…</main>
+      </div>
+    }>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </Suspense>
   );
 }

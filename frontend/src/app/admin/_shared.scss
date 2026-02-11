@@ -63,26 +63,60 @@
   margin: 0;
 }
 
+// --- Material Design 風 ラベル ---
 .label {
   display: block;
-  font-size: v.$font-md;
-  font-weight: 600;
+  font-size: v.$font-sm;
+  font-weight: 500;
   color: v.$color-gray-700;
-  margin-bottom: v.$space-1 / 2;
+  margin-bottom: v.$space-1;
+  transition: color 0.2s ease;
 }
 
-.input {
+// --- Material Design 風 テキスト・セレクト（アンダーライン＋フォーカス） ---
+.input,
+.select {
   width: 100%;
-  padding: v.$space-2;
-  border: 1px solid v.$color-gray-300;
-  border-radius: v.$radius-md;
+  padding: v.$space-2 v.$space-1 v.$space-2 0;
+  border: none;
+  border-bottom: 1px solid v.$color-gray-300;
+  border-radius: 0;
   font-size: v.$font-base;
+  font-family: inherit;
+  color: v.$color-gray-900;
+  background: transparent;
   box-sizing: border-box;
+  transition: border-color 0.2s ease, border-width 0.2s ease, box-shadow 0.2s ease;
+
+  &::placeholder {
+    color: v.$color-gray-400;
+  }
+
+  &:hover {
+    border-bottom-color: v.$color-gray-400;
+  }
+
+  &:focus {
+    outline: none;
+    border-bottom-width: 2px;
+    border-bottom-color: v.$color-primary;
+    margin-bottom: -1px;
+  }
+}
+
+.select {
+  padding-right: v.$space-6;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
 }
 
 .inputSmall {
   composes: input;
   width: auto;
+  min-width: 80px;
 }
 
 // ================================================================
@@ -407,6 +441,26 @@
 // ================================================================
 // Misc colors
 // ================================================================
+// フォーム内容の切替アニメーション（イベント作成 1件/一括 など）
+:global {
+  @keyframes eventCreateFormFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.eventCreateFormContent {
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: eventCreateFormFadeIn 0.35s ease both;
+}
+
 .colorSun     { color: v.$color-sunday; }
 .colorSat     { color: v.$color-saturday; }
 .colorGray    { color: v.$color-gray-500; }

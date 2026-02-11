@@ -37,8 +37,7 @@ export default async function updateUser(
     updates.push("phone = ?"); params.push(phone == null || String(phone).trim() === "" ? null : String(phone).trim());
   }
   if (email !== undefined) {
-    const v = String(email).trim();
-    const emailVal = v === "" ? null : v;
+    const emailVal = email == null || String(email).trim() === "" ? null : String(email).trim();
     if (emailVal !== null && !isValidEmail(emailVal)) {
       res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
       return;

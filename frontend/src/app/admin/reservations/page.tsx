@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { RESERVATION_TABS } from "../../routes";
-import s from "../admin.module.scss";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
 const FLASH_VISIBLE_MS = 3000;
@@ -17,7 +16,7 @@ const API_BASE = (() => {
 })();
 
 type ClassType = { id: number; code: string; name: string; description?: string | null };
-type User = { id: number; name: string; email?: string | null; course_type?: string | null; stage?: string; status?: string };
+type User = { id: number; name: string; email?: string | null; phone?: string | null; course_type?: string | null; stage?: string; status?: string };
 type AdminEvent = {
   id: number;
   class_type_id: number;
@@ -57,40 +56,6 @@ type AdminReservation = {
 
 type Tab = "classTypes" | "events" | "credits" | "reservations";
 
-// --- スタイル定数 ---
-const card: React.CSSProperties = {
-  border: "1px solid #e5e7eb",
-  borderRadius: "8px",
-  padding: "16px",
-  marginBottom: "12px",
-  backgroundColor: "#fff",
-};
-const label: React.CSSProperties = {
-  display: "block",
-  fontSize: "12px",
-  fontWeight: 600,
-  color: "#374151",
-  marginBottom: "2px",
-};
-const input: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 8px",
-  border: "1px solid #d1d5db",
-  borderRadius: "6px",
-  fontSize: "13px",
-  boxSizing: "border-box",
-};
-const btn = (color = "#3b82f6", disabled = false): React.CSSProperties => ({
-  fontSize: "12px",
-  padding: "6px 14px",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: disabled ? "#d1d5db" : color,
-  color: disabled ? "#9ca3af" : "#fff",
-  cursor: disabled ? "not-allowed" : "pointer",
-  fontWeight: 600,
-  opacity: disabled ? 0.6 : 1,
-});
 const TAB_KEYS: Tab[] = ["classTypes", "events", "credits", "reservations"];
 
 function parseTab(value: string | null): Tab {
@@ -98,7 +63,7 @@ function parseTab(value: string | null): Tab {
   return "classTypes";
 }
 
-export default function AdminPage() {
+function AdminPageContent() {
   const searchParams = useSearchParams();
   const tabFromUrl = parseTab(searchParams.get("tab"));
 
@@ -171,16 +136,12 @@ export default function AdminPage() {
 
   return (
     <>
-      <h1 className={s.pageTitle}>{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
+      <h1 className="h3 mb-4">{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
       {msg && (
-        <div className={`${s.flashWrap} ${msgExiting ? s.flashWrapExiting : ""}`}>
-          <div className={`${s.flash} ${s.flashSuccess}`}>{msg}</div>
-        </div>
+        <div className={`alert alert-success mb-3 ${msgExiting ? "fade" : ""}`} role="alert">{msg}</div>
       )}
       {err && (
-        <div className={`${s.flashWrap} ${errExiting ? s.flashWrapExiting : ""}`}>
-          <div className={`${s.flash} ${s.flashError}`}>{err}</div>
-        </div>
+        <div className={`alert alert-danger mb-3 ${errExiting ? "fade" : ""}`} role="alert">{err}</div>
       )}
 
       {tab === "classTypes" && <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />}
@@ -188,6 +149,14 @@ export default function AdminPage() {
       {tab === "credits" && <CreditsTab classTypes={classTypes} users={users} flash={flash} flashErr={flashErr} />}
       {tab === "reservations" && <ReservationsTab users={users} flash={flash} flashErr={flashErr} />}
     </>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "1rem" }}>読み込み中…</div>}>
+      <AdminPageContent />
+    </Suspense>
   );
 }
 
@@ -201,7 +170,8 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
     const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().slice(0, 10);
   });
 
-  // new event form
+  // event create form (1件 / 一括の切替)
+  const [eventCreateMode, setEventCreateMode] = useState<"single" | "bulk">("single");
   const [newClassType, setNewClassType] = useState<number | "">("");
   const [newStartsAt, setNewStartsAt] = useState("");
   const [newEndsAt, setNewEndsAt] = useState("");
@@ -631,19 +601,19 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
             </h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "10px 12px", alignItems: "center", fontSize: "13px", marginBottom: "16px" }}>
-              <span style={label}>クラス</span>
+              <span className="form-label">クラス</span>
               <span style={{ fontWeight: 600 }}>{editEvent.class_type_name}</span>
 
-              <span style={label}>開始日時</span>
-              <input type="datetime-local" style={input} value={editEvStart} onChange={(e) => setEditEvStart(e.target.value)} />
+              <span className="form-label">開始日時</span>
+              <input type="datetime-local" className="form-control" value={editEvStart} onChange={(e) => setEditEvStart(e.target.value)} />
 
-              <span style={label}>終了日時</span>
-              <input type="datetime-local" style={input} value={editEvEnd} onChange={(e) => setEditEvEnd(e.target.value)} />
+              <span className="form-label">終了日時</span>
+              <input type="datetime-local" className="form-control" value={editEvEnd} onChange={(e) => setEditEvEnd(e.target.value)} />
 
-              <span style={label}>定員</span>
-              <input type="number" min={0} style={{ ...input, width: "80px" }} value={editEvCapacity} onChange={(e) => setEditEvCapacity(Number(e.target.value))} />
+              <span className="form-label">定員</span>
+              <input type="number" min={0} className="form-control" style={{ width: "80px" }} value={editEvCapacity} onChange={(e) => setEditEvCapacity(Number(e.target.value))} />
 
-              <span style={label}>ステータス</span>
+              <span className="form-label">ステータス</span>
               <div style={{ display: "flex", gap: "6px" }}>
                 {([["scheduled", "開催", "#059669"], ["holiday", "通常休み", "#6b7280"], ["canceled_by_admin", "休講", "#dc2626"]] as const).map(([val, lbl, color]) => (
                   <button
@@ -666,7 +636,7 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                 ))}
               </div>
 
-              <span style={label}>予約数</span>
+              <span className="form-label">予約数</span>
               <span>{editEvent.reserved_count} / {editEvCapacity}</span>
             </div>
 
@@ -699,116 +669,146 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
         </div>
       )}
 
-      {/* 新規イベント作成 */}
-      <div style={card}>
-        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>新規イベント作成</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px auto", gap: "8px", alignItems: "end" }}>
-          <div>
-            <span style={label}>クラス種別</span>
-            <select style={input} value={newClassType} onChange={(e) => setNewClassType(Number(e.target.value) || "")}>
-              <option value="">選択</option>
-              {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <span style={label}>開始日時</span>
-            <input type="datetime-local" style={input} value={newStartsAt} onChange={(e) => setNewStartsAt(e.target.value)} />
-          </div>
-          <div>
-            <span style={label}>終了日時</span>
-            <input type="datetime-local" style={input} value={newEndsAt} onChange={(e) => setNewEndsAt(e.target.value)} />
-          </div>
-          <div>
-            <span style={label}>定員</span>
-            <input type="number" style={input} value={newCapacity} onChange={(e) => setNewCapacity(Number(e.target.value))} min={1} />
-          </div>
-          <button type="button" style={btn()} onClick={handleCreateEvent}>作成</button>
-        </div>
-      </div>
-
-      {/* まとめイベント登録 */}
-      <div style={card}>
-        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>まとめイベント登録（曜日×期間で一括作成）</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 70px", gap: "8px", alignItems: "end", marginBottom: "8px" }}>
-          <div>
-            <span style={label}>クラス種別</span>
-            <select style={input} value={bulkClassType} onChange={(e) => setBulkClassType(Number(e.target.value) || "")}>
-              <option value="">選択</option>
-              {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <span style={label}>開始時刻</span>
-            <input type="time" style={input} value={bulkStartTime} onChange={(e) => setBulkStartTime(e.target.value)} />
-          </div>
-          <div>
-            <span style={label}>終了時刻</span>
-            <input type="time" style={input} value={bulkEndTime} onChange={(e) => setBulkEndTime(e.target.value)} />
-          </div>
-          <div>
-            <span style={label}>定員</span>
-            <input type="number" style={input} value={bulkCapacity} onChange={(e) => setBulkCapacity(Number(e.target.value))} min={1} />
-          </div>
+      {/* イベント作成（1件 / 一括） */}
+      <div className="card mb-3 card-body">
+        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>イベント作成</h3>
+        <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+          <button
+            type="button"
+            style={{
+              fontSize: "13px",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              border: eventCreateMode === "single" ? "2px solid #3b82f6" : "1px solid #d1d5db",
+              backgroundColor: eventCreateMode === "single" ? "#eff6ff" : "#fff",
+              color: eventCreateMode === "single" ? "#1d4ed8" : "#374151",
+              fontWeight: eventCreateMode === "single" ? 600 : 400,
+              cursor: "pointer",
+            }}
+            onClick={() => setEventCreateMode("single")}
+          >
+            1件作成
+          </button>
+          <button
+            type="button"
+            style={{
+              fontSize: "13px",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              border: eventCreateMode === "bulk" ? "2px solid #3b82f6" : "1px solid #d1d5db",
+              backgroundColor: eventCreateMode === "bulk" ? "#eff6ff" : "#fff",
+              color: eventCreateMode === "bulk" ? "#1d4ed8" : "#374151",
+              fontWeight: eventCreateMode === "bulk" ? 600 : 400,
+              cursor: "pointer",
+            }}
+            onClick={() => setEventCreateMode("bulk")}
+          >
+            一括作成（曜日×期間）
+          </button>
         </div>
 
-        <div style={{ marginBottom: "8px" }}>
-          <span style={label}>曜日（開催する曜日をチェック）</span>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-            {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
-              <label
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "3px",
-                  fontSize: "13px",
-                  padding: "4px 8px",
-                  borderRadius: "6px",
-                  border: bulkWeekdays.includes(i) ? "2px solid #3b82f6" : "1px solid #d1d5db",
-                  backgroundColor: bulkWeekdays.includes(i) ? "#eff6ff" : "#fff",
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={bulkWeekdays.includes(i)}
-                  onChange={() => toggleWeekday(i)}
-                  style={{ display: "none" }}
-                />
-                {w}
-              </label>
-            ))}
+        <div key={eventCreateMode} className="">
+        {eventCreateMode === "single" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px auto", gap: "8px", alignItems: "end" }}>
+            <div>
+              <span className="form-label">クラス種別</span>
+              <select className="form-select" value={newClassType} onChange={(e) => setNewClassType(Number(e.target.value) || "")}>
+                <option value="">選択</option>
+                {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <span className="form-label">開始日時</span>
+              <input type="datetime-local" className="form-control" value={newStartsAt} onChange={(e) => setNewStartsAt(e.target.value)} />
+            </div>
+            <div>
+              <span className="form-label">終了日時</span>
+              <input type="datetime-local" className="form-control" value={newEndsAt} onChange={(e) => setNewEndsAt(e.target.value)} />
+            </div>
+            <div>
+              <span className="form-label">定員</span>
+              <input type="number" className="form-control" value={newCapacity} onChange={(e) => setNewCapacity(Number(e.target.value))} min={1} />
+            </div>
+            <button type="button" className="btn btn-primary" onClick={handleCreateEvent}>作成</button>
           </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
-          <div>
-            <span style={label}>開始日</span>
-            <input type="date" style={input} value={bulkDateFrom} onChange={(e) => setBulkDateFrom(e.target.value)} />
-          </div>
-          <div>
-            <span style={label}>終了日</span>
-            <input type="date" style={input} value={bulkDateTo} onChange={(e) => setBulkDateTo(e.target.value)} />
-          </div>
-          <div>
-            <span style={label}>除外日（カンマ区切り）</span>
-            <input type="text" style={input} value={bulkExclude} onChange={(e) => setBulkExclude(e.target.value)} placeholder="2026-03-21, 2026-05-05" />
-          </div>
-          <button type="button" style={btn("#059669")} onClick={handleBulkCreate}>まとめて作成</button>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 70px", gap: "8px", alignItems: "end", marginBottom: "8px" }}>
+              <div>
+                <span className="form-label">クラス種別</span>
+                <select className="form-select" value={bulkClassType} onChange={(e) => setBulkClassType(Number(e.target.value) || "")}>
+                  <option value="">選択</option>
+                  {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <span className="form-label">開始時刻</span>
+                <input type="time" className="form-control" value={bulkStartTime} onChange={(e) => setBulkStartTime(e.target.value)} />
+              </div>
+              <div>
+                <span className="form-label">終了時刻</span>
+                <input type="time" className="form-control" value={bulkEndTime} onChange={(e) => setBulkEndTime(e.target.value)} />
+              </div>
+              <div>
+                <span className="form-label">定員</span>
+                <input type="number" className="form-control" value={bulkCapacity} onChange={(e) => setBulkCapacity(Number(e.target.value))} min={1} />
+              </div>
+            </div>
+            <div style={{ marginBottom: "8px" }}>
+              <span className="form-label">曜日（開催する曜日をチェック）</span>
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
+                  <label
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "3px",
+                      fontSize: "13px",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      border: bulkWeekdays.includes(i) ? "2px solid #3b82f6" : "1px solid #d1d5db",
+                      backgroundColor: bulkWeekdays.includes(i) ? "#eff6ff" : "#fff",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                  >
+                    <input type="checkbox" checked={bulkWeekdays.includes(i)} onChange={() => toggleWeekday(i)} style={{ display: "none" }} />
+                    {w}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
+              <div>
+                <span className="form-label">開始日</span>
+                <input type="date" className="form-control" value={bulkDateFrom} onChange={(e) => setBulkDateFrom(e.target.value)} />
+              </div>
+              <div>
+                <span className="form-label">終了日</span>
+                <input type="date" className="form-control" value={bulkDateTo} onChange={(e) => setBulkDateTo(e.target.value)} />
+              </div>
+              <div>
+                <span className="form-label">除外日（カンマ区切り）</span>
+                <input type="text" className="form-control" value={bulkExclude} onChange={(e) => setBulkExclude(e.target.value)} placeholder="2026-03-21, 2026-05-05" />
+              </div>
+              <button type="button" className="btn btn-success" onClick={handleBulkCreate}>まとめて作成</button>
+            </div>
+          </>
+        )}
         </div>
       </div>
 
       {/* 表示切替 + 期間フィルタ */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px", flexWrap: "wrap" }}>
-        <button type="button" style={{ ...btn(viewMode === "calendar" ? "#3b82f6" : "#9ca3af"), fontSize: "12px" }} onClick={() => setViewMode("calendar")}>カレンダー</button>
-        <button type="button" style={{ ...btn(viewMode === "table" ? "#3b82f6" : "#9ca3af"), fontSize: "12px" }} onClick={() => setViewMode("table")}>テーブル</button>
+        <button type="button" className={`btn btn-sm ${viewMode === "calendar" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setViewMode("calendar")}>カレンダー</button>
+        <button type="button" className={`btn btn-sm ${viewMode === "table" ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setViewMode("table")}>テーブル</button>
         <span style={{ borderLeft: "1px solid #d1d5db", height: "20px", margin: "0 4px" }} />
         <span style={{ fontSize: "13px" }}>期間:</span>
-        <input type="date" style={{ ...input, width: "150px" }} value={from} onChange={(e) => setFrom(e.target.value)} />
+        <input type="date" className="form-control" style={{ width: "150px" }} value={from} onChange={(e) => setFrom(e.target.value)} />
         <span>〜</span>
-        <input type="date" style={{ ...input, width: "150px" }} value={to} onChange={(e) => setTo(e.target.value)} />
-        <button type="button" style={btn()} onClick={loadEvents}>検索</button>
+        <input type="date" className="form-control" style={{ width: "150px" }} value={to} onChange={(e) => setTo(e.target.value)} />
+        <button type="button" className="btn btn-primary" onClick={loadEvents}>検索</button>
       </div>
 
       {/* カレンダー時のモード切替 */}
@@ -855,8 +855,7 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       {(() => {
         const show = viewMode === "table" || calClickMode === "select";
         return (
-      <div style={{
-        ...card,
+      <div className="card mb-3" style={{
         display: "flex",
         gap: "8px",
         alignItems: "center",
@@ -871,8 +870,8 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       }}>
         <span style={{ fontSize: "13px", fontWeight: 600 }}>まとめ操作</span>
         <span style={{ fontSize: "12px", color: "#6b7280" }}>（{selectedIds.size} 件選択中）</span>
-        <button type="button" style={{ ...btn("#6b7280"), fontSize: "11px" }} onClick={selectAll}>全選択</button>
-        <button type="button" style={{ ...btn("#6b7280"), fontSize: "11px" }} onClick={deselectAll}>選択解除</button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={selectAll}>全選択</button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={deselectAll}>選択解除</button>
         <span style={{ borderLeft: "1px solid #d1d5db", height: "20px", margin: "0 2px" }} />
         {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
           <button
@@ -908,21 +907,21 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
           </button>
         ))}
         <span style={{ borderLeft: "1px solid #d1d5db", height: "20px", margin: "0 2px" }} />
-        <button type="button" style={{ ...btn("#059669"), fontSize: "11px" }} onClick={() => requestBulkStatus("scheduled")}>開催に</button>
-        <button type="button" style={{ ...btn("#6b7280"), fontSize: "11px" }} onClick={() => requestBulkStatus("holiday")}>通常休みに</button>
-        <button type="button" style={{ ...btn("#dc2626"), fontSize: "11px" }} onClick={() => requestBulkStatus("canceled_by_admin")}>休講に</button>
+        <button type="button" className="btn btn-success btn-sm" onClick={() => requestBulkStatus("scheduled")}>開催に</button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => requestBulkStatus("holiday")}>通常休みに</button>
+        <button type="button" className="btn btn-danger btn-sm" onClick={() => requestBulkStatus("canceled_by_admin")}>休講に</button>
         <span style={{ borderLeft: "1px solid #d1d5db", height: "20px", margin: "0 2px" }} />
         <span style={{ fontSize: "12px" }}>定員:</span>
-        <input type="number" min={0} value={bulkCapacityValue} onChange={(e) => setBulkCapacityValue(Number(e.target.value))} style={{ ...input, width: "60px" }} />
-        <button type="button" style={{ ...btn("#3b82f6"), fontSize: "11px" }} onClick={requestBulkCapacity}>定員変更</button>
+        <input type="number" min={0} value={bulkCapacityValue} onChange={(e) => setBulkCapacityValue(Number(e.target.value))} className="form-control" style={{ width: "60px" }} />
+        <button type="button" className="btn btn-primary btn-sm" onClick={requestBulkCapacity}>定員変更</button>
         <span style={{ borderLeft: "1px solid #d1d5db", height: "20px", margin: "0 2px" }} />
         <span style={{ fontSize: "12px" }}>時間:</span>
-        <input type="time" value={bulkEditStartTime} onChange={(e) => setBulkEditStartTime(e.target.value)} style={{ ...input, width: "90px" }} />
+        <input type="time" value={bulkEditStartTime} onChange={(e) => setBulkEditStartTime(e.target.value)} className="form-control" style={{ width: "90px" }} />
         <span>～</span>
-        <input type="time" value={bulkEditEndTime} onChange={(e) => setBulkEditEndTime(e.target.value)} style={{ ...input, width: "90px" }} />
-        <button type="button" style={{ ...btn("#3b82f6"), fontSize: "11px" }} onClick={requestBulkTime}>時間変更</button>
+        <input type="time" value={bulkEditEndTime} onChange={(e) => setBulkEditEndTime(e.target.value)} className="form-control" style={{ width: "90px" }} />
+        <button type="button" className="btn btn-primary btn-sm" onClick={requestBulkTime}>時間変更</button>
         <span style={{ borderLeft: "1px solid #d1d5db", height: "20px", margin: "0 2px" }} />
-        <button type="button" style={{ ...btn("#991b1b"), fontSize: "11px" }} onClick={requestBulkDelete}>まとめて削除</button>
+        <button type="button" className="btn btn-danger btn-sm" onClick={requestBulkDelete}>まとめて削除</button>
       </div>
         );
       })()}
@@ -931,9 +930,9 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       {viewMode === "calendar" && (
         <div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
-            <button type="button" style={{ ...btn("#6b7280"), fontSize: "12px" }} onClick={() => setCalMonth((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))}>◀ 前月</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCalMonth((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))}>◀ 前月</button>
             <span style={{ fontWeight: 600, fontSize: "14px" }}>{calMonth.getFullYear()}年 {calMonth.getMonth() + 1}月</span>
-            <button type="button" style={{ ...btn("#6b7280"), fontSize: "12px" }} onClick={() => setCalMonth((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))}>次月 ▶</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCalMonth((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))}>次月 ▶</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", tableLayout: "fixed" } as any}>
             {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
@@ -1019,8 +1018,8 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
 
       {/* テーブル表示（共通 tableCard モジュール） */}
       {viewMode === "table" && (
-        <div className={s.tableCard}>
-          <table className={`${s.tableCardTable} ${s.tableCardTableAuto}`}>
+        <div className="card mb-3">
+          <table className="table table-striped table-hover mb-0">
             <thead>
               <tr>
                 <th style={{ width: "36px" }}>
@@ -1037,7 +1036,7 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
             </thead>
             <tbody>
               {events.map((ev) => (
-                <tr key={ev.id} className={selectedIds.has(ev.id) ? s.trSelected : undefined}>
+                <tr key={ev.id} className={selectedIds.has(ev.id) ? "table-primary" : undefined}>
                   <td>
                     <input type="checkbox" checked={selectedIds.has(ev.id)} onChange={() => toggleSelect(ev.id)} />
                   </td>
@@ -1046,11 +1045,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                   <td>
                   {editTimeId === ev.id ? (
                     <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
-                      <input type="datetime-local" style={{ ...input, width: "170px", fontSize: "12px" }} value={editStart} onChange={(e) => setEditStart(e.target.value)} />
+                      <input type="datetime-local" className="form-control" style={{ width: "170px", fontSize: "12px" }} value={editStart} onChange={(e) => setEditStart(e.target.value)} />
                       <span>～</span>
-                      <input type="datetime-local" style={{ ...input, width: "170px", fontSize: "12px" }} value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
-                      <button type="button" style={btn("#059669")} onClick={saveTimeEdit}>保存</button>
-                      <button type="button" style={btn("#6b7280")} onClick={cancelTimeEdit}>取消</button>
+                      <input type="datetime-local" className="form-control" style={{ width: "170px", fontSize: "12px" }} value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
+                      <button type="button" className="btn btn-success" onClick={saveTimeEdit}>保存</button>
+                      <button type="button" className="btn btn-secondary" onClick={cancelTimeEdit}>取消</button>
                     </div>
                   ) : (
                     <span style={{ cursor: "pointer" }} onClick={() => startTimeEdit(ev)} title="クリックで時間を編集">
@@ -1077,7 +1076,7 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                     type="number"
                     min={0}
                     defaultValue={ev.capacity}
-                    style={{ width: "50px", ...input }}
+                    className="form-control" style={{ width: "50px" }}
                     onBlur={(e) => {
                       const v = Number(e.target.value);
                       if (v !== ev.capacity) handleCapacityChange(ev.id, v);
@@ -1100,17 +1099,17 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
                   </span>
                 </td>
                 <td>
-                  <span className={s.tableCardActions}>
-                    <button type="button" disabled={ev.status === "scheduled"} style={btn("#059669", ev.status === "scheduled")} onClick={() => handleStatusChange(ev.id, "scheduled")}>
+                  <span className="btn-group btn-group-sm">
+                    <button type="button" disabled={ev.status === "scheduled"} className="btn btn-success btn-sm" onClick={() => handleStatusChange(ev.id, "scheduled")}>
                       開催に戻す
                     </button>
-                    <button type="button" disabled={ev.status === "holiday"} style={btn("#6b7280", ev.status === "holiday")} onClick={() => handleStatusChange(ev.id, "holiday")}>
+                    <button type="button" disabled={ev.status === "holiday"} className="btn btn-secondary btn-sm" onClick={() => handleStatusChange(ev.id, "holiday")}>
                       通常休みに
                     </button>
-                    <button type="button" disabled={ev.status === "canceled_by_admin"} style={btn("#dc2626", ev.status === "canceled_by_admin")} onClick={() => handleStatusChange(ev.id, "canceled_by_admin")}>
+                    <button type="button" disabled={ev.status === "canceled_by_admin"} className="btn btn-danger btn-sm" onClick={() => handleStatusChange(ev.id, "canceled_by_admin")}>
                       休講に
                     </button>
-                    <button type="button" style={btn("#991b1b")} onClick={() => handleDeleteEvent(ev.id)}>
+                    <button type="button" className="btn btn-danger" onClick={() => handleDeleteEvent(ev.id)}>
                       削除
                     </button>
                   </span>
@@ -1118,7 +1117,7 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
               </tr>
             ))}
               {events.length === 0 && (
-                <tr><td colSpan={8} className={s.tableCardEmpty}>イベントがありません</td></tr>
+                <tr><td colSpan={8} className="text-center text-body-secondary py-4">イベントがありません</td></tr>
               )}
             </tbody>
           </table>
@@ -1218,53 +1217,53 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
   return (
     <div>
       {/* 手動付与フォーム */}
-      <div style={card}>
+      <div className="card mb-3 card-body">
         <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>振替権利の手動付与</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
           <div>
-            <span style={label}>ユーザー</span>
-            <select style={input} value={grantUserId} onChange={(e) => setGrantUserId(Number(e.target.value) || "")}>
+            <span className="form-label">ユーザー</span>
+            <select className="form-select" value={grantUserId} onChange={(e) => setGrantUserId(Number(e.target.value) || "")}>
               <option value="">選択</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.name} (ID:{u.id})</option>)}
+              {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.phone ? ` (${u.phone})` : ""} (ID:{u.id})</option>)}
             </select>
           </div>
           <div>
-            <span style={label}>クラス種別（任意）</span>
-            <select style={input} value={grantClassType} onChange={(e) => setGrantClassType(Number(e.target.value) || "")}>
+            <span className="form-label">クラス種別（任意）</span>
+            <select className="form-select" value={grantClassType} onChange={(e) => setGrantClassType(Number(e.target.value) || "")}>
               <option value="">制限なし</option>
               {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
             </select>
           </div>
           <div>
-            <span style={label}>有効期限（任意）</span>
-            <input type="date" style={input} value={grantExpires} onChange={(e) => setGrantExpires(e.target.value)} />
+            <span className="form-label">有効期限（任意）</span>
+            <input type="date" className="form-control" value={grantExpires} onChange={(e) => setGrantExpires(e.target.value)} />
           </div>
           <div>
-            <span style={label}>備考</span>
-            <input type="text" style={input} value={grantNote} onChange={(e) => setGrantNote(e.target.value)} placeholder="救済付与など" />
+            <span className="form-label">備考</span>
+            <input type="text" className="form-control" value={grantNote} onChange={(e) => setGrantNote(e.target.value)} placeholder="救済付与など" />
           </div>
-          <button type="button" style={btn()} onClick={handleGrant}>付与</button>
+          <button type="button" className="btn btn-primary" onClick={handleGrant}>付与</button>
         </div>
       </div>
 
       {/* フィルタ */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
-        <select style={{ ...input, width: "180px" }} value={filterUserId} onChange={(e) => setFilterUserId(Number(e.target.value) || "")}>
+        <select className="form-select" style={{ width: "180px" }} value={filterUserId} onChange={(e) => setFilterUserId(Number(e.target.value) || "")}>
           <option value="">全ユーザー</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.phone ? ` (${u.phone})` : ""}</option>)}
         </select>
-        <select style={{ ...input, width: "140px" }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+        <select className="form-select" style={{ width: "140px" }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="">全ステータス</option>
           <option value="granted">granted</option>
           <option value="consumed">consumed</option>
           <option value="revoked">revoked</option>
         </select>
-        <button type="button" style={btn()} onClick={loadCredits}>検索</button>
+        <button type="button" className="btn btn-primary" onClick={loadCredits}>検索</button>
       </div>
 
       {/* 一覧（共通 tableCard モジュール） */}
-      <div className={s.tableCard}>
-        <table className={`${s.tableCardTable} ${s.tableCardTableAuto}`}>
+      <div className="card mb-3">
+        <table className="table table-striped table-hover mb-0">
           <thead>
             <tr>
               <th>ID</th>
@@ -1289,7 +1288,7 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
                   <input
                     type="date"
                     defaultValue={c.expires_at?.slice(0, 10) ?? ""}
-                    style={{ ...input, width: "130px" }}
+                    className="form-control" style={{ width: "130px" }}
                     onBlur={(e) => {
                       const v = e.target.value;
                       const old = c.expires_at?.slice(0, 10) ?? "";
@@ -1303,19 +1302,19 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
                 <td>{c.source}</td>
                 <td style={{ fontSize: "12px" }}>{c.note}</td>
                 <td>
-                  <span className={s.tableCardActions}>
+                  <span className="btn-group btn-group-sm">
                     {c.status === "granted" && (
-                      <button type="button" style={btn("#dc2626")} onClick={() => handleRevoke(c.id)}>取消</button>
+                      <button type="button" className="btn btn-danger" onClick={() => handleRevoke(c.id)}>取消</button>
                     )}
                     {(c.status === "revoked" || c.status === "consumed") && (
-                      <button type="button" style={btn("#059669")} onClick={() => handleRestore(c.id)}>復活</button>
+                      <button type="button" className="btn btn-success" onClick={() => handleRestore(c.id)}>復活</button>
                     )}
                   </span>
                 </td>
               </tr>
             ))}
             {credits.length === 0 && (
-              <tr><td colSpan={9} className={s.tableCardEmpty}>振替権利がありません</td></tr>
+              <tr><td colSpan={9} className="text-center text-body-secondary py-4">振替権利がありません</td></tr>
             )}
           </tbody>
         </table>
@@ -1387,31 +1386,31 @@ function ReservationsTab({ users, flash, flashErr }: { users: User[]; flash: (m:
   return (
     <div>
       {/* 代理予約フォーム */}
-      <div style={card}>
+      <div className="card mb-3 card-body">
         <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>代理予約（電話対応など）</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 100px auto", gap: "8px", alignItems: "end" }}>
           <div>
-            <span style={label}>ユーザー</span>
-            <select style={input} value={proxyUserId} onChange={(e) => setProxyUserId(Number(e.target.value) || "")}>
+            <span className="form-label">ユーザー</span>
+            <select className="form-select" value={proxyUserId} onChange={(e) => setProxyUserId(Number(e.target.value) || "")}>
               <option value="">選択</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.name} (ID:{u.id})</option>)}
+              {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.phone ? ` (${u.phone})` : ""} (ID:{u.id})</option>)}
             </select>
           </div>
           <div>
-            <span style={label}>イベントID</span>
-            <input type="number" style={input} value={proxyEventId} onChange={(e) => setProxyEventId(Number(e.target.value) || "")} />
+            <span className="form-label">イベントID</span>
+            <input type="number" className="form-control" value={proxyEventId} onChange={(e) => setProxyEventId(Number(e.target.value) || "")} />
           </div>
           <div>
-            <span style={label}>種別</span>
-            <select style={input} value={proxyType} onChange={(e) => setProxyType(e.target.value as any)}>
+            <span className="form-label">種別</span>
+            <select className="form-select" value={proxyType} onChange={(e) => setProxyType(e.target.value as any)}>
               <option value="normal">通常</option>
               <option value="makeup">振替</option>
             </select>
           </div>
           {proxyType === "makeup" && (
             <div>
-              <span style={label}>振替権利ID</span>
-              <input type="number" style={input} value={proxyCreditId} onChange={(e) => setProxyCreditId(Number(e.target.value) || "")} />
+              <span className="form-label">振替権利ID</span>
+              <input type="number" className="form-control" value={proxyCreditId} onChange={(e) => setProxyCreditId(Number(e.target.value) || "")} />
             </div>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -1419,27 +1418,27 @@ function ReservationsTab({ users, flash, flashErr }: { users: User[]; flash: (m:
               <input type="checkbox" checked={proxyOverride} onChange={(e) => setProxyOverride(e.target.checked)} />
               特例承認（定員+1）
             </label>
-            <button type="button" style={btn()} onClick={handleProxyReservation}>予約作成</button>
+            <button type="button" className="btn btn-primary" onClick={handleProxyReservation}>予約作成</button>
           </div>
         </div>
       </div>
 
       {/* フィルタ */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
-        <select style={{ ...input, width: "180px" }} value={filterUserId} onChange={(e) => setFilterUserId(Number(e.target.value) || "")}>
+        <select className="form-select" style={{ width: "180px" }} value={filterUserId} onChange={(e) => setFilterUserId(Number(e.target.value) || "")}>
           <option value="">全ユーザー</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.phone ? ` (${u.phone})` : ""}</option>)}
         </select>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <span style={{ fontSize: "12px" }}>イベントID:</span>
-          <input type="number" style={{ ...input, width: "80px" }} value={filterEventId} onChange={(e) => setFilterEventId(Number(e.target.value) || "")} />
+          <input type="number" className="form-control" style={{ width: "80px" }} value={filterEventId} onChange={(e) => setFilterEventId(Number(e.target.value) || "")} />
         </div>
-        <button type="button" style={btn()} onClick={loadReservations}>検索</button>
+        <button type="button" className="btn btn-primary" onClick={loadReservations}>検索</button>
       </div>
 
       {/* 一覧（共通 tableCard モジュール） */}
-      <div className={s.tableCard}>
-        <table className={`${s.tableCardTable} ${s.tableCardTableAuto}`}>
+      <div className="card mb-3">
+        <table className="table table-striped table-hover mb-0">
           <thead>
             <tr>
               <th>ID</th>
@@ -1467,16 +1466,16 @@ function ReservationsTab({ users, flash, flashErr }: { users: User[]; flash: (m:
                   {r.status}
                 </td>
                 <td>
-                  <span className={s.tableCardActions}>
+                  <span className="btn-group btn-group-sm">
                     {r.status === "booked" && (
-                      <button type="button" style={btn("#dc2626")} onClick={() => handleCancel(r.id)}>キャンセル</button>
+                      <button type="button" className="btn btn-danger" onClick={() => handleCancel(r.id)}>キャンセル</button>
                     )}
                   </span>
                 </td>
               </tr>
             ))}
             {reservations.length === 0 && (
-              <tr><td colSpan={7} className={s.tableCardEmpty}>予約がありません</td></tr>
+              <tr><td colSpan={7} className="text-center text-body-secondary py-4">予約がありません</td></tr>
             )}
           </tbody>
         </table>
@@ -1589,28 +1588,28 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
       </ConfirmModal>
 
       {/* 新規作成フォーム */}
-      <div style={card}>
+      <div className="card mb-3 card-body">
         <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>クラス種別を追加</h3>
         <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
           <div>
-            <span style={label}>コード（任意・未入力なら名前から自動）</span>
-            <input type="text" style={input} value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="例: kakekko" />
+            <span className="form-label">コード（任意・未入力なら名前から自動）</span>
+            <input type="text" className="form-control" value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="例: kakekko" />
           </div>
           <div>
-            <span style={label}>名前</span>
-            <input type="text" style={input} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="かけっこ" />
+            <span className="form-label">名前</span>
+            <input type="text" className="form-control" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="かけっこ" />
           </div>
           <div>
-            <span style={label}>説明（任意）</span>
-            <input type="text" style={input} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="かけっこクラスの説明" />
+            <span className="form-label">説明（任意）</span>
+            <input type="text" className="form-control" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="かけっこクラスの説明" />
           </div>
-          <button type="button" style={btn()} onClick={handleCreate}>追加</button>
+          <button type="button" className="btn btn-primary" onClick={handleCreate}>追加</button>
         </div>
       </div>
 
       {/* 一覧テーブル（共通 tableCard モジュール） */}
-      <div className={s.tableCard}>
-        <table className={s.tableCardTable}>
+      <div className="card mb-3">
+        <table className="table table-striped table-hover mb-0">
           <thead>
             <tr>
               <th style={{ width: "56px" }}>ID</th>
@@ -1627,18 +1626,18 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
                 {editId === ct.id ? (
                   <>
                     <td>
-                      <input type="text" style={{ ...input, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editCode} onChange={(e) => setEditCode(e.target.value)} />
+                      <input type="text" className="form-control" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editCode} onChange={(e) => setEditCode(e.target.value)} />
                     </td>
                     <td>
-                      <input type="text" style={{ ...input, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editName} onChange={(e) => setEditName(e.target.value)} />
+                      <input type="text" className="form-control" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editName} onChange={(e) => setEditName(e.target.value)} />
                     </td>
                     <td>
-                      <input type="text" style={{ ...input, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                      <input type="text" className="form-control" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>
-                      <span className={s.tableCardActions}>
-                        <button type="button" style={btn("#059669")} onClick={handleUpdate}>保存</button>
-                        <button type="button" style={btn("#6b7280")} onClick={cancelEdit}>取消</button>
+                      <span className="btn-group btn-group-sm">
+                        <button type="button" className="btn btn-success" onClick={handleUpdate}>保存</button>
+                        <button type="button" className="btn btn-secondary" onClick={cancelEdit}>取消</button>
                       </span>
                     </td>
                   </>
@@ -1648,9 +1647,9 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
                     <td style={{ fontWeight: 600 }}>{ct.name}</td>
                     <td style={{ fontSize: "12px", color: "#6b7280" }}>{ct.description ?? "—"}</td>
                     <td style={{ whiteSpace: "nowrap" }}>
-                      <span className={s.tableCardActions}>
-                        <button type="button" style={btn("#3b82f6")} onClick={() => startEdit(ct)}>編集</button>
-                        <button type="button" style={btn("#dc2626")} onClick={() => requestDelete(ct)}>削除</button>
+                      <span className="btn-group btn-group-sm">
+                        <button type="button" className="btn btn-primary" onClick={() => startEdit(ct)}>編集</button>
+                        <button type="button" className="btn btn-danger" onClick={() => requestDelete(ct)}>削除</button>
                       </span>
                     </td>
                   </>
@@ -1658,7 +1657,7 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
               </tr>
             ))}
             {classTypes.length === 0 && (
-              <tr><td colSpan={5} className={s.tableCardEmpty}>クラス種別がありません</td></tr>
+              <tr><td colSpan={5} className="text-center text-body-secondary py-4">クラス種別がありません</td></tr>
             )}
           </tbody>
         </table>

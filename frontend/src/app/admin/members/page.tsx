@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import s from "../admin.module.scss";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
 const API_BASE = (() => {
@@ -12,6 +11,7 @@ const API_BASE = (() => {
 const FLASH_VISIBLE_MS = 3000;
 const FLASH_ERR_VISIBLE_MS = 5000;
 const FLASH_EXIT_ANIMATION_MS = 300;
+const MEMBERS_PER_PAGE = 50;
 
 type Member = {
   id: number;
@@ -43,7 +43,6 @@ function ConfirmModal({
   onCancel,
   confirmLabel = "実行",
   confirmColor = "#3b82f6",
-  scss: s,
 }: {
   open: boolean;
   title: string;
@@ -52,25 +51,28 @@ function ConfirmModal({
   onCancel: () => void;
   confirmLabel?: string;
   confirmColor?: string;
-  scss: { [k: string]: string };
 }) {
   if (!open) return null;
   return (
-    <div className={s.modalOverlay} onClick={onCancel}>
-      <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
-        <h3 className={s.modalTitle}>{title}</h3>
-        <div className={s.modalBody}>{children}</div>
-        <div className={s.modalFooter}>
-          <button type="button" className={s.modalBtnCancel} onClick={onCancel}>
-            キャンセル
-          </button>
-          <button
-            type="button"
-            className={confirmColor === "#991b1b" ? s.modalBtnConfirmDanger : s.modalBtnConfirm}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
+    <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
+      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">{title}</h5>
+          </div>
+          <div className="modal-body">{children}</div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              キャンセル
+            </button>
+            <button
+              type="button"
+              className={confirmColor === "#991b1b" ? "btn btn-danger" : "btn btn-primary"}
+              onClick={onConfirm}
+            >
+              {confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -85,6 +87,114 @@ const stageOptions = [
   { value: "adult", label: "大人" },
   { value: "other", label: "その他" },
 ];
+
+function AddMemberModal({
+  open,
+  name,
+  setName,
+  furigana,
+  setFurigana,
+  email,
+  setEmail,
+  address,
+  setAddress,
+  phone,
+  setPhone,
+  courseType,
+  setCourseType,
+  stage,
+  setStage,
+  formError,
+  setFormError,
+  onSave,
+  onCancel,
+}: {
+  open: boolean;
+  name: string;
+  setName: (v: string) => void;
+  furigana: string;
+  setFurigana: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  address: string;
+  setAddress: (v: string) => void;
+  phone: string;
+  setPhone: (v: string) => void;
+  courseType: string;
+  setCourseType: (v: string) => void;
+  stage: string;
+  setStage: (v: string) => void;
+  formError: { field: string; message: string } | null;
+  setFormError: (v: { field: string; message: string } | null) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
+      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">会員を新規登録</h5>
+          </div>
+          <div className="modal-body">
+          <div className="d-flex flex-column gap-3 mb-0">
+          <div className="mb-2">
+            <label className="form-label">名前</label>
+            <input
+              type="text"
+              className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (formError?.field === "name") setFormError(null);
+              }}
+              placeholder="山田 太郎"
+            />
+            {formError?.field === "name" && <div className="invalid-feedback d-block">{formError.message}</div>}
+          </div>
+          <div className="mb-2">
+            <label className="form-label">フリガナ（任意）</label>
+            <input type="text" className="form-control" value={furigana} onChange={(e) => setFurigana(e.target.value)} placeholder="ヤマダ タロウ" />
+          </div>
+          <div className="mb-2">
+            <label className="form-label">メール（任意）</label>
+            <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} value={email} onChange={(e) => { setEmail(e.target.value); if (formError?.field === "email") setFormError(null); }} placeholder="user@example.com" />
+            {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
+          </div>
+          <div className="mb-2">
+            <label className="form-label">住所（任意）</label>
+            <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="〇〇市〇〇町1-2-3" />
+          </div>
+          <div className="mb-2">
+            <label className="form-label">電話番号（任意）</label>
+            <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090-1234-5678" />
+          </div>
+          <div className="mb-2">
+            <label className="form-label">コース種別</label>
+            <input type="text" className="form-control" value={courseType} onChange={(e) => setCourseType(e.target.value)} placeholder="—" />
+          </div>
+          <div className="mb-2">
+            <label className="form-label">ステータス</label>
+            <select className="form-select" value={stage} onChange={(e) => setStage(e.target.value)}>
+              {stageOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>キャンセル</button>
+            <button type="button" className="btn btn-success" onClick={onSave}>登録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function EditMemberModal({
   open,
@@ -107,7 +217,6 @@ function EditMemberModal({
   setFormError,
   onSave,
   onCancel,
-  scss: s,
 }: {
   open: boolean;
   editId: number | null;
@@ -129,105 +238,59 @@ function EditMemberModal({
   setFormError: (v: { field: string; message: string } | null) => void;
   onSave: () => void;
   onCancel: () => void;
-  scss: { [k: string]: string };
 }) {
   if (!open || !editId) return null;
   return (
-    <div className={s.modalOverlay} onClick={onCancel}>
-      <div className={s.membersEditModalContent} onClick={(e) => e.stopPropagation()}>
-        <h3 className={s.modalTitle}>会員を編集（#{editId}）</h3>
-        <div className={s.membersEditFormFields}>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>名前</span>
-            <input
-              type="text"
-              className={formError?.field === "name" ? s.membersInputError : s.membersInput}
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                if (formError?.field === "name") setFormError(null);
-              }}
-              placeholder="山田 太郎"
-            />
-            <span className={s.membersFieldError}>{formError?.field === "name" ? formError.message : "\u00A0"}</span>
+    <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
+      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">会員を編集（#{editId}）</h5>
           </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>フリガナ（任意）</span>
-            <input
-              type="text"
-              className={s.membersInput}
-              value={furigana}
-              onChange={(e) => setFurigana(e.target.value)}
-              placeholder="ヤマダ タロウ"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          <div className="modal-body">
+          <div className="d-flex flex-column gap-0 mb-0">
+          <div className="mb-2">
+            <label className="form-label">名前</label>
+            <input type="text" className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`} value={name} onChange={(e) => { setName(e.target.value); if (formError?.field === "name") setFormError(null); }} placeholder="山田 太郎" />
+            {formError?.field === "name" && <div className="invalid-feedback d-block">{formError.message}</div>}
           </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>メール（任意）</span>
-            <input
-              type="email"
-              className={formError?.field === "email" ? s.membersInputError : s.membersInput}
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (formError?.field === "email") setFormError(null);
-              }}
-              placeholder="user@example.com"
-            />
-            <span className={s.membersFieldError}>{formError?.field === "email" ? formError.message : "\u00A0"}</span>
+          <div className="mb-2">
+            <label className="form-label">フリガナ（任意）</label>
+            <input type="text" className="form-control" value={furigana} onChange={(e) => setFurigana(e.target.value)} placeholder="ヤマダ タロウ" />
           </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>住所（任意）</span>
-            <input
-              type="text"
-              className={s.membersInput}
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="〇〇市〇〇町1-2-3"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          <div className="mb-2">
+            <label className="form-label">メール（任意）</label>
+            <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} value={email} onChange={(e) => { setEmail(e.target.value); if (formError?.field === "email") setFormError(null); }} placeholder="user@example.com" />
+            {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
           </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>電話番号（任意）</span>
-            <input
-              type="tel"
-              className={s.membersInput}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="090-1234-5678"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          <div className="mb-2">
+            <label className="form-label">住所（任意）</label>
+            <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="〇〇市〇〇町1-2-3" />
           </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>コース種別</span>
-            <input
-              type="text"
-              className={s.membersInput}
-              value={courseType}
-              onChange={(e) => setCourseType(e.target.value)}
-              placeholder="—"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
+          <div className="mb-2">
+            <label className="form-label">電話番号（任意）</label>
+            <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090-1234-5678" />
           </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>ステータス</span>
-            <select className={s.membersInput} value={stage} onChange={(e) => setStage(e.target.value)}>
+          <div className="mb-2">
+            <label className="form-label">コース種別</label>
+            <input type="text" className="form-control" value={courseType} onChange={(e) => setCourseType(e.target.value)} placeholder="—" />
+          </div>
+          <div className="mb-2">
+            <label className="form-label">ステータス</label>
+            <select className="form-select" value={stage} onChange={(e) => setStage(e.target.value)}>
               {stageOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
             </select>
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
           </div>
-        </div>
-        <div className={s.modalFooter}>
-          <button type="button" className={s.modalBtnCancel} onClick={onCancel}>
-            キャンセル
-          </button>
-          <button type="button" className={s.membersBtnSuccess} onClick={onSave}>
-            保存
-          </button>
+          </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>キャンセル</button>
+            <button type="button" className="btn btn-success" onClick={onSave}>保存</button>
+          </div>
         </div>
       </div>
     </div>
@@ -325,6 +388,47 @@ export default function AdminMembersPage() {
   const [editStage, setEditStage] = useState<string>("other");
 
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // フィルター
+  const [filterKeyword, setFilterKeyword] = useState("");
+  const [filterStage, setFilterStage] = useState<string>("");
+
+  const filteredMembers = useMemo(() => {
+    let list = members;
+    const kw = filterKeyword.trim().toLowerCase();
+    if (kw) {
+      list = list.filter((m) => {
+        const name = (m.name ?? "").toLowerCase();
+        const furigana = (m.furigana ?? "").toLowerCase();
+        const email = (m.email ?? "").toLowerCase();
+        const address = (m.address ?? "").toLowerCase();
+        const phone = (m.phone ?? "").toLowerCase();
+        const course = (m.course_type ?? "").toLowerCase();
+        return name.includes(kw) || furigana.includes(kw) || email.includes(kw) || address.includes(kw) || phone.includes(kw) || course.includes(kw);
+      });
+    }
+    if (filterStage) {
+      list = list.filter((m) => (m.stage ?? "") === filterStage);
+    }
+    return list;
+  }, [members, filterKeyword, filterStage]);
+
+  const [page, setPage] = useState(1);
+  const totalFiltered = filteredMembers.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / MEMBERS_PER_PAGE));
+  const paginatedMembers = useMemo(
+    () => filteredMembers.slice((page - 1) * MEMBERS_PER_PAGE, page * MEMBERS_PER_PAGE),
+    [filteredMembers, page]
+  );
+
+  useEffect(() => {
+    setPage((p) => (p > totalPages && totalPages > 0 ? totalPages : p));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterKeyword, filterStage]);
 
   const [newFormError, setNewFormError] = useState<{ field: string; message: string } | null>(null);
   const [editFormError, setEditFormError] = useState<{ field: string; message: string } | null>(null);
@@ -374,15 +478,16 @@ export default function AdminMembersPage() {
         return;
       }
       flash("会員を追加しました");
-    setNewFormError(null);
-    setNewName("");
-    setNewFurigana("");
-    setNewEmail("");
-    setNewAddress("");
-    setNewPhone("");
-    setNewCourseType("");
-    setNewStage("other");
-    loadMembers();
+      setShowAddModal(false);
+      setNewFormError(null);
+      setNewName("");
+      setNewFurigana("");
+      setNewEmail("");
+      setNewAddress("");
+      setNewPhone("");
+      setNewCourseType("");
+      setNewStage("other");
+      loadMembers();
     } catch (e) {
       const isNetwork = e instanceof TypeError && e.message === "Failed to fetch";
       setNewFormError({
@@ -419,10 +524,6 @@ export default function AdminMembersPage() {
       return;
     }
     const emailVal = editEmail.trim() || null;
-    if (emailVal !== null && !isValidEmail(emailVal)) {
-      setEditFormError({ field: "email", message: "メールアドレスの形式が正しくありません" });
-      return;
-    }
     const res = await fetch(`${API_BASE}/admin/users/${editId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -468,18 +569,43 @@ export default function AdminMembersPage() {
 
   return (
     <>
-      <h1 className={s.pageTitle}>会員管理</h1>
+      <h1 className="h3 mb-4">会員管理</h1>
 
       {msg && (
-        <div className={`${s.flashWrap} ${msgExiting ? s.flashWrapExiting : ""}`}>
-          <div className={`${s.flash} ${s.flashSuccess}`}>{msg}</div>
+        <div className={`alert alert-success alert-dismissible fade show mb-3 ${msgExiting ? "fade" : ""}`} role="alert">
+          {msg}
         </div>
       )}
       {err && (
-        <div className={`${s.flashWrap} ${errExiting ? s.flashWrapExiting : ""}`}>
-          <div className={`${s.flash} ${s.flashError}`}>{err}</div>
+        <div className={`alert alert-danger alert-dismissible fade show mb-3 ${errExiting ? "fade" : ""}`} role="alert">
+          {err}
         </div>
       )}
+
+      <AddMemberModal
+        open={showAddModal}
+        name={newName}
+        setName={setNewName}
+        furigana={newFurigana}
+        setFurigana={setNewFurigana}
+        email={newEmail}
+        setEmail={setNewEmail}
+        address={newAddress}
+        setAddress={setNewAddress}
+        phone={newPhone}
+        setPhone={setNewPhone}
+        courseType={newCourseType}
+        setCourseType={setNewCourseType}
+        stage={newStage}
+        setStage={setNewStage}
+        formError={newFormError}
+        setFormError={setNewFormError}
+        onSave={handleCreate}
+        onCancel={() => {
+          setShowAddModal(false);
+          setNewFormError(null);
+        }}
+      />
 
       <EditMemberModal
         open={editId !== null}
@@ -502,7 +628,6 @@ export default function AdminMembersPage() {
         setFormError={setEditFormError}
         onSave={handleUpdate}
         onCancel={cancelEdit}
-        scss={s}
       />
 
       <ConfirmModal
@@ -512,7 +637,6 @@ export default function AdminMembersPage() {
         onCancel={() => setDeleteTarget(null)}
         confirmLabel="削除する"
         confirmColor="#991b1b"
-        scss={s}
       >
         {deleteTarget && (
           <>
@@ -521,168 +645,110 @@ export default function AdminMembersPage() {
         )}
       </ConfirmModal>
 
-      {/* 新規追加 */}
-      <div className={s.membersCard}>
-        <h3 className={s.membersCardTitle}>会員を追加</h3>
-        <div className={s.membersFormGrid}>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>名前</span>
-            <input
-              type="text"
-              className={newFormError?.field === "name" ? s.membersInputError : s.membersInput}
-              value={newName}
-              onChange={(e) => {
-                setNewName(e.target.value);
-                if (newFormError?.field === "name") setNewFormError(null);
-              }}
-              placeholder="山田 太郎"
-            />
-            <span className={s.membersFieldError}>
-              {newFormError?.field === "name" ? newFormError.message : "\u00A0"}
-            </span>
-          </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>フリガナ（任意）</span>
-            <input
-              type="text"
-              className={s.membersInput}
-              value={newFurigana}
-              onChange={(e) => setNewFurigana(e.target.value)}
-              placeholder="ヤマダ タロウ"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
-          </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>メール（任意）</span>
-            <input
-              type="email"
-              className={newFormError?.field === "email" ? s.membersInputError : s.membersInput}
-              value={newEmail}
-              onChange={(e) => {
-                setNewEmail(e.target.value);
-                if (newFormError?.field === "email") setNewFormError(null);
-              }}
-              placeholder="user@example.com"
-            />
-            <span className={s.membersFieldError}>
-              {newFormError?.field === "email" ? newFormError.message : "\u00A0"}
-            </span>
-          </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>住所（任意）</span>
-            <input
-              type="text"
-              className={s.membersInput}
-              value={newAddress}
-              onChange={(e) => setNewAddress(e.target.value)}
-              placeholder="〇〇市〇〇町1-2-3"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
-          </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>電話番号（任意）</span>
-            <input
-              type="tel"
-              className={s.membersInput}
-              value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)}
-              placeholder="090-1234-5678"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
-          </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>コース種別</span>
-            <input
-              type="text"
-              className={s.membersInput}
-              value={newCourseType}
-              onChange={(e) => setNewCourseType(e.target.value)}
-              placeholder="—"
-            />
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
-          </div>
-          <div className={s.membersFieldWrap}>
-            <span className={s.membersLabel}>ステータス</span>
-            <select
-              className={s.membersInput}
-              value={newStage}
-              onChange={(e) => setNewStage(e.target.value)}
-            >
-              {stageOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
-          </div>
-          <div className={`${s.membersFieldWrap} ${s.membersFieldWrapCenter}`}>
-            <span className={`${s.membersLabel} ${s.membersLabelInvisible}`}>—</span>
-            <button type="button" className={s.membersBtnPrimary} onClick={handleCreate}>
-              追加
+      {/* 会員追加ボタン・フィルター */}
+      <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <button type="button" className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+          会員を追加
+        </button>
+        <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+          <input
+            type="text"
+            className="form-control"
+            style={{ maxWidth: "360px" }}
+            placeholder="キーワード（名前・フリガナ・メール・住所・電話・コース）"
+            value={filterKeyword}
+            onChange={(e) => setFilterKeyword(e.target.value)}
+          />
+          <select
+            className="form-select"
+            style={{ width: "auto", minWidth: "140px" }}
+            value={filterStage}
+            onChange={(e) => setFilterStage(e.target.value)}
+          >
+            <option value="">すべてのステータス</option>
+            {stageOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {(filterKeyword.trim() || filterStage) && (
+            <button type="button" className="btn btn-secondary" onClick={() => { setFilterKeyword(""); setFilterStage(""); }}>
+              クリア
             </button>
-            <span className={s.membersFieldError}>{"\u00A0"}</span>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* 一覧 */}
-      <div className={s.tableCard}>
-        <table className={s.tableCardTable}>
+      <div className="card shadow-sm overflow-hidden">
+        <div className="table-responsive" style={{ overflowX: "auto" }}>
+        <table className="table table-striped table-hover mb-0" style={{ minWidth: "960px" }}>
           <thead>
             <tr>
-              <th className={s.membersThId}>ID</th>
-              <th className={s.membersThName}>名前</th>
-              <th className={s.membersThName}>フリガナ</th>
-              <th className={s.membersThEmail}>メール</th>
-              <th className={s.membersThEmail}>住所</th>
-              <th className={s.membersThPhone}>電話番号</th>
-              <th className={s.membersThCourse}>コース種別</th>
-              <th className={s.membersThCourse}>ステータス</th>
-              <th className={s.membersThActions}>操作</th>
+              <th style={{ width: "56px" }}>ID</th>
+              <th>名前</th>
+              <th>フリガナ</th>
+              <th>メール</th>
+              <th>住所</th>
+              <th>電話番号</th>
+              <th>コース種別</th>
+              <th>ステータス</th>
+              <th>登録日</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
-            {members.map((m) => (
+            {paginatedMembers.map((m) => (
               <tr key={m.id}>
                 <td>{m.id}</td>
-                <td className={s.membersTableName}>{m.name}</td>
-                <td className={s.membersTableMuted}>{m.furigana ?? "—"}</td>
-                <td className={s.membersTableMuted}>{m.email ?? "—"}</td>
-                <td className={s.membersTableMuted}>{m.address ?? "—"}</td>
-                <td className={s.membersTableMuted}>{m.phone ?? "—"}</td>
-                <td className={s.membersTableMuted}>{m.course_type ?? "—"}</td>
+                <td className="fw-semibold">{m.name}</td>
+                <td className="text-body-secondary">{m.furigana ?? "—"}</td>
+                <td className="text-body-secondary">{m.email ?? "—"}</td>
+                <td className="text-body-secondary">{m.address ?? "—"}</td>
+                <td className="text-body-secondary">{m.phone ?? "—"}</td>
+                <td className="text-body-secondary">{m.course_type ?? "—"}</td>
                 <td>
-                  <span className={s.membersStageBadge}>
+                  <span className="badge bg-success">
                     {stageOptions.find((o) => o.value === m.stage)?.label ?? m.stage ?? "—"}
                   </span>
                 </td>
-                <td className={s.membersTdActions}>
-                  <span className={s.tableCardActions}>
-                    <button type="button" className={s.membersBtnPrimary} onClick={() => startEdit(m)}>
-                      編集
-                    </button>
-                    <button
-                      type="button"
-                      className={s.membersBtnDanger}
-                      onClick={() => setDeleteTarget(m)}
-                    >
-                      削除
-                    </button>
-                  </span>
+                <td className="text-body-secondary">
+                  {m.created_at ? new Date(m.created_at).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }) : "—"}
+                </td>
+                <td>
+                  <div className="btn-group btn-group-sm">
+                    <button type="button" className="btn btn-primary" onClick={() => startEdit(m)}>編集</button>
+                    <button type="button" className="btn btn-danger" onClick={() => setDeleteTarget(m)}>削除</button>
+                  </div>
                 </td>
               </tr>
             ))}
-            {members.length === 0 && (
+            {filteredMembers.length === 0 && (
               <tr>
-                <td colSpan={9} className={s.tableCardEmpty}>
-                  会員がありません
+                <td colSpan={10} className="text-center text-body-secondary py-4">
+                  {members.length === 0 ? "会員がありません" : "条件に一致する会員がありません"}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+        </div>
       </div>
+
+      {totalFiltered > 0 && (
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 py-2">
+          <span className="small text-body-secondary">
+            {(page - 1) * MEMBERS_PER_PAGE + 1}-{Math.min(page * MEMBERS_PER_PAGE, totalFiltered)} / {totalFiltered} 件
+          </span>
+          <div className="d-flex align-items-center gap-1">
+            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>前へ</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} type="button" className={`btn btn-sm ${p === page ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>次へ</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

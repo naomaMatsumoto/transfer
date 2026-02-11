@@ -9,7 +9,7 @@ const adminRouter = Router();
 
 adminRouter.use(usersRouter);
 adminRouter.use(classTypesRouter);
-adminRouter.use(eventsRouter);
+adminRouter.use("/events", eventsRouter);
 adminRouter.use(makeupCreditsRouter);
 adminRouter.use(reservationsRouter);
 

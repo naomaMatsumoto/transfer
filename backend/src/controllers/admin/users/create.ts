@@ -27,8 +27,8 @@ export default async function createUser(
     res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
     return;
   }
-  const addressVal = address != null && String(address).trim() !== "" ? String(address).trim() : null;
-  const phoneVal = phone != null && String(phone).trim() !== "" ? String(phone).trim() : null;
+  const addressVal = address == null || String(address).trim() === "" ? null : String(address).trim();
+  const phoneVal = phone == null || String(phone).trim() === "" ? null : String(phone).trim();
   const stageVal = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
   try {
     const [result] = await pool.query(
