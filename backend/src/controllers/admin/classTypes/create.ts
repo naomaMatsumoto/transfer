@@ -1,0 +1,44 @@
+import { Request, Response, NextFunction } from "express";
+import { pool } from "../../../db";
+import { ERR } from "../../../constants";
+
+function generateClassTypeCode(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff-]/g, "");
+  if (slug.length > 0 && slug.length <= 50) return slug;
+  return "ct_" + String(Date.now());
+}
+
+export default async function createClassType(
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): Promise<void> {
+  const body = req.body as { code?: string; name?: string; description?: string };
+  const { code, name, description } = body;
+  if (!name || !String(name).trim()) {
+    res.status(400).json({ error: ERR.CLASS_TYPE_NAME_REQUIRED });
+    return;
+  }
+  const trimmedName = String(name).trim();
+  const codeToUse =
+    code && String(code).trim() ? String(code).trim() : generateClassTypeCode(trimmedName);
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO class_types (code, name, description) VALUES (?, ?, ?)",
+      [codeToUse, trimmedName, description ?? null]
+    );
+    const insertId = (result as { insertId: number }).insertId;
+    res.status(201).json({ id: insertId, code: codeToUse, name: trimmedName });
+  } catch (err: unknown) {
+    const e = err as { code?: string };
+    if (e.code === "ER_DUP_ENTRY") {
+      res.status(400).json({ error: ERR.CLASS_TYPE_CODE_DUPLICATE });
+      return;
+    }
+    throw err;
+  }
+}

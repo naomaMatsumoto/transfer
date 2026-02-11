@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as eventsController from "../controllers/events.controller";
+import listEvents from "../controllers/events/list";
 import { asyncHandler } from "../middleware/asyncHandler";
 
 const router = Router();
-router.get("/events", asyncHandler(eventsController.list));
+router.get("/events", asyncHandler(listEvents));
 export default router;

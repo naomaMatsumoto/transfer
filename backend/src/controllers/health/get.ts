@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { pool } from "../db";
+import { pool } from "../../db";
 
-export async function check(
+export default async function getHealth(
   _req: Request,
   res: Response,
   _next: NextFunction

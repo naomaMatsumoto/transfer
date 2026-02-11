@@ -1,0 +1,55 @@
+import { Request, Response, NextFunction } from "express";
+import { pool } from "../../../db";
+import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
+
+export default async function createUser(
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): Promise<void> {
+  const { name, furigana, email, address, phone, course_type, stage } = req.body as {
+    name?: string;
+    furigana?: string | null;
+    email?: string;
+    address?: string | null;
+    phone?: string | null;
+    course_type?: string | null;
+    stage?: string;
+  };
+  if (!name || !String(name).trim()) {
+    res.status(400).json({ error: ERR.MEMBER_NAME_REQUIRED });
+    return;
+  }
+  const trimmedName = String(name).trim();
+  const furiganaVal = furigana != null && String(furigana).trim() !== "" ? String(furigana).trim() : null;
+  const emailTrimmed = email != null && String(email).trim() !== "" ? String(email).trim() : null;
+  if (emailTrimmed !== null && !isValidEmail(emailTrimmed)) {
+    res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+    return;
+  }
+  const addressVal = address != null && String(address).trim() !== "" ? String(address).trim() : null;
+  const phoneVal = phone != null && String(phone).trim() !== "" ? String(phone).trim() : null;
+  const stageVal = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO users (name, furigana, email, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [trimmedName, furiganaVal, emailTrimmed, addressVal, phoneVal, course_type ?? null, stageVal],
+    );
+    res.status(201).json({
+      id: (result as any).insertId,
+      name: trimmedName,
+      furigana: furiganaVal,
+      email: emailTrimmed,
+      address: addressVal,
+      phone: phoneVal,
+      course_type: course_type ?? null,
+      stage: stageVal,
+    });
+  } catch (err: any) {
+    if (err.code === "ER_DUP_ENTRY") {
+      res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
+      return;
+    }
+    throw err;
+  }
+}

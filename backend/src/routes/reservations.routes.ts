@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as reservationsController from "../controllers/reservations.controller";
+import createReservation from "../controllers/reservations/create";
 import { asyncHandler } from "../middleware/asyncHandler";
 
 const router = Router();
-router.post("/reservations", asyncHandler(reservationsController.create));
+router.post("/reservations", asyncHandler(createReservation));
 export default router;

@@ -1,0 +1,18 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const users_1 = __importDefault(require("./users"));
+const classTypes_1 = __importDefault(require("./classTypes"));
+const events_1 = __importDefault(require("./events"));
+const makeupCredits_1 = __importDefault(require("./makeupCredits"));
+const reservations_1 = __importDefault(require("./reservations"));
+const adminRouter = (0, express_1.Router)();
+adminRouter.use(users_1.default);
+adminRouter.use(classTypes_1.default);
+adminRouter.use(events_1.default);
+adminRouter.use(makeupCredits_1.default);
+adminRouter.use(reservations_1.default);
+exports.default = adminRouter;

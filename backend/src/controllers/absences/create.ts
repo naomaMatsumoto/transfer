@@ -1,15 +1,20 @@
 import { Request, Response, NextFunction } from "express";
-import { pool } from "../db";
-import { ERR } from "../constants";
+import { pool } from "../../db";
+import { ERR } from "../../constants";
 
-export async function create(req: Request, res: Response, _next: NextFunction) {
+export default async function createAbsence(
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): Promise<void> {
   const { userId, eventId, reason } = req.body as {
     userId?: number;
     eventId?: number;
     reason?: string;
   };
   if (!userId || !eventId) {
-    return res.status(400).json({ error: ERR.USER_ID_EVENT_ID_REQUIRED });
+    res.status(400).json({ error: ERR.USER_ID_EVENT_ID_REQUIRED });
+    return;
   }
   const conn = await pool.getConnection();
   try {
@@ -21,7 +26,8 @@ export async function create(req: Request, res: Response, _next: NextFunction) {
     const eventRow = (events as any[])[0];
     if (!eventRow) {
       await conn.rollback();
-      return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      return;
     }
     const [result] = await conn.query(
       "INSERT INTO makeup_credits (user_id, class_type_id, granted_at, status, source, source_event_id, note) VALUES (?, ?, NOW(), 'granted', 'absence', ?, ?)",

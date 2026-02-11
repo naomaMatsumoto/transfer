@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { pool } from "../db";
-import { ERR } from "../constants";
+import { pool } from "../../db";
+import { ERR } from "../../constants";
 
-export async function create(req: Request, res: Response, _next: NextFunction) {
+export default async function createReservation(
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): Promise<void> {
   const { userId, eventId, reservationType, makeupCreditId } = req.body as {
     userId?: number;
     eventId?: number;
@@ -10,7 +14,8 @@ export async function create(req: Request, res: Response, _next: NextFunction) {
     makeupCreditId?: number | null;
   };
   if (!userId || !eventId || !reservationType) {
-    return res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
+    res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
+    return;
   }
   const conn = await pool.getConnection();
   try {
@@ -25,15 +30,18 @@ export async function create(req: Request, res: Response, _next: NextFunction) {
     const event = (eventRows as any[])[0];
     if (!event) {
       await conn.rollback();
-      return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      return;
     }
     if (event.status !== "scheduled") {
       await conn.rollback();
-      return res.status(400).json({ error: ERR.EVENT_NOT_BOOKABLE });
+      res.status(400).json({ error: ERR.EVENT_NOT_BOOKABLE });
+      return;
     }
     if (event.reserved_count >= event.capacity) {
       await conn.rollback();
-      return res.status(400).json({ error: ERR.EVENT_CAPACITY_FULL });
+      res.status(400).json({ error: ERR.EVENT_CAPACITY_FULL });
+      return;
     }
     const [existing] = await conn.query(
       "SELECT id FROM reservations WHERE user_id = ? AND event_id = ? AND status IN ('booked','attended') FOR UPDATE",
@@ -41,13 +49,15 @@ export async function create(req: Request, res: Response, _next: NextFunction) {
     );
     if ((existing as any[]).length > 0) {
       await conn.rollback();
-      return res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
+      res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
+      return;
     }
     let makeupIdToUse: number | null = null;
     if (reservationType === "makeup") {
       if (!makeupCreditId) {
         await conn.rollback();
-        return res.status(400).json({ error: ERR.MAKEUP_CREDIT_ID_REQUIRED });
+        res.status(400).json({ error: ERR.MAKEUP_CREDIT_ID_REQUIRED });
+        return;
       }
       const [credits] = await conn.query(
         "SELECT id, status FROM makeup_credits WHERE id = ? AND user_id = ? FOR UPDATE",
@@ -56,7 +66,8 @@ export async function create(req: Request, res: Response, _next: NextFunction) {
       const credit = (credits as any[])[0];
       if (!credit || credit.status !== "granted") {
         await conn.rollback();
-        return res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
+        res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
+        return;
       }
       makeupIdToUse = credit.id;
     }
