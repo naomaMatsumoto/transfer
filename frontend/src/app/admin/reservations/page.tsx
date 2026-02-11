@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { RESERVATION_TABS } from "../../routes";
 import s from "../admin.module.scss";
-import { getApiErrorMessage } from "../lib/apiErrors";
+import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
 const FLASH_VISIBLE_MS = 3000;
 const FLASH_ERR_VISIBLE_MS = 5000;

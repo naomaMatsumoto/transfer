@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import s from "../admin.module.scss";
-import { getApiErrorMessage } from "../lib/apiErrors";
+import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
 const API_BASE = (() => {
   const u = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();

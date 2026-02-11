@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import s from "./calendar.module.scss";
-import { getApiErrorMessage } from "./lib/apiErrors";
+import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
 type EventRow = {
   id: number;
