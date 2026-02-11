@@ -171,12 +171,53 @@ $header-height: 52px;
 .adminNavLinkActive { font-weight: 700; color: v.$color-gray-700; text-decoration: none; }
 .adminNavSep { color: v.$color-gray-300; user-select: none; }
 
+// フラッシュメッセージ用ラッパー（画面上部・最前面・アニメーション・自動で消える）
+.flashWrap {
+  position: fixed;
+  top: 56px; /* ヘッダー直下 */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  animation: flashSlideIn 0.3s ease-out;
+  pointer-events: none;
+}
+
+@keyframes flashSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.flashWrapExiting {
+  animation: flashSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes flashSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%);
+  }
+}
+
 .flash {
-  padding: v.$space-3 v.$space-4;
+  padding: v.$space-3 v.$space-5;
   border-radius: v.$radius-lg;
-  margin-bottom: v.$space-4;
   font-size: v.$font-base;
   font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.flashWrap .flash {
+  margin-bottom: 0;
 }
 
 .flashSuccess {

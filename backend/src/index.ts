@@ -12,6 +12,11 @@ const port = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.path.startsWith("/admin")) logger.info(`${req.method} ${req.path}`);
+  next();
+});
+
 const pool = createPool({
   host: process.env.DB_HOST || "db",
   port: Number(process.env.DB_PORT) || 3306,
@@ -21,6 +26,50 @@ const pool = createPool({
   waitForConnections: true,
   connectionLimit: 10,
 });
+
+// Error codes (messages are resolved on frontend)
+const ERR = {
+  EVENTS_FROM_TO_REQUIRED: "EVENTS_FROM_TO_REQUIRED",
+  USER_ID_REQUIRED: "USER_ID_REQUIRED",
+  USER_ID_EVENT_ID_REQUIRED: "USER_ID_EVENT_ID_REQUIRED",
+  EVENT_NOT_FOUND: "EVENT_NOT_FOUND",
+  RESERVATION_PARAMS_REQUIRED: "RESERVATION_PARAMS_REQUIRED",
+  EVENT_NOT_BOOKABLE: "EVENT_NOT_BOOKABLE",
+  EVENT_CAPACITY_FULL: "EVENT_CAPACITY_FULL",
+  EVENT_CAPACITY_FULL_OVERRIDE: "EVENT_CAPACITY_FULL_OVERRIDE",
+  RESERVATION_ALREADY_EXISTS: "RESERVATION_ALREADY_EXISTS",
+  MAKEUP_CREDIT_ID_REQUIRED: "MAKEUP_CREDIT_ID_REQUIRED",
+  MAKEUP_CREDIT_NOT_AVAILABLE: "MAKEUP_CREDIT_NOT_AVAILABLE",
+  CLASS_TYPE_NAME_REQUIRED: "CLASS_TYPE_NAME_REQUIRED",
+  CLASS_TYPE_CODE_DUPLICATE: "CLASS_TYPE_CODE_DUPLICATE",
+  CLASS_TYPE_NAME_EMPTY: "CLASS_TYPE_NAME_EMPTY",
+  CLASS_TYPE_UPDATE_EMPTY: "CLASS_TYPE_UPDATE_EMPTY",
+  CLASS_TYPE_NOT_FOUND: "CLASS_TYPE_NOT_FOUND",
+  CLASS_TYPE_IN_USE: "CLASS_TYPE_IN_USE",
+  EVENT_CREATE_PARAMS_REQUIRED: "EVENT_CREATE_PARAMS_REQUIRED",
+  EVENT_BULK_PARAMS_REQUIRED: "EVENT_BULK_PARAMS_REQUIRED",
+  EVENT_DELETE_HAS_RESERVATIONS: "EVENT_DELETE_HAS_RESERVATIONS",
+  EVENT_IDS_REQUIRED: "EVENT_IDS_REQUIRED",
+  EVENT_BULK_DELETE_HAS_RESERVATIONS: "EVENT_BULK_DELETE_HAS_RESERVATIONS",
+  EVENT_BULK_STATUS_PARAMS_REQUIRED: "EVENT_BULK_STATUS_PARAMS_REQUIRED",
+  EVENT_STATUS_INVALID: "EVENT_STATUS_INVALID",
+  EVENT_BULK_CAPACITY_PARAMS_REQUIRED: "EVENT_BULK_CAPACITY_PARAMS_REQUIRED",
+  EVENT_BULK_TIME_PARAMS_REQUIRED: "EVENT_BULK_TIME_PARAMS_REQUIRED",
+  EVENT_TIME_PARAMS_REQUIRED: "EVENT_TIME_PARAMS_REQUIRED",
+  EVENT_CAPACITY_INVALID: "EVENT_CAPACITY_INVALID",
+  CREDIT_USER_ID_REQUIRED: "CREDIT_USER_ID_REQUIRED",
+  CREDIT_UPDATE_EMPTY: "CREDIT_UPDATE_EMPTY",
+  CREDIT_NOT_FOUND: "CREDIT_NOT_FOUND",
+  RESERVATION_NOT_FOUND: "RESERVATION_NOT_FOUND",
+  RESERVATION_CANCEL_NOT_BOOKED: "RESERVATION_CANCEL_NOT_BOOKED",
+  MEMBER_NAME_REQUIRED: "MEMBER_NAME_REQUIRED",
+  MEMBER_NAME_EMPTY: "MEMBER_NAME_EMPTY",
+  MEMBER_EMAIL_INVALID: "MEMBER_EMAIL_INVALID",
+  MEMBER_EMAIL_DUPLICATE: "MEMBER_EMAIL_DUPLICATE",
+  MEMBER_UPDATE_EMPTY: "MEMBER_UPDATE_EMPTY",
+  MEMBER_NOT_FOUND: "MEMBER_NOT_FOUND",
+  MEMBER_DELETE_HAS_REFERENCES: "MEMBER_DELETE_HAS_REFERENCES",
+} as const;
 
 // ヘルスチェック
 app.get(
@@ -43,9 +92,7 @@ app.get(
       const { from, to, userId } = req.query;
 
       if (!from || !to) {
-        return res
-          .status(400)
-          .json({ error: "`from` と `to` は必須です (YYYY-MM-DD)" });
+        return res.status(400).json({ error: ERR.EVENTS_FROM_TO_REQUIRED });
       }
 
       const userIdNum = userId ? Number(userId) : 0;
@@ -87,7 +134,7 @@ app.get(
       const { userId } = req.query;
       const userIdNum = Number(userId);
       if (!userIdNum) {
-        return res.status(400).json({ error: "`userId` は必須です" });
+        return res.status(400).json({ error: ERR.USER_ID_REQUIRED });
       }
 
       const [rows] = await pool.query(
@@ -127,9 +174,7 @@ app.post(
     };
 
     if (!userId || !eventId) {
-      return res
-        .status(400)
-        .json({ error: "`userId` と `eventId` は必須です" });
+      return res.status(400).json({ error: ERR.USER_ID_EVENT_ID_REQUIRED });
     }
 
     const conn = await pool.getConnection();
@@ -144,7 +189,7 @@ app.post(
       const eventRow = (events as any[])[0];
       if (!eventRow) {
         await conn.rollback();
-        return res.status(404).json({ error: "イベントが存在しません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
 
       // 振替権利を付与（有効期限などは後でルール追加）
@@ -186,9 +231,7 @@ app.post(
     };
 
     if (!userId || !eventId || !reservationType) {
-      return res.status(400).json({
-        error: "`userId`, `eventId`, `reservationType` は必須です",
-      });
+      return res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
     }
 
     const conn = await pool.getConnection();
@@ -216,15 +259,15 @@ app.post(
       const event = (eventRows as any[])[0];
       if (!event) {
         await conn.rollback();
-        return res.status(404).json({ error: "イベントが存在しません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
       if (event.status !== "scheduled") {
         await conn.rollback();
-        return res.status(400).json({ error: "この枠は予約できません" });
+        return res.status(400).json({ error: ERR.EVENT_NOT_BOOKABLE });
       }
       if (event.reserved_count >= event.capacity) {
         await conn.rollback();
-        return res.status(400).json({ error: "定員に達しています" });
+        return res.status(400).json({ error: ERR.EVENT_CAPACITY_FULL });
       }
 
       // 同一枠の重複予約防止
@@ -238,7 +281,7 @@ app.post(
       );
       if ((existing as any[]).length > 0) {
         await conn.rollback();
-        return res.status(400).json({ error: "すでにこの枠を予約済みです" });
+        return res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
       }
 
       let makeupIdToUse: number | null = null;
@@ -246,9 +289,7 @@ app.post(
       if (reservationType === "makeup") {
         if (!makeupCreditId) {
           await conn.rollback();
-          return res
-            .status(400)
-            .json({ error: "`makeupCreditId` が必要です" });
+          return res.status(400).json({ error: ERR.MAKEUP_CREDIT_ID_REQUIRED });
         }
 
         const [credits] = await conn.query(
@@ -261,9 +302,7 @@ app.post(
         const credit = (credits as any[])[0];
         if (!credit || credit.status !== "granted") {
           await conn.rollback();
-          return res
-            .status(400)
-            .json({ error: "利用可能な振替権利が見つかりません" });
+          return res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
         }
         makeupIdToUse = credit.id;
       }
@@ -311,15 +350,156 @@ app.post(
 // Admin API
 // ================================================================
 
-// --- ユーザー一覧（プルダウン用） ---
+// --- ユーザー一覧（プルダウン用・会員管理） ---
 app.get(
   "/admin/users",
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const [rows] = await pool.query(
-        "SELECT id, name, email, grade, course_type, status FROM users ORDER BY id ASC",
+        "SELECT id, name, furigana, email, address, phone, course_type, stage, status, created_at FROM users ORDER BY id ASC",
       );
       res.json(rows);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// --- 会員 作成 ---
+const STAGE_VALUES = ["preschool", "elementary", "junior_high", "high_school", "other"] as const;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(s: string): boolean {
+  return s.length > 0 && s.length <= 255 && EMAIL_REGEX.test(s);
+}
+app.post(
+  "/admin/users",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { name, furigana, email, address, phone, course_type, stage } = req.body as {
+      name?: string;
+      furigana?: string | null;
+      email?: string;
+      address?: string | null;
+      phone?: string | null;
+      course_type?: string | null;
+      stage?: string;
+    };
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: ERR.MEMBER_NAME_REQUIRED });
+    }
+    const trimmedName = String(name).trim();
+    const furiganaVal = furigana != null && String(furigana).trim() !== "" ? String(furigana).trim() : null;
+    const emailTrimmed = email != null && String(email).trim() !== "" ? String(email).trim() : null;
+    if (emailTrimmed !== null && !isValidEmail(emailTrimmed)) {
+      return res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+    }
+    const addressVal = address != null && String(address).trim() !== "" ? String(address).trim() : null;
+    const phoneVal = phone != null && String(phone).trim() !== "" ? String(phone).trim() : null;
+    const stageVal = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
+    try {
+      const [result] = await pool.query(
+        "INSERT INTO users (name, furigana, email, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [trimmedName, furiganaVal, emailTrimmed, addressVal, phoneVal, course_type ?? null, stageVal],
+      );
+      res.status(201).json({
+        id: (result as any).insertId,
+        name: trimmedName,
+        furigana: furiganaVal,
+        email: emailTrimmed,
+        address: addressVal,
+        phone: phoneVal,
+        course_type: course_type ?? null,
+        stage: stageVal,
+      });
+    } catch (err: any) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
+      }
+      next(err);
+    }
+  },
+);
+
+// --- 会員 更新 ---
+app.patch(
+  "/admin/users/:id",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = Number(req.params.id);
+    const { name, furigana, email, address, phone, course_type, stage } = req.body as {
+      name?: string;
+      furigana?: string | null;
+      email?: string;
+      address?: string | null;
+      phone?: string | null;
+      course_type?: string | null;
+      stage?: string;
+    };
+    const updates: string[] = [];
+    const params: any[] = [];
+    if (name !== undefined) {
+      const v = String(name).trim();
+      if (v.length === 0) return res.status(400).json({ error: ERR.MEMBER_NAME_EMPTY });
+      updates.push("name = ?"); params.push(v);
+    }
+    if (furigana !== undefined) {
+      updates.push("furigana = ?"); params.push(furigana == null || String(furigana).trim() === "" ? null : String(furigana).trim());
+    }
+    if (address !== undefined) {
+      updates.push("address = ?"); params.push(address == null || String(address).trim() === "" ? null : String(address).trim());
+    }
+    if (phone !== undefined) {
+      updates.push("phone = ?"); params.push(phone == null || String(phone).trim() === "" ? null : String(phone).trim());
+    }
+    if (email !== undefined) {
+      const v = String(email).trim();
+      const emailVal = v === "" ? null : v;
+      if (emailVal !== null && !isValidEmail(emailVal)) {
+        return res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+      }
+      updates.push("email = ?"); params.push(emailVal);
+    }
+    if (course_type !== undefined) { updates.push("course_type = ?"); params.push(course_type === null || course_type === "" ? null : course_type); }
+    if (stage !== undefined) {
+      const v = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
+      updates.push("stage = ?"); params.push(v);
+    }
+    if (updates.length === 0) {
+      return res.status(400).json({ error: ERR.MEMBER_UPDATE_EMPTY });
+    }
+    params.push(id);
+    try {
+      const [result] = await pool.query(
+        `UPDATE users SET ${updates.join(", ")} WHERE id = ?`,
+        params,
+      );
+      if ((result as any).affectedRows === 0) {
+        return res.status(404).json({ error: ERR.MEMBER_NOT_FOUND });
+      }
+      res.json({ id, updated: true });
+    } catch (err: any) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
+      }
+      next(err);
+    }
+  },
+);
+
+// --- 会員 削除 ---
+app.delete(
+  "/admin/users/:id",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = Number(req.params.id);
+    try {
+      const [refCredits] = await pool.query("SELECT 1 FROM makeup_credits WHERE user_id = ? LIMIT 1", [id]);
+      const [refRes] = await pool.query("SELECT 1 FROM reservations WHERE user_id = ? LIMIT 1", [id]);
+      if ((refCredits as any[]).length > 0 || (refRes as any[]).length > 0) {
+        return res.status(400).json({ error: ERR.MEMBER_DELETE_HAS_REFERENCES });
+      }
+      const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
+      if ((result as any).affectedRows === 0) {
+        return res.status(404).json({ error: ERR.MEMBER_NOT_FOUND });
+      }
+      res.json({ id, deleted: true });
     } catch (err) {
       next(err);
     }
@@ -341,6 +521,17 @@ app.get(
   },
 );
 
+// コード未指定時用の一意なコードを生成（名前のスラッグ or ct_タイムスタンプ）
+function generateClassTypeCode(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff-]/g, "");
+  if (slug.length > 0 && slug.length <= 50) return slug;
+  return `ct_${Date.now()}`;
+}
+
 // --- クラス種別 作成 ---
 app.post(
   "/admin/class-types",
@@ -350,18 +541,20 @@ app.post(
       name?: string;
       description?: string;
     };
-    if (!code || !name) {
-      return res.status(400).json({ error: "code と name は必須です" });
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: ERR.CLASS_TYPE_NAME_REQUIRED });
     }
+    const trimmedName = String(name).trim();
+    const codeToUse = code && String(code).trim() ? String(code).trim() : generateClassTypeCode(trimmedName);
     try {
       const [result] = await pool.query(
         "INSERT INTO class_types (code, name, description) VALUES (?, ?, ?)",
-        [code, name, description ?? null],
+        [codeToUse, trimmedName, description ?? null],
       );
-      res.status(201).json({ id: (result as any).insertId, code, name });
+      res.status(201).json({ id: (result as any).insertId, code: codeToUse, name: trimmedName });
     } catch (err: any) {
       if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "この code は既に使われています" });
+        return res.status(400).json({ error: ERR.CLASS_TYPE_CODE_DUPLICATE });
       }
       next(err);
     }
@@ -380,11 +573,15 @@ app.patch(
     };
     const sets: string[] = [];
     const params: any[] = [];
-    if (code !== undefined) { sets.push("code = ?"); params.push(code); }
-    if (name !== undefined) { sets.push("name = ?"); params.push(name); }
+    if (code !== undefined) { sets.push("code = ?"); params.push(String(code).trim()); }
+    if (name !== undefined) {
+      const v = String(name).trim();
+      if (v.length === 0) return res.status(400).json({ error: ERR.CLASS_TYPE_NAME_EMPTY });
+      sets.push("name = ?"); params.push(v);
+    }
     if (description !== undefined) { sets.push("description = ?"); params.push(description); }
     if (sets.length === 0) {
-      return res.status(400).json({ error: "更新する項目がありません" });
+      return res.status(400).json({ error: ERR.CLASS_TYPE_UPDATE_EMPTY });
     }
     params.push(id);
     try {
@@ -393,12 +590,12 @@ app.patch(
         params,
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "クラス種別が見つかりません" });
+        return res.status(404).json({ error: ERR.CLASS_TYPE_NOT_FOUND });
       }
       res.json({ id, updated: true });
     } catch (err: any) {
       if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "この code は既に使われています" });
+        return res.status(400).json({ error: ERR.CLASS_TYPE_CODE_DUPLICATE });
       }
       next(err);
     }
@@ -416,12 +613,12 @@ app.delete(
         [id],
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "クラス種別が見つかりません" });
+        return res.status(404).json({ error: ERR.CLASS_TYPE_NOT_FOUND });
       }
       res.json({ id, deleted: true });
     } catch (err: any) {
       if (err.code === "ER_ROW_IS_REFERENCED_2") {
-        return res.status(400).json({ error: "このクラス種別はイベント等で使用中のため削除できません" });
+        return res.status(400).json({ error: ERR.CLASS_TYPE_IN_USE });
       }
       next(err);
     }
@@ -478,7 +675,7 @@ app.post(
       capacity?: number;
     };
     if (!classTypeId || !startsAt || !endsAt) {
-      return res.status(400).json({ error: "classTypeId, startsAt, endsAt は必須です" });
+      return res.status(400).json({ error: ERR.EVENT_CREATE_PARAMS_REQUIRED });
     }
     try {
       const [result] = await pool.query(
@@ -510,9 +707,7 @@ app.post(
       };
 
     if (!classTypeId || !startTime || !endTime || !weekdays || weekdays.length === 0 || !dateFrom || !dateTo) {
-      return res.status(400).json({
-        error: "classTypeId, startTime, endTime, weekdays, dateFrom, dateTo は必須です",
-      });
+      return res.status(400).json({ error: ERR.EVENT_BULK_PARAMS_REQUIRED });
     }
 
     const excludeSet = new Set(excludeDates ?? []);
@@ -571,7 +766,8 @@ app.delete(
       if ((reservations as any[]).length > 0) {
         await conn.rollback();
         return res.status(400).json({
-          error: `このイベントには有効な予約が ${(reservations as any[]).length} 件あります。先に予約をキャンセルしてください`,
+          error: ERR.EVENT_DELETE_HAS_RESERVATIONS,
+          count: (reservations as any[]).length,
         });
       }
 
@@ -593,7 +789,7 @@ app.delete(
       );
       if ((result as any).affectedRows === 0) {
         await conn.rollback();
-        return res.status(404).json({ error: "イベントが見つかりません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
 
       await conn.commit();
@@ -613,7 +809,7 @@ app.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const { ids } = req.body as { ids?: number[] };
     if (!ids || ids.length === 0) {
-      return res.status(400).json({ error: "ids は必須です" });
+      return res.status(400).json({ error: ERR.EVENT_IDS_REQUIRED });
     }
 
     const conn = await pool.getConnection();
@@ -631,9 +827,9 @@ app.post(
       const activeEvents = activeRes as any[];
       if (activeEvents.length > 0) {
         await conn.rollback();
-        const blocked = activeEvents.map((r: any) => `#${r.event_id}(${r.cnt}件)`).join(", ");
         return res.status(400).json({
-          error: `有効な予約があるイベントがあります: ${blocked}。先に予約をキャンセルしてください`,
+          error: ERR.EVENT_BULK_DELETE_HAS_RESERVATIONS,
+          details: activeEvents.map((r: any) => ({ eventId: r.event_id, count: r.cnt })),
         });
       }
 
@@ -675,10 +871,10 @@ app.post(
       status?: "scheduled" | "canceled_by_admin" | "holiday";
     };
     if (!ids || ids.length === 0 || !status) {
-      return res.status(400).json({ error: "ids と status は必須です" });
+      return res.status(400).json({ error: ERR.EVENT_BULK_STATUS_PARAMS_REQUIRED });
     }
     if (!["scheduled", "canceled_by_admin", "holiday"].includes(status)) {
-      return res.status(400).json({ error: "status が不正です" });
+      return res.status(400).json({ error: ERR.EVENT_STATUS_INVALID });
     }
     try {
       const placeholders = ids.map(() => "?").join(",");
@@ -699,7 +895,7 @@ app.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const { ids, capacity } = req.body as { ids?: number[]; capacity?: number };
     if (!ids || ids.length === 0 || capacity == null || capacity < 0) {
-      return res.status(400).json({ error: "ids と capacity は必須です" });
+      return res.status(400).json({ error: ERR.EVENT_BULK_CAPACITY_PARAMS_REQUIRED });
     }
     try {
       const placeholders = ids.map(() => "?").join(",");
@@ -724,7 +920,7 @@ app.post(
       endTime?: string;   // "17:00"
     };
     if (!ids || ids.length === 0 || !startTime || !endTime) {
-      return res.status(400).json({ error: "ids, startTime, endTime は必須です" });
+      return res.status(400).json({ error: ERR.EVENT_BULK_TIME_PARAMS_REQUIRED });
     }
     try {
       let updated = 0;
@@ -761,9 +957,7 @@ app.patch(
       status?: "scheduled" | "canceled_by_admin" | "holiday";
     };
     if (!status || !["scheduled", "canceled_by_admin", "holiday"].includes(status)) {
-      return res
-        .status(400)
-        .json({ error: "status は scheduled / canceled_by_admin / holiday のいずれかです" });
+      return res.status(400).json({ error: ERR.EVENT_STATUS_INVALID });
     }
     try {
       const [result] = await pool.query(
@@ -771,7 +965,7 @@ app.patch(
         [status, eventId],
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "イベントが見つかりません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
       res.json({ id: eventId, status });
     } catch (err) {
@@ -787,7 +981,7 @@ app.patch(
     const eventId = Number(req.params.id);
     const { startsAt, endsAt } = req.body as { startsAt?: string; endsAt?: string };
     if (!startsAt || !endsAt) {
-      return res.status(400).json({ error: "startsAt と endsAt は必須です" });
+      return res.status(400).json({ error: ERR.EVENT_TIME_PARAMS_REQUIRED });
     }
     try {
       const [result] = await pool.query(
@@ -795,7 +989,7 @@ app.patch(
         [startsAt, endsAt, eventId],
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "イベントが見つかりません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
       res.json({ id: eventId, startsAt, endsAt });
     } catch (err) {
@@ -811,7 +1005,7 @@ app.patch(
     const eventId = Number(req.params.id);
     const { capacity } = req.body as { capacity?: number };
     if (capacity == null || capacity < 0) {
-      return res.status(400).json({ error: "capacity は 0 以上の数値です" });
+      return res.status(400).json({ error: ERR.EVENT_CAPACITY_INVALID });
     }
     try {
       const [result] = await pool.query(
@@ -819,7 +1013,7 @@ app.patch(
         [capacity, eventId],
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "イベントが見つかりません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
       res.json({ id: eventId, capacity });
     } catch (err) {
@@ -887,7 +1081,7 @@ app.post(
       createdBy?: string;
     };
     if (!userId) {
-      return res.status(400).json({ error: "userId は必須です" });
+      return res.status(400).json({ error: ERR.CREDIT_USER_ID_REQUIRED });
     }
     try {
       const [result] = await pool.query(
@@ -934,7 +1128,7 @@ app.patch(
       params.push(note);
     }
     if (sets.length === 0) {
-      return res.status(400).json({ error: "更新する項目がありません" });
+      return res.status(400).json({ error: ERR.CREDIT_UPDATE_EMPTY });
     }
     sets.push("updated_at = NOW()");
     params.push(creditId);
@@ -944,7 +1138,7 @@ app.patch(
         params,
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "振替権利が見つかりません" });
+        return res.status(404).json({ error: ERR.CREDIT_NOT_FOUND });
       }
       res.json({ id: creditId, updated: true });
     } catch (err) {
@@ -964,7 +1158,7 @@ app.delete(
         [creditId],
       );
       if ((result as any).affectedRows === 0) {
-        return res.status(404).json({ error: "振替権利が見つかりません" });
+        return res.status(404).json({ error: ERR.CREDIT_NOT_FOUND });
       }
       res.json({ id: creditId, status: "revoked" });
     } catch (err) {
@@ -987,9 +1181,7 @@ app.post(
       };
 
     if (!userId || !eventId || !reservationType) {
-      return res.status(400).json({
-        error: "userId, eventId, reservationType は必須です",
-      });
+      return res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
     }
 
     const conn = await pool.getConnection();
@@ -1012,13 +1204,13 @@ app.post(
       const event = (eventRows as any[])[0];
       if (!event) {
         await conn.rollback();
-        return res.status(404).json({ error: "イベントが存在しません" });
+        return res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       }
 
       // 特例承認でなければ定員チェック
       if (!overrideCapacity && event.reserved_count >= event.capacity) {
         await conn.rollback();
-        return res.status(400).json({ error: "定員に達しています（特例承認で+1可能）" });
+        return res.status(400).json({ error: ERR.EVENT_CAPACITY_FULL_OVERRIDE });
       }
 
       // 重複チェック
@@ -1028,7 +1220,7 @@ app.post(
       );
       if ((existing as any[]).length > 0) {
         await conn.rollback();
-        return res.status(400).json({ error: "すでにこの枠を予約済みです" });
+        return res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
       }
 
       let makeupIdToUse: number | null = null;
@@ -1040,7 +1232,7 @@ app.post(
         const credit = (credits as any[])[0];
         if (!credit || credit.status !== "granted") {
           await conn.rollback();
-          return res.status(400).json({ error: "利用可能な振替権利が見つかりません" });
+          return res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
         }
         makeupIdToUse = credit.id;
       }
@@ -1093,11 +1285,11 @@ app.patch(
       const reservation = (rows as any[])[0];
       if (!reservation) {
         await conn.rollback();
-        return res.status(404).json({ error: "予約が見つかりません" });
+        return res.status(404).json({ error: ERR.RESERVATION_NOT_FOUND });
       }
       if (reservation.status !== "booked") {
         await conn.rollback();
-        return res.status(400).json({ error: "booked 以外はキャンセルできません" });
+        return res.status(400).json({ error: ERR.RESERVATION_CANCEL_NOT_BOOKED });
       }
 
       await conn.query(
@@ -1171,10 +1363,19 @@ app.get(
   },
 );
 
+// 未マッチ時は JSON 404（HTML が返る場合は別プロセスが 4000 で動いている可能性）
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: "Not Found", path: _req.method + " " + _req.path });
+});
+
 // エラーハンドラ
 app.use(
   (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    logger.error("Unhandled error", { err });
+    const e = err as { message?: string; sqlMessage?: string; code?: string; stack?: string };
+    const msg = e?.sqlMessage ?? (err instanceof Error ? err.message : String(err));
+    const code = e?.code ? ` [${e.code}]` : "";
+    const stack = err instanceof Error ? (err as Error).stack : undefined;
+    logger.error(stack ? `Unhandled error${code}: ${msg}\n${stack}` : `Unhandled error${code}: ${msg}`);
     res.status(500).json({ error: "Internal Server Error" });
   },
 );

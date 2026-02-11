@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import s from "./calendar.module.scss";
+import { getApiErrorMessage } from "./lib/apiErrors";
 
 type EventRow = {
   id: number;
@@ -26,8 +27,11 @@ type MakeupCredit = {
   note: string | null;
 };
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE = (() => {
+  const u = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (u && (u.startsWith("http://") || u.startsWith("https://"))) return u.replace(/\/$/, "");
+  return "http://localhost:4000";
+})();
 const DEMO_USER_ID = 1;
 
 export default function Home() {
@@ -120,7 +124,7 @@ export default function Home() {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? "予約に失敗しました");
+        throw new Error(getApiErrorMessage(data?.error));
       }
       const fromStr = toDateStr(gridStart);
       const toStr = toDateStr(gridEnd);
@@ -145,7 +149,7 @@ export default function Home() {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? "欠席登録に失敗しました");
+        throw new Error(getApiErrorMessage(data?.error));
       }
       const creditsRes = await fetch(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(DEMO_USER_ID)}`);
       setCredits(await creditsRes.json());

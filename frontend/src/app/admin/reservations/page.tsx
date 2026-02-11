@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { RESERVATION_TABS } from "../../routes";
 import s from "../admin.module.scss";
+import { getApiErrorMessage } from "../lib/apiErrors";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+const FLASH_VISIBLE_MS = 3000;
+const FLASH_ERR_VISIBLE_MS = 5000;
+const FLASH_EXIT_ANIMATION_MS = 300;
+
+const API_BASE = (() => {
+  const u = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (u && (u.startsWith("http://") || u.startsWith("https://"))) return u.replace(/\/$/, "");
+  return "http://localhost:4000";
+})();
 
 type ClassType = { id: number; code: string; name: string; description?: string | null };
-type User = { id: number; name: string; email: string; grade: number | null; course_type: string | null; status: string };
+type User = { id: number; name: string; email?: string | null; course_type?: string | null; stage?: string; status?: string };
 type AdminEvent = {
   id: number;
   class_type_id: number;
@@ -99,6 +107,46 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [msgExiting, setMsgExiting] = useState(false);
+  const [errExiting, setErrExiting] = useState(false);
+  const flashTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearFlashTimeouts = useCallback(() => {
+    flashTimeoutsRef.current.forEach((t) => clearTimeout(t));
+    flashTimeoutsRef.current = [];
+  }, []);
+
+  const flash = useCallback((m: string) => {
+    clearFlashTimeouts();
+    setErr(null);
+    setErrExiting(false);
+    setMsg(m);
+    setMsgExiting(false);
+    flashTimeoutsRef.current.push(
+      setTimeout(() => setMsgExiting(true), FLASH_VISIBLE_MS),
+      setTimeout(() => {
+        setMsg(null);
+        setMsgExiting(false);
+      }, FLASH_VISIBLE_MS + FLASH_EXIT_ANIMATION_MS),
+    );
+  }, [clearFlashTimeouts]);
+
+  const flashErr = useCallback((m: string) => {
+    clearFlashTimeouts();
+    setMsg(null);
+    setMsgExiting(false);
+    setErr(m);
+    setErrExiting(false);
+    flashTimeoutsRef.current.push(
+      setTimeout(() => setErrExiting(true), FLASH_ERR_VISIBLE_MS),
+      setTimeout(() => {
+        setErr(null);
+        setErrExiting(false);
+      }, FLASH_ERR_VISIBLE_MS + FLASH_EXIT_ANIMATION_MS),
+    );
+  }, [clearFlashTimeouts]);
+
+  useEffect(() => () => clearFlashTimeouts(), [clearFlashTimeouts]);
 
   // URL と同期（サイドバーのリンクで遷移するため）
   useEffect(() => {
@@ -121,14 +169,19 @@ export default function AdminPage() {
       .catch(() => setUsers([]));
   }, [loadClassTypes]);
 
-  const flash = (m: string) => { setMsg(m); setErr(null); setTimeout(() => setMsg(null), 3000); };
-  const flashErr = (m: string) => { setErr(m); setMsg(null); setTimeout(() => setErr(null), 5000); };
-
   return (
     <>
       <h1 className={s.pageTitle}>{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
-      {msg && <div className={`${s.flash} ${s.flashSuccess}`}>{msg}</div>}
-      {err && <div className={`${s.flash} ${s.flashError}`}>{err}</div>}
+      {msg && (
+        <div className={`${s.flashWrap} ${msgExiting ? s.flashWrapExiting : ""}`}>
+          <div className={`${s.flash} ${s.flashSuccess}`}>{msg}</div>
+        </div>
+      )}
+      {err && (
+        <div className={`${s.flashWrap} ${errExiting ? s.flashWrapExiting : ""}`}>
+          <div className={`${s.flash} ${s.flashError}`}>{err}</div>
+        </div>
+      )}
 
       {tab === "classTypes" && <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />}
       {tab === "events" && <EventsTab classTypes={classTypes} flash={flash} flashErr={flashErr} />}
@@ -257,7 +310,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids }),
         });
-        if (!res.ok) { flashErr((await res.json()).error); return; }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          flashErr(getApiErrorMessage(data?.error, data));
+          return;
+        }
         const data = await res.json();
         flash(`${data.deleted} 件のイベントを削除しました`);
         setSelectedIds(new Set());
@@ -281,7 +338,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids, status }),
         });
-        if (!res.ok) { flashErr((await res.json()).error); return; }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          flashErr(getApiErrorMessage(data?.error));
+          return;
+        }
         const data = await res.json();
         flash(`${data.updated} 件を ${statusLabel} に変更しました`);
         setSelectedIds(new Set());
@@ -302,7 +363,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids, capacity: bulkCapacityValue }),
         });
-        if (!res.ok) { flashErr((await res.json()).error); return; }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          flashErr(getApiErrorMessage(data?.error));
+          return;
+        }
         const data = await res.json();
         flash(`${data.updated} 件の定員を ${data.capacity} に変更しました`);
         setSelectedIds(new Set());
@@ -327,7 +392,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids, startTime: bulkEditStartTime, endTime: bulkEditEndTime }),
         });
-        if (!res.ok) { flashErr((await res.json()).error); return; }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          flashErr(getApiErrorMessage(data?.error));
+          return;
+        }
         const data = await res.json();
         flash(`${data.updated} 件の時間を ${data.startTime}～${data.endTime} に変更しました`);
         setSelectedIds(new Set());
@@ -365,7 +434,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ classTypeId: newClassType, startsAt: newStartsAt, endsAt: newEndsAt, capacity: newCapacity }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash("イベントを作成しました"); setNewClassType(""); setNewStartsAt(""); setNewEndsAt(""); loadEvents();
   };
 
@@ -390,7 +463,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
         excludeDates,
       }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     const data = await res.json();
     flash(`${data.count} 件のイベントをまとめて作成しました`);
     loadEvents();
@@ -408,7 +485,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`イベント#${id} → ${status}`); loadEvents();
   };
 
@@ -418,7 +499,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ capacity }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`イベント#${id} 定員 → ${capacity}`); loadEvents();
   };
 
@@ -428,7 +513,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ startsAt, endsAt }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`イベント #${id} の時間を変更しました`); loadEvents();
   };
 
@@ -458,7 +547,11 @@ function EventsTab({ classTypes, flash, flashErr }: { classTypes: ClassType[]; f
       `イベント #${id} を削除します。この操作は取り消せません。`,
       async () => {
         const res = await fetch(`${API_BASE}/admin/events/${id}`, { method: "DELETE" });
-        if (!res.ok) { flashErr((await res.json()).error); return; }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          flashErr(getApiErrorMessage(data?.error, data));
+          return;
+        }
         flash(`イベント #${id} を削除しました`); loadEvents();
       },
       "削除する",
@@ -1075,14 +1168,22 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
         createdBy: "admin",
       }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash("振替権利を付与しました"); setGrantUserId(""); setGrantClassType(""); setGrantExpires(""); setGrantNote(""); loadCredits();
   };
 
   const handleRevoke = async (id: number) => {
     if (!confirm(`振替権利 #${id} を取消しますか？`)) return;
     const res = await fetch(`${API_BASE}/admin/makeup-credits/${id}`, { method: "DELETE" });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`振替権利 #${id} を取消しました`); loadCredits();
   };
 
@@ -1092,7 +1193,11 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "granted" }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`振替権利 #${id} を復活しました`); loadCredits();
   };
 
@@ -1102,7 +1207,11 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ expiresAt: newExpiry || null }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`振替権利 #${id} の期限を変更しました`); loadCredits();
   };
 
@@ -1256,14 +1365,22 @@ function ReservationsTab({ users, flash, flashErr }: { users: User[]; flash: (m:
         overrideCapacity: proxyOverride,
       }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash("代理予約を作成しました"); setProxyUserId(""); setProxyEventId(""); setProxyCreditId(""); setProxyOverride(false); loadReservations();
   };
 
   const handleCancel = async (id: number) => {
     if (!confirm(`予約 #${id} をキャンセルしますか？`)) return;
     const res = await fetch(`${API_BASE}/admin/reservations/${id}/cancel`, { method: "PATCH" });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`予約 #${id} をキャンセルしました`); loadReservations();
   };
 
@@ -1386,13 +1503,21 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
   const [deleteTarget, setDeleteTarget] = useState<ClassType | null>(null);
 
   const handleCreate = async () => {
-    if (!newCode || !newName) { flashErr("code と name は必須です"); return; }
+    if (!newName.trim()) { flashErr("名前は必須です"); return; }
     const res = await fetch(`${API_BASE}/admin/class-types`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: newCode, name: newName, description: newDesc || null }),
+      body: JSON.stringify({
+        code: newCode.trim() || undefined,
+        name: newName.trim(),
+        description: newDesc.trim() || null,
+      }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash("クラス種別を作成しました");
     setNewCode(""); setNewName(""); setNewDesc("");
     reload();
@@ -1409,13 +1534,21 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
 
   const handleUpdate = async () => {
     if (!editId) return;
-    if (!editCode || !editName) { flashErr("code と name は必須です"); return; }
+    if (!editName.trim()) { flashErr("名前は必須です"); return; }
     const res = await fetch(`${API_BASE}/admin/class-types/${editId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: editCode, name: editName, description: editDesc || null }),
+      body: JSON.stringify({
+        code: editCode.trim() || undefined,
+        name: editName.trim(),
+        description: editDesc.trim() || null,
+      }),
     });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`クラス種別 #${editId} を更新しました`);
     setEditId(null);
     reload();
@@ -1430,7 +1563,11 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
     const id = deleteTarget.id;
     setDeleteTarget(null);
     const res = await fetch(`${API_BASE}/admin/class-types/${id}`, { method: "DELETE" });
-    if (!res.ok) { flashErr((await res.json()).error); return; }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
     flash(`クラス種別 #${id} を削除しました`);
     reload();
   };
@@ -1456,8 +1593,8 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
         <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>クラス種別を追加</h3>
         <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
           <div>
-            <span style={label}>コード（英数字）</span>
-            <input type="text" style={input} value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="kakekko" />
+            <span style={label}>コード（任意・未入力なら名前から自動）</span>
+            <input type="text" style={input} value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="例: kakekko" />
           </div>
           <div>
             <span style={label}>名前</span>

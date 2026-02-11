@@ -1,3 +1,10 @@
+-- データベース作成とテーブル初期化（Docker MySQL で dynamo-extension を使う場合）
+-- PowerShell: Get-Content .\backend\src\db\setup-dynamo-extension.sql -Raw | docker exec -i makeup-mysql mysql -u root -prootpassword
+-- cmd / bash: docker exec -i makeup-mysql mysql -u root -prootpassword < backend/src/db/setup-dynamo-extension.sql
+
+CREATE DATABASE IF NOT EXISTS `dynamo-extension`;
+USE `dynamo-extension`;
+
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -6,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   address VARCHAR(500) NULL,
   phone VARCHAR(50) NULL,
   course_type VARCHAR(50) NULL,
-  stage ENUM('preschool', 'elementary', 'junior_high', 'high_school', 'other') DEFAULT 'other' COMMENT '未就学児/小学生/中学生/高校生/その他',
+  stage ENUM('preschool', 'elementary', 'junior_high', 'high_school', 'other') DEFAULT 'other',
   status ENUM('active', 'paused', 'withdrawn') DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -62,5 +69,3 @@ CREATE TABLE IF NOT EXISTS reservations (
   CONSTRAINT fk_reservation_event FOREIGN KEY (event_id) REFERENCES events(id),
   CONSTRAINT fk_reservation_makeup_credit FOREIGN KEY (makeup_credit_id) REFERENCES makeup_credits(id)
 );
-
-
