@@ -7,12 +7,16 @@ export default async function listEvents(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const { from, to, userId } = req.query;
+  const { from, to, userId, storeId } = req.query;
   if (!from || !to) {
     res.status(400).json({ error: ERR.EVENTS_FROM_TO_REQUIRED });
     return;
   }
   const userIdNum = userId ? Number(userId) : 0;
+  const storeIdNum = storeId ? Number(storeId) : 0;
+  const whereStore = storeIdNum > 0 ? " AND ct.store_id = ?" : "";
+  const params: (string | number)[] = [userIdNum, from, to];
+  if (storeIdNum > 0) params.push(storeIdNum);
   const [rows] = await pool.query(
     `
     SELECT
@@ -28,11 +32,11 @@ export default async function listEvents(
     FROM events e
     LEFT JOIN reservations r ON r.event_id = e.id
     LEFT JOIN class_types ct ON ct.id = e.class_type_id
-    WHERE e.starts_at BETWEEN ? AND ?
+    WHERE e.starts_at BETWEEN ? AND ?${whereStore}
     GROUP BY e.id
     ORDER BY e.starts_at ASC
   `,
-    [userIdNum, from, to],
+    params,
   );
   res.json(rows);
 }

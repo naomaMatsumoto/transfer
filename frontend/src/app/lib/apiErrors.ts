@@ -53,6 +53,26 @@ const API_ERROR_MESSAGES: Record<string, string> = {
   MEMBER_UPDATE_EMPTY: "更新する項目がありません",
   MEMBER_NOT_FOUND: "会員が見つかりません",
   MEMBER_DELETE_HAS_REFERENCES: "振替権利または予約が紐づいているため削除できません。先にそれらを解除してください。",
+
+  // スタッフ
+  STAFF_NAME_REQUIRED: "名前は必須です",
+  STAFF_NAME_EMPTY: "名前は空にできません",
+  STAFF_UPDATE_EMPTY: "更新する項目がありません",
+  STAFF_NOT_FOUND: "スタッフが見つかりません",
+
+  // 法人申し込み
+  CORPORATION_NAME_REQUIRED: "法人名を入力してください",
+  STORE_NAME_REQUIRED: "店舗名を入力してください",
+  ADMIN_EMAIL_REQUIRED: "管理者のメールアドレスを入力してください",
+  ADMIN_PASSWORD_REQUIRED: "パスワードは6文字以上で入力してください",
+  ADMIN_EMAIL_ALREADY_USED: "このメールアドレスは既に利用されています",
+
+  // 会員登録
+  MEMBER_STORE_REQUIRED: "店舗を選択してください",
+  MEMBER_EMAIL_REQUIRED: "メールアドレスを入力してください",
+  STORE_NOT_FOUND: "店舗が見つかりません",
+  VERIFICATION_TOKEN_INVALID: "認証リンクが無効です。再度会員登録をお願いします。",
+  VERIFICATION_TOKEN_EXPIRED: "認証リンクの有効期限が切れています。再度会員登録をお願いします。",
 };
 
 export type ApiErrorExtra = {

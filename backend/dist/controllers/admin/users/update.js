@@ -3,7 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = updateUser;
 const db_1 = require("../../../db");
 const constants_1 = require("../../../constants");
+const corporationStores_1 = require("../../../lib/corporationStores");
 async function updateUser(req, res, _next) {
+    const storeIds = await (0, corporationStores_1.getStoreIdsForRequest)(req);
+    if (storeIds.length === 0) {
+        res.status(403).json({ error: "FORBIDDEN" });
+        return;
+    }
     const id = Number(req.params.id);
     const { name, furigana, email, address, phone, course_type, stage } = req.body;
     const updates = [];
@@ -30,8 +36,7 @@ async function updateUser(req, res, _next) {
         params.push(phone == null || String(phone).trim() === "" ? null : String(phone).trim());
     }
     if (email !== undefined) {
-        const v = String(email).trim();
-        const emailVal = v === "" ? null : v;
+        const emailVal = email == null || String(email).trim() === "" ? null : String(email).trim();
         if (emailVal !== null && !(0, constants_1.isValidEmail)(emailVal)) {
             res.status(400).json({ error: constants_1.ERR.MEMBER_EMAIL_INVALID });
             return;
@@ -52,9 +57,10 @@ async function updateUser(req, res, _next) {
         res.status(400).json({ error: constants_1.ERR.MEMBER_UPDATE_EMPTY });
         return;
     }
-    params.push(id);
+    const placeholders = storeIds.map(() => "?").join(",");
+    params.push(id, ...storeIds);
     try {
-        const [result] = await db_1.pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, params);
+        const [result] = await db_1.pool.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ? AND store_id IN (${placeholders})`, params);
         if (result.affectedRows === 0) {
             res.status(404).json({ error: constants_1.ERR.MEMBER_NOT_FOUND });
             return;

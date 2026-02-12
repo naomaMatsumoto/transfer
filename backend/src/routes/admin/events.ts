@@ -11,6 +11,8 @@ import deleteOneEvent from "../../controllers/admin/events/deleteOne";
 import updateEventStatus from "../../controllers/admin/events/updateStatus";
 import updateEventTime from "../../controllers/admin/events/updateTime";
 import updateEventCapacity from "../../controllers/admin/events/updateCapacity";
+import getEventStaff from "../../controllers/admin/events/getStaff";
+import putEventStaff from "../../controllers/admin/events/putStaff";
 
 const router = Router();
 
@@ -25,5 +27,7 @@ router.delete("/:id", asyncHandler(deleteOneEvent));
 router.patch("/:id/status", asyncHandler(updateEventStatus));
 router.patch("/:id/time", asyncHandler(updateEventTime));
 router.patch("/:id/capacity", asyncHandler(updateEventCapacity));
+router.get("/:id/staff", asyncHandler(getEventStaff));
+router.put("/:id/staff", asyncHandler(putEventStaff));
 
 export default router;

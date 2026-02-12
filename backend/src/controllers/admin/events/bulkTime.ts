@@ -1,12 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 export default async function bulkTimeEvents(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
   const body = req.body as {
     ids?: number[];
     startTime?: string;
@@ -17,9 +23,13 @@ export default async function bulkTimeEvents(
     res.status(400).json({ error: ERR.EVENT_BULK_TIME_PARAMS_REQUIRED });
     return;
   }
+  const storePh = storeIds.map(() => "?").join(",");
   let updated = 0;
   for (const id of ids) {
-    const [rows] = await pool.query("SELECT starts_at, ends_at FROM events WHERE id = ?", [id]);
+    const [rows] = await pool.query(
+      `SELECT e.starts_at, e.ends_at FROM events e JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePh})`,
+      [id, ...storeIds]
+    );
     const row = (rows as { starts_at: string; ends_at: string }[])[0];
     if (!row) continue;
     const dateStr = (row.starts_at ?? "").toString().slice(0, 10);

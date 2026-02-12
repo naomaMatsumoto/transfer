@@ -1,12 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 export default async function createReservation(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
   const body = req.body as {
     userId?: number;
     eventId?: number;
@@ -20,17 +26,32 @@ export default async function createReservation(
     res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
     return;
   }
+  if (reservationType === "makeup" && !makeupCreditId) {
+    res.status(400).json({ error: ERR.MAKEUP_CREDIT_ID_REQUIRED });
+    return;
+  }
 
+  const storePh = storeIds.map(() => "?").join(",");
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
     const [eventRows] = await conn.query(
-      "SELECT e.id, e.capacity, e.status, COALESCE(SUM(CASE WHEN r.status IN ('booked','attended') THEN 1 ELSE 0 END), 0) AS reserved_count FROM events e LEFT JOIN reservations r ON r.event_id = e.id WHERE e.id = ? GROUP BY e.id FOR UPDATE",
-      [eventId]
+      `SELECT e.id, e.capacity, e.status, COALESCE(SUM(CASE WHEN r.status IN ('booked','attended') THEN 1 ELSE 0 END), 0) AS reserved_count FROM events e LEFT JOIN reservations r ON r.event_id = e.id JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePh}) GROUP BY e.id FOR UPDATE`,
+      [eventId, ...storeIds]
     );
     const event = (eventRows as { id: number; capacity: number; reserved_count: number }[])[0];
     if (!event) {
+      await conn.rollback();
+      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      return;
+    }
+
+    const [userRows] = await conn.query(
+      `SELECT id FROM users WHERE id = ? AND store_id IN (${storePh})`,
+      [userId, ...storeIds]
+    );
+    if ((userRows as unknown[]).length === 0) {
       await conn.rollback();
       res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
       return;
@@ -53,7 +74,7 @@ export default async function createReservation(
     }
 
     let makeupIdToUse: number | null = null;
-    if (reservationType === "makeup" && makeupCreditId) {
+    if (reservationType === "makeup") {
       const [credits] = await conn.query(
         "SELECT id, status FROM makeup_credits WHERE id = ? AND user_id = ? FOR UPDATE",
         [makeupCreditId, userId]

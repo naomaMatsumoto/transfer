@@ -16,6 +16,8 @@ const deleteOne_1 = __importDefault(require("../../controllers/admin/events/dele
 const updateStatus_1 = __importDefault(require("../../controllers/admin/events/updateStatus"));
 const updateTime_1 = __importDefault(require("../../controllers/admin/events/updateTime"));
 const updateCapacity_1 = __importDefault(require("../../controllers/admin/events/updateCapacity"));
+const getStaff_1 = __importDefault(require("../../controllers/admin/events/getStaff"));
+const putStaff_1 = __importDefault(require("../../controllers/admin/events/putStaff"));
 const router = (0, express_1.Router)();
 router.get("/", (0, asyncHandler_1.asyncHandler)(list_1.default));
 router.post("/", (0, asyncHandler_1.asyncHandler)(create_1.default));
@@ -28,4 +30,6 @@ router.delete("/:id", (0, asyncHandler_1.asyncHandler)(deleteOne_1.default));
 router.patch("/:id/status", (0, asyncHandler_1.asyncHandler)(updateStatus_1.default));
 router.patch("/:id/time", (0, asyncHandler_1.asyncHandler)(updateTime_1.default));
 router.patch("/:id/capacity", (0, asyncHandler_1.asyncHandler)(updateCapacity_1.default));
+router.get("/:id/staff", (0, asyncHandler_1.asyncHandler)(getStaff_1.default));
+router.put("/:id/staff", (0, asyncHandler_1.asyncHandler)(putStaff_1.default));
 exports.default = router;

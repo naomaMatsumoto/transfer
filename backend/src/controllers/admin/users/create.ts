@@ -1,12 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 export default async function createUser(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
+  const storeId = storeIds[0];
   const { name, furigana, email, address, phone, course_type, stage } = req.body as {
     name?: string;
     furigana?: string | null;
@@ -32,8 +39,8 @@ export default async function createUser(
   const stageVal = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
   try {
     const [result] = await pool.query(
-      "INSERT INTO users (name, furigana, email, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [trimmedName, furiganaVal, emailTrimmed, addressVal, phoneVal, course_type ?? null, stageVal],
+      "INSERT INTO users (store_id, name, furigana, email, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [storeId, trimmedName, furiganaVal, emailTrimmed, addressVal, phoneVal, course_type ?? null, stageVal],
     );
     res.status(201).json({
       id: (result as any).insertId,

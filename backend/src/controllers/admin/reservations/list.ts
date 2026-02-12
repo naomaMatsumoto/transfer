@@ -1,14 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 export default async function listReservations(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
+  const storePh = storeIds.map(() => "?").join(",");
+  const conditions: string[] = [
+    `(ct.store_id IN (${storePh}) AND u.store_id IN (${storePh}))`,
+  ];
+  const params: unknown[] = [...storeIds, ...storeIds];
   const { eventId, userId } = req.query;
-  const conditions: string[] = [];
-  const params: unknown[] = [];
   if (eventId) {
     conditions.push("r.event_id = ?");
     params.push(Number(eventId));
@@ -17,9 +26,9 @@ export default async function listReservations(
     conditions.push("r.user_id = ?");
     params.push(Number(userId));
   }
-  const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+  const where = "WHERE " + conditions.join(" AND ");
   const sql =
-    "SELECT r.id, r.user_id, u.name AS user_name, r.event_id, e.starts_at, ct.name AS class_type_name, r.reservation_type, r.makeup_credit_id, r.status, r.created_at, r.canceled_at FROM reservations r LEFT JOIN users u ON u.id = r.user_id LEFT JOIN events e ON e.id = r.event_id LEFT JOIN class_types ct ON ct.id = e.class_type_id " +
+    `SELECT r.id, r.user_id, u.name AS user_name, r.event_id, e.starts_at, ct.name AS class_type_name, r.reservation_type, r.makeup_credit_id, r.status, r.created_at, r.canceled_at FROM reservations r LEFT JOIN users u ON u.id = r.user_id LEFT JOIN events e ON e.id = r.event_id LEFT JOIN class_types ct ON ct.id = e.class_type_id ` +
     where +
     " ORDER BY r.created_at DESC";
   const [rows] = await pool.query(sql, params);

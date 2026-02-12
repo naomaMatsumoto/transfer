@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 function generateClassTypeCode(name: string): string {
   const slug = name
@@ -17,6 +18,12 @@ export default async function createClassType(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
+  const storeId = storeIds[0];
   const body = req.body as { code?: string; name?: string; description?: string };
   const { code, name, description } = body;
   if (!name || !String(name).trim()) {
@@ -28,8 +35,8 @@ export default async function createClassType(
     code && String(code).trim() ? String(code).trim() : generateClassTypeCode(trimmedName);
   try {
     const [result] = await pool.query(
-      "INSERT INTO class_types (code, name, description) VALUES (?, ?, ?)",
-      [codeToUse, trimmedName, description ?? null]
+      "INSERT INTO class_types (store_id, code, name, description) VALUES (?, ?, ?, ?)",
+      [storeId, codeToUse, trimmedName, description ?? null]
     );
     const insertId = (result as { insertId: number }).insertId;
     res.status(201).json({ id: insertId, code: codeToUse, name: trimmedName });

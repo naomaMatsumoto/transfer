@@ -1,0 +1,15 @@
+-- スタッフ管理: staff テーブルと event_staff 中間テーブル
+CREATE TABLE IF NOT EXISTS staff (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_staff (
+  event_id BIGINT UNSIGNED NOT NULL,
+  staff_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (event_id, staff_id),
+  CONSTRAINT fk_event_staff_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+  CONSTRAINT fk_event_staff_staff FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
+);

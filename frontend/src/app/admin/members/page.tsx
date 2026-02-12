@@ -2,12 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
-
-const API_BASE = (() => {
-  const u = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  if (u && (u.startsWith("http://") || u.startsWith("https://"))) return u.replace(/\/$/, "");
-  return "http://localhost:4000";
-})();
+import { getApiBase, apiFetch } from "@/app/lib/api";
 const FLASH_VISIBLE_MS = 3000;
 const FLASH_ERR_VISIBLE_MS = 5000;
 const FLASH_EXIT_ANIMATION_MS = 300;
@@ -350,7 +345,7 @@ export default function AdminMembersPage() {
 
   const loadMembers = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/users`);
+      const res = await apiFetch(`${getApiBase()}/admin/users`);
       if (!res.ok) throw new Error("failed");
       const contentType = res.headers.get("content-type");
       if (!contentType?.includes("application/json")) {
@@ -445,7 +440,7 @@ export default function AdminMembersPage() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/admin/users`, {
+      const res = await apiFetch(`${getApiBase()}/admin/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -524,7 +519,7 @@ export default function AdminMembersPage() {
       return;
     }
     const emailVal = editEmail.trim() || null;
-    const res = await fetch(`${API_BASE}/admin/users/${editId}`, {
+    const res = await apiFetch(`${getApiBase()}/admin/users/${editId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -557,7 +552,7 @@ export default function AdminMembersPage() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setDeleteTarget(null);
-    const res = await fetch(`${API_BASE}/admin/users/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${getApiBase()}/admin/users/${id}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) {
       flashErr(getApiErrorMessage(data.error));

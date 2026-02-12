@@ -1,20 +1,27 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 export default async function cancelReservation(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
   const reservationId = Number(req.params.id);
+  const storePh = storeIds.map(() => "?").join(",");
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
     const [rows] = await conn.query(
-      "SELECT id, reservation_type, makeup_credit_id, status FROM reservations WHERE id = ? FOR UPDATE",
-      [reservationId]
+      `SELECT r.id, r.reservation_type, r.makeup_credit_id, r.status FROM reservations r JOIN events e ON e.id = r.event_id JOIN class_types ct ON ct.id = e.class_type_id JOIN users u ON u.id = r.user_id WHERE r.id = ? AND ct.store_id IN (${storePh}) AND u.store_id IN (${storePh}) FOR UPDATE`,
+      [reservationId, ...storeIds, ...storeIds]
     );
     const reservation = (rows as { reservation_type: string; makeup_credit_id: number | null; status: string }[])[0];
     if (!reservation) {

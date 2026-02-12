@@ -3,7 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = createUser;
 const db_1 = require("../../../db");
 const constants_1 = require("../../../constants");
+const corporationStores_1 = require("../../../lib/corporationStores");
 async function createUser(req, res, _next) {
+    const storeIds = await (0, corporationStores_1.getStoreIdsForRequest)(req);
+    if (storeIds.length === 0) {
+        res.status(403).json({ error: "FORBIDDEN" });
+        return;
+    }
+    const storeId = storeIds[0];
     const { name, furigana, email, address, phone, course_type, stage } = req.body;
     if (!name || !String(name).trim()) {
         res.status(400).json({ error: constants_1.ERR.MEMBER_NAME_REQUIRED });
@@ -16,11 +23,11 @@ async function createUser(req, res, _next) {
         res.status(400).json({ error: constants_1.ERR.MEMBER_EMAIL_INVALID });
         return;
     }
-    const addressVal = address != null && String(address).trim() !== "" ? String(address).trim() : null;
-    const phoneVal = phone != null && String(phone).trim() !== "" ? String(phone).trim() : null;
+    const addressVal = address == null || String(address).trim() === "" ? null : String(address).trim();
+    const phoneVal = phone == null || String(phone).trim() === "" ? null : String(phone).trim();
     const stageVal = stage && constants_1.STAGE_VALUES.includes(stage) ? stage : "other";
     try {
-        const [result] = await db_1.pool.query("INSERT INTO users (name, furigana, email, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?)", [trimmedName, furiganaVal, emailTrimmed, addressVal, phoneVal, course_type ?? null, stageVal]);
+        const [result] = await db_1.pool.query("INSERT INTO users (store_id, name, furigana, email, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [storeId, trimmedName, furiganaVal, emailTrimmed, addressVal, phoneVal, course_type ?? null, stageVal]);
         res.status(201).json({
             id: result.insertId,
             name: trimmedName,

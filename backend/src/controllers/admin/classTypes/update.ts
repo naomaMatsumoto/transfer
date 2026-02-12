@@ -1,12 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
+import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 
 export default async function updateClassType(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
+  const storeIds = await getStoreIdsForRequest(req);
+  if (storeIds.length === 0) {
+    res.status(403).json({ error: "FORBIDDEN" });
+    return;
+  }
   const id = Number(req.params.id);
   const { code, name, description } = req.body as {
     code?: string;
@@ -33,10 +39,10 @@ export default async function updateClassType(
     res.status(400).json({ error: ERR.CLASS_TYPE_UPDATE_EMPTY });
     return;
   }
-  params.push(id);
+  params.push(id, ...storeIds);
   try {
     const [result] = await pool.query(
-      `UPDATE class_types SET ${sets.join(", ")} WHERE id = ?`,
+      `UPDATE class_types SET ${sets.join(", ")} WHERE id = ? AND store_id IN (${storeIds.map(() => "?").join(",")})`,
       params,
     );
     if ((result as any).affectedRows === 0) {

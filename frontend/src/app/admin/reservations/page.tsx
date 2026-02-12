@@ -4,19 +4,15 @@ import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { RESERVATION_TABS } from "../../routes";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
+import { getApiBase, apiFetch } from "@/app/lib/api";
 
 const FLASH_VISIBLE_MS = 3000;
 const FLASH_ERR_VISIBLE_MS = 5000;
 const FLASH_EXIT_ANIMATION_MS = 300;
 
-const API_BASE = (() => {
-  const u = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  if (u && (u.startsWith("http://") || u.startsWith("https://"))) return u.replace(/\/$/, "");
-  return "http://localhost:4000";
-})();
-
 type ClassType = { id: number; code: string; name: string; description?: string | null };
 type User = { id: number; name: string; email?: string | null; phone?: string | null; course_type?: string | null; stage?: string; status?: string };
+type Staff = { id: number; name: string };
 type AdminEvent = {
   id: number;
   class_type_id: number;
@@ -26,6 +22,7 @@ type AdminEvent = {
   capacity: number;
   status: string;
   reserved_count: number;
+  staff?: { id: number; name: string }[];
 };
 type AdminCredit = {
   id: number;
@@ -54,9 +51,9 @@ type AdminReservation = {
   canceled_at: string | null;
 };
 
-type Tab = "classTypes" | "events" | "credits";
+type Tab = "classTypes" | "events" | "staff" | "credits";
 
-const TAB_KEYS: Tab[] = ["classTypes", "events", "credits"];
+const TAB_KEYS: Tab[] = ["classTypes", "events", "staff", "credits"];
 
 function parseTab(value: string | null): Tab {
   if (!value) return "classTypes";
@@ -73,6 +70,7 @@ function AdminPageContent() {
   const [tab, setTabState] = useState<Tab>(tabFromUrl);
   const [classTypes, setClassTypes] = useState<ClassType[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [msgExiting, setMsgExiting] = useState(false);
@@ -122,20 +120,28 @@ function AdminPageContent() {
   }, [tabFromUrl]);
 
   const loadClassTypes = useCallback(() => {
-    fetch(`${API_BASE}/admin/class-types`)
+    apiFetch(`${getApiBase()}/admin/class-types`)
       .then((r) => r.ok ? r.json() : [])
       .then((d) => setClassTypes(Array.isArray(d) ? d : []))
       .catch(() => setClassTypes([]));
   }, []);
 
+  const loadStaff = useCallback(() => {
+    apiFetch(`${getApiBase()}/admin/staff`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setStaff(Array.isArray(d) ? d : []))
+      .catch(() => setStaff([]));
+  }, []);
+
   // load master data (APIがエラーでも配列として安全に扱う)
   useEffect(() => {
     loadClassTypes();
-    fetch(`${API_BASE}/admin/users`)
+    loadStaff();
+    apiFetch(`${getApiBase()}/admin/users`)
       .then((r) => r.ok ? r.json() : [])
       .then((d) => setUsers(Array.isArray(d) ? d : []))
       .catch(() => setUsers([]));
-  }, [loadClassTypes]);
+  }, [loadClassTypes, loadStaff]);
 
   return (
     <>
@@ -148,7 +154,8 @@ function AdminPageContent() {
       )}
 
       {tab === "classTypes" && <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />}
-      {tab === "events" && <EventsTab classTypes={classTypes} users={users} flash={flash} flashErr={flashErr} />}
+      {tab === "events" && <EventsTab classTypes={classTypes} users={users} staff={staff} flash={flash} flashErr={flashErr} />}
+      {tab === "staff" && <StaffTab staffList={staff} reload={loadStaff} flash={flash} flashErr={flashErr} />}
       {tab === "credits" && <CreditsTab classTypes={classTypes} users={users} flash={flash} flashErr={flashErr} />}
     </>
   );
@@ -165,7 +172,7 @@ export default function AdminPage() {
 // ================================================================
 // イベント・休講・予約
 // ================================================================
-function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassType[]; users: User[]; flash: (m: string) => void; flashErr: (m: string) => void }) {
+function EventsTab({ classTypes, users, staff, flash, flashErr }: { classTypes: ClassType[]; users: User[]; staff: Staff[]; flash: (m: string) => void; flashErr: (m: string) => void }) {
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [from, setFrom] = useState(() => new Date().toISOString().slice(0, 10));
   const [to, setTo] = useState(() => {
@@ -178,12 +185,14 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   const [newStartsAt, setNewStartsAt] = useState("");
   const [newEndsAt, setNewEndsAt] = useState("");
   const [newCapacity, setNewCapacity] = useState(6);
+  const [newEventStaffIds, setNewEventStaffIds] = useState<number[]>([]);
   // 1件作成と同時に予約する（定員数だけ登録可能）
   const [newEventAlsoReserve, setNewEventAlsoReserve] = useState(false);
   type ReserveRow = { userId: number | ""; type: "normal" | "makeup"; creditId: number | "" };
   const [newEventReserveList, setNewEventReserveList] = useState<ReserveRow[]>([{ userId: "", type: "normal", creditId: "" }]);
   const [openReserveUserDropdown, setOpenReserveUserDropdown] = useState<number | null>(null);
   const [reserveUserFilter, setReserveUserFilter] = useState("");
+  const [createEventModalOpen, setCreateEventModalOpen] = useState(false);
 
   // 選択（まとめ操作用）
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -235,6 +244,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   const [editEvEnd, setEditEvEnd] = useState("");
   const [editEvCapacity, setEditEvCapacity] = useState(6);
   const [editEvStatus, setEditEvStatus] = useState("scheduled");
+  const [editEvStaffIds, setEditEvStaffIds] = useState<number[]>([]);
   const [editEvReservations, setEditEvReservations] = useState<AdminReservation[]>([]);
   const [editEvToCancel, setEditEvToCancel] = useState<Set<number>>(new Set());
   const [editEvToAdd, setEditEvToAdd] = useState<ReserveRow[]>([]);
@@ -245,7 +255,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
 
   const loadEditEventReservations = useCallback(async (eventId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/reservations?eventId=${eventId}`);
+      const res = await apiFetch(`${getApiBase()}/admin/reservations?eventId=${eventId}`);
       const data = res.ok ? await res.json() : [];
       const list = Array.isArray(data) ? data : [];
       setEditEvReservations(list.filter((r: AdminReservation) => r.status !== "canceled" && !r.canceled_at));
@@ -258,6 +268,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
     setEditEvEnd(ev.ends_at?.slice(0, 16)?.replace(" ", "T") ?? "");
     setEditEvCapacity(ev.capacity);
     setEditEvStatus(ev.status);
+    setEditEvStaffIds(Array.isArray(ev.staff) ? ev.staff.map((s) => s.id) : []);
     setEditEvReservations([]);
     setEditEvToCancel(new Set());
     setEditEvToAdd([]);
@@ -294,9 +305,14 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
         return;
       }
     }
+    const makeupWithoutCredit = toAdd.find((r) => r.type === "makeup" && (r.creditId === "" || !r.creditId));
+    if (makeupWithoutCredit) {
+      flashErr("振替で予約する場合は、振替権利を選択してください");
+      return;
+    }
     try {
       for (const id of editEvToCancel) {
-        const res = await fetch(`${API_BASE}/admin/reservations/${id}/cancel`, { method: "PATCH" });
+        const res = await apiFetch(`${getApiBase()}/admin/reservations/${id}/cancel`, { method: "PATCH" });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           flashErr(getApiErrorMessage(data?.error));
@@ -305,7 +321,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       }
       for (const row of toAdd) {
         if (!row.userId) continue;
-        const res = await fetch(`${API_BASE}/admin/reservations`, {
+        const res = await apiFetch(`${getApiBase()}/admin/reservations`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -323,23 +339,28 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
         }
       }
       // 時間・定員・ステータス
-      await fetch(`${API_BASE}/admin/events/${editEvent.id}/time`, {
+      await apiFetch(`${getApiBase()}/admin/events/${editEvent.id}/time`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ startsAt: editEvStart.replace("T", " "), endsAt: editEvEnd.replace("T", " ") }),
       });
-      await fetch(`${API_BASE}/admin/events/${editEvent.id}/capacity`, {
+      await apiFetch(`${getApiBase()}/admin/events/${editEvent.id}/capacity`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ capacity: editEvCapacity }),
       });
       if (editEvStatus !== editEvent.status) {
-        await fetch(`${API_BASE}/admin/events/${editEvent.id}/status`, {
+        await apiFetch(`${getApiBase()}/admin/events/${editEvent.id}/status`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: editEvStatus }),
         });
       }
+      await apiFetch(`${getApiBase()}/admin/events/${editEvent.id}/staff`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffIds: editEvStaffIds }),
+      });
       let futureUpdated = 0;
       const userIdsToCancel = editEvReservations
         .filter((r) => editEvToCancel.has(r.id))
@@ -352,7 +373,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
         const toDate = new Date(origDate);
         toDate.setFullYear(toDate.getFullYear() + 1);
         const toStr = toDate.toISOString().slice(0, 10);
-        const res = await fetch(`${API_BASE}/admin/events?from=${fromStr}&to=${toStr}`);
+        const res = await apiFetch(`${getApiBase()}/admin/events?from=${fromStr}&to=${toStr}`);
         if (res.ok) {
           const list = (await res.json()) as AdminEvent[];
           const newStartTime = editEvStart.replace("T", " ").slice(11, 16);
@@ -367,34 +388,39 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
             const dateStr = ev.starts_at?.slice(0, 10) ?? "";
             const startsAt = `${dateStr} ${newStartTime}`;
             const endsAt = `${dateStr} ${newEndTime}`;
-            await fetch(`${API_BASE}/admin/events/${ev.id}/time`, {
+            await apiFetch(`${getApiBase()}/admin/events/${ev.id}/time`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ startsAt, endsAt }),
             });
-            await fetch(`${API_BASE}/admin/events/${ev.id}/capacity`, {
+            await apiFetch(`${getApiBase()}/admin/events/${ev.id}/capacity`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ capacity: editEvCapacity }),
             });
-            await fetch(`${API_BASE}/admin/events/${ev.id}/status`, {
+            await apiFetch(`${getApiBase()}/admin/events/${ev.id}/status`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ status: editEvStatus }),
             });
+            await apiFetch(`${getApiBase()}/admin/events/${ev.id}/staff`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ staffIds: editEvStaffIds }),
+            });
             // 予約（ユーザー）も反映: 今回キャンセルしたユーザーを今後のイベントからもキャンセル
             try {
               for (const uid of userIdsToCancel) {
-                const listRes = await fetch(`${API_BASE}/admin/reservations?eventId=${ev.id}`);
+                const listRes = await apiFetch(`${getApiBase()}/admin/reservations?eventId=${ev.id}`);
                 if (!listRes.ok) continue;
                 const reservations = (await listRes.json()) as AdminReservation[];
                 const r = reservations.find((x) => x.user_id === uid && x.status !== "canceled" && !x.canceled_at);
-                if (r) await fetch(`${API_BASE}/admin/reservations/${r.id}/cancel`, { method: "PATCH" });
+                if (r) await apiFetch(`${getApiBase()}/admin/reservations/${r.id}/cancel`, { method: "PATCH" });
               }
               // 今回追加した予約を今後のイベントにも追加
               for (const row of toAdd) {
                 if (!row.userId) continue;
-                const addRes = await fetch(`${API_BASE}/admin/reservations`, {
+                const addRes = await apiFetch(`${getApiBase()}/admin/reservations`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -426,8 +452,117 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
 
   const deleteFromEditModal = () => {
     if (!editEvent) return;
-    setEditEvent(null);
-    handleDeleteEvent(editEvent.id);
+    const idToDelete = editEvent.id;
+    const applyToFuture = editApplyToFuture === "future";
+    const confirmMessage = applyToFuture
+      ? `イベント #${idToDelete} と、同じ曜日・時間の今後のイベントを削除します。この操作は取り消せません。`
+      : `イベント #${idToDelete} を削除します。この操作は取り消せません。`;
+    openModal(
+      "イベント削除",
+      confirmMessage,
+      async () => {
+        const doDeleteIds = async (ids: number[], useForce: boolean) => {
+          const res = await apiFetch(`${getApiBase()}/admin/events/bulk-delete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids, force: useForce }),
+          });
+          return res;
+        };
+        const runDelete = async (ids: number[]): Promise<boolean> => {
+          const res = await doDeleteIds(ids, false);
+          if (res.ok) return true;
+          const data = await res.json().catch(() => ({}));
+          if (data?.error === "EVENT_BULK_DELETE_HAS_RESERVATIONS" || data?.error === "EVENT_IDS_REQUIRED") {
+            const resForce = await doDeleteIds(ids, true);
+            if (!resForce.ok) {
+              const errData = await resForce.json().catch(() => ({}));
+              flashErr(getApiErrorMessage(errData?.error, errData));
+              return false;
+            }
+            return true;
+          }
+          flashErr(getApiErrorMessage(data?.error, data));
+          return false;
+        };
+        if (applyToFuture) {
+          const origDate = new Date(editEvent.starts_at);
+          const origWeekday = origDate.getDay();
+          const origStartTime = (editEvent.starts_at ?? "").slice(11, 16);
+          const fromStr = editEvent.starts_at?.slice(0, 10) ?? "";
+          const toDate = new Date(origDate);
+          toDate.setFullYear(toDate.getFullYear() + 1);
+          const toStr = toDate.toISOString().slice(0, 10);
+          const listRes = await apiFetch(`${getApiBase()}/admin/events?from=${fromStr}&to=${toStr}`);
+          if (!listRes.ok) {
+            flashErr("今後のイベントの取得に失敗しました");
+            return;
+          }
+          const list = (await listRes.json()) as AdminEvent[];
+          const editEventStartMs = new Date(editEvent.starts_at).getTime();
+          const idsToDelete = list
+            .filter((ev) => {
+              const evStart = new Date(ev.starts_at);
+              return evStart.getTime() >= editEventStartMs && evStart.getDay() === origWeekday && (ev.starts_at ?? "").slice(11, 16) === origStartTime;
+            })
+            .map((ev) => ev.id);
+          if (idsToDelete.length === 0) {
+            flashErr("削除対象のイベントが見つかりませんでした");
+            return;
+          }
+          const ok = await runDelete(idsToDelete);
+          if (ok) {
+            flash(idsToDelete.length > 1
+              ? `イベント #${idToDelete} と、同じ曜日・時間の今後の ${idsToDelete.length - 1} 件を削除しました`
+              : `イベント #${idToDelete} を削除しました`);
+            setEditEvent(null);
+            loadEvents();
+          }
+          return;
+        }
+        const res = await apiFetch(`${getApiBase()}/admin/events/${idToDelete}`, { method: "DELETE" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data?.error === "EVENT_DELETE_HAS_RESERVATIONS") {
+            const count = data?.count ?? 0;
+            setModal({
+              title: "強制削除の確認",
+              message: `このイベントには有効な予約が ${count} 件あります。削除すると予約も取り消されます。それでも強制削除しますか？`,
+              confirmLabel: "強制削除する",
+              confirmColor: "#991b1b",
+              action: async () => {
+                const listRes = await apiFetch(`${getApiBase()}/admin/reservations?eventId=${idToDelete}`);
+                if (listRes.ok) {
+                  const list = (await listRes.json()) as AdminReservation[];
+                  for (const r of list) {
+                    if (r.status !== "canceled" && !r.canceled_at) {
+                      await apiFetch(`${getApiBase()}/admin/reservations/${r.id}/cancel`, { method: "PATCH" });
+                    }
+                  }
+                }
+                const delRes = await apiFetch(`${getApiBase()}/admin/events/${idToDelete}`, { method: "DELETE" });
+                if (!delRes.ok) {
+                  const errData = await delRes.json().catch(() => ({}));
+                  flashErr(getApiErrorMessage(errData?.error, errData));
+                  return;
+                }
+                flash(`イベント #${idToDelete} を強制削除しました（予約も取り消しました）`);
+                setEditEvent(null);
+                loadEvents();
+              },
+            });
+            return false;
+          }
+          flashErr(getApiErrorMessage(data?.error, data));
+          return;
+        }
+        flash(`イベント #${idToDelete} を削除しました`);
+        setEditEvent(null);
+        loadEvents();
+      },
+      "削除する",
+      "#991b1b",
+    );
   };
 
   // 確認モーダル状態（payload で ids を渡し、実行時に確実に送る）。action が false を返したらモーダルを閉じない（警告モーダルに差し替え用）
@@ -466,7 +601,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       async (p) => {
         const idsToDelete = p?.ids ?? [];
         if (idsToDelete.length === 0) { flashErr("削除対象がありません"); return; }
-        const res = await fetch(`${API_BASE}/admin/events/bulk-delete`, {
+        const res = await apiFetch(`${getApiBase()}/admin/events/bulk-delete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids: idsToDelete }),
@@ -483,7 +618,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
               action: async (payload2) => {
                 const idList = payload2?.ids ?? [];
                 if (idList.length === 0) return;
-                const res2 = await fetch(`${API_BASE}/admin/events/bulk-delete`, {
+                const res2 = await apiFetch(`${getApiBase()}/admin/events/bulk-delete`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ ids: idList, force: true }),
@@ -523,7 +658,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       "ステータス一括変更",
       `${ids.length} 件のイベントを「${statusLabel}」に変更します。`,
       async () => {
-        const res = await fetch(`${API_BASE}/admin/events/bulk-status`, {
+        const res = await apiFetch(`${getApiBase()}/admin/events/bulk-status`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids, status }),
@@ -548,7 +683,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       "定員一括変更",
       `${ids.length} 件のイベントの定員を ${bulkCapacityValue} 人に変更します。`,
       async () => {
-        const res = await fetch(`${API_BASE}/admin/events/bulk-capacity`, {
+        const res = await apiFetch(`${getApiBase()}/admin/events/bulk-capacity`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids, capacity: bulkCapacityValue }),
@@ -580,10 +715,14 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
     const ids = Array.from(selectedIds);
     if (ids.length === 0) { flashErr("イベントを選択してください"); return; }
     if (!bulkReserveUserId) { flashErr("ユーザーを選択してください"); return; }
+    if (bulkReserveType === "makeup" && !bulkReserveCreditId) {
+      flashErr("振替で追加する場合は振替権利IDを入力してください");
+      return;
+    }
     let created = 0;
     let skipped = 0;
     for (const eventId of ids) {
-      const res = await fetch(`${API_BASE}/admin/reservations`, {
+      const res = await apiFetch(`${getApiBase()}/admin/reservations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -610,12 +749,12 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
     if (!bulkCancelUserId) { flashErr("キャンセルするユーザーを選択してください"); return; }
     let canceled = 0;
     for (const eventId of ids) {
-      const listRes = await fetch(`${API_BASE}/admin/reservations?eventId=${eventId}`);
+      const listRes = await apiFetch(`${getApiBase()}/admin/reservations?eventId=${eventId}`);
       if (!listRes.ok) continue;
       const list = await listRes.json() as AdminReservation[];
       const r = list.find((x: AdminReservation) => x.user_id === bulkCancelUserId && x.status !== "canceled" && !x.canceled_at);
       if (!r) continue;
-      const cancelRes = await fetch(`${API_BASE}/admin/reservations/${r.id}/cancel`, { method: "PATCH" });
+      const cancelRes = await apiFetch(`${getApiBase()}/admin/reservations/${r.id}/cancel`, { method: "PATCH" });
       if (cancelRes.ok) canceled++;
     }
     if (canceled > 0) {
@@ -634,7 +773,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       "時間一括変更",
       `${ids.length} 件のイベントの時間を ${bulkEditStartTime} ～ ${bulkEditEndTime} に変更します。（日付はそのまま）`,
       async () => {
-        const res = await fetch(`${API_BASE}/admin/events/bulk-time`, {
+        const res = await apiFetch(`${getApiBase()}/admin/events/bulk-time`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids, startTime: bulkEditStartTime, endTime: bulkEditEndTime }),
@@ -657,6 +796,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   const [bulkStartTime, setBulkStartTime] = useState("16:00");
   const [bulkEndTime, setBulkEndTime] = useState("17:00");
   const [bulkCapacity, setBulkCapacity] = useState(6);
+  const [bulkCreateStaffIds, setBulkCreateStaffIds] = useState<number[]>([]);
   const [bulkWeekdays, setBulkWeekdays] = useState<number[]>([1, 2, 3, 4, 5, 6]); // 月〜土（日曜以外）
   const [bulkDateFrom, setBulkDateFrom] = useState(() => new Date().toISOString().slice(0, 10));
   const [bulkDateTo, setBulkDateTo] = useState(() => {
@@ -670,7 +810,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
 
   const loadEvents = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/events?from=${from}&to=${to}`);
+      const res = await apiFetch(`${getApiBase()}/admin/events?from=${from}&to=${to}`);
       const data = res.ok ? await res.json() : [];
       setEvents(Array.isArray(data) ? data : []);
     } catch { flashErr("イベント読み込み失敗"); }
@@ -685,10 +825,18 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
     if (toReserve.length > newCapacity) { flashErr(`予約数は定員（${newCapacity}人）以内にしてください`); return; }
     const reserveUserIds = toReserve.map((r) => r.userId);
     if (new Set(reserveUserIds).size !== reserveUserIds.length) { flashErr("同じユーザーは複数回登録できません"); return; }
-    const res = await fetch(`${API_BASE}/admin/events`, {
+    const makeupWithoutCredit = toReserve.find((r) => r.type === "makeup" && (r.creditId === "" || !r.creditId));
+    if (makeupWithoutCredit) { flashErr("振替で予約する場合は、振替権利を選択してください"); return; }
+    const res = await apiFetch(`${getApiBase()}/admin/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ classTypeId: newClassType, startsAt: newStartsAt, endsAt: newEndsAt, capacity: newCapacity }),
+      body: JSON.stringify({
+        classTypeId: newClassType,
+        startsAt: newStartsAt,
+        endsAt: newEndsAt,
+        capacity: newCapacity,
+        staffIds: newEventStaffIds.length > 0 ? newEventStaffIds : undefined,
+      }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -700,7 +848,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       let created = 0;
       for (const row of toReserve) {
         if (!row.userId) continue;
-        const rres = await fetch(`${API_BASE}/admin/reservations`, {
+        const rres = await apiFetch(`${getApiBase()}/admin/reservations`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -724,8 +872,10 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       flash("イベントを作成しました");
     }
     setNewClassType(""); setNewStartsAt(""); setNewEndsAt("");
+    setNewEventStaffIds([]);
     setNewEventAlsoReserve(false);
     setNewEventReserveList([{ userId: "", type: "normal", creditId: "" }]);
+    setCreateEventModalOpen(false);
     loadEvents();
   };
 
@@ -737,11 +887,13 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
     if (toReserve.length > bulkCapacity) { flashErr(`予約数は定員（${bulkCapacity}人）以内にしてください`); return; }
     const reserveUserIds = toReserve.map((r) => r.userId);
     if (new Set(reserveUserIds).size !== reserveUserIds.length) { flashErr("同じユーザーは複数回登録できません"); return; }
+    const makeupWithoutCredit = toReserve.find((r) => r.type === "makeup" && (r.creditId === "" || !r.creditId));
+    if (makeupWithoutCredit) { flashErr("振替で予約する場合は、振替権利を選択してください"); return; }
     const excludeDates = bulkExclude
       .split(/[,\s]+/)
       .map((s) => s.trim())
       .filter(Boolean);
-    const res = await fetch(`${API_BASE}/admin/events/bulk`, {
+    const res = await apiFetch(`${getApiBase()}/admin/events/bulk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -753,6 +905,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
         dateFrom: bulkDateFrom,
         dateTo: bulkDateTo,
         excludeDates,
+        staffIds: bulkCreateStaffIds.length > 0 ? bulkCreateStaffIds : undefined,
       }),
     });
     if (!res.ok) {
@@ -766,7 +919,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       for (const ev of data.events) {
         for (const row of toReserve) {
           if (!row.userId) continue;
-          const rres = await fetch(`${API_BASE}/admin/reservations`, {
+          const rres = await apiFetch(`${getApiBase()}/admin/reservations`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -786,6 +939,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       : `${data.count} 件のイベントをまとめて作成しました`);
     if (bulkAlsoReserve) setBulkReserveList([{ userId: "", type: "normal", creditId: "" }]);
     setBulkAlsoReserve(false);
+    setCreateEventModalOpen(false);
     loadEvents();
   };
 
@@ -796,7 +950,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   };
 
   const handleStatusChange = async (id: number, status: string) => {
-    const res = await fetch(`${API_BASE}/admin/events/${id}/status`, {
+    const res = await apiFetch(`${getApiBase()}/admin/events/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -810,7 +964,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   };
 
   const handleCapacityChange = async (id: number, capacity: number) => {
-    const res = await fetch(`${API_BASE}/admin/events/${id}/capacity`, {
+    const res = await apiFetch(`${getApiBase()}/admin/events/${id}/capacity`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ capacity }),
@@ -824,7 +978,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   };
 
   const handleTimeChange = async (id: number, startsAt: string, endsAt: string) => {
-    const res = await fetch(`${API_BASE}/admin/events/${id}/time`, {
+    const res = await apiFetch(`${getApiBase()}/admin/events/${id}/time`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ startsAt, endsAt }),
@@ -862,9 +1016,38 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
       "イベント削除",
       `イベント #${id} を削除します。この操作は取り消せません。`,
       async () => {
-        const res = await fetch(`${API_BASE}/admin/events/${id}`, { method: "DELETE" });
+        const res = await apiFetch(`${getApiBase()}/admin/events/${id}`, { method: "DELETE" });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
+          if (data?.error === "EVENT_DELETE_HAS_RESERVATIONS") {
+            const count = data?.count ?? 0;
+            setModal({
+              title: "強制削除の確認",
+              message: `このイベントには有効な予約が ${count} 件あります。削除すると予約も取り消されます。それでも強制削除しますか？`,
+              confirmLabel: "強制削除する",
+              confirmColor: "#991b1b",
+              action: async () => {
+                const listRes = await apiFetch(`${getApiBase()}/admin/reservations?eventId=${id}`);
+                if (listRes.ok) {
+                  const list = (await listRes.json()) as AdminReservation[];
+                  for (const r of list) {
+                    if (r.status !== "canceled" && !r.canceled_at) {
+                      await apiFetch(`${getApiBase()}/admin/reservations/${r.id}/cancel`, { method: "PATCH" });
+                    }
+                  }
+                }
+                const delRes = await apiFetch(`${getApiBase()}/admin/events/${id}`, { method: "DELETE" });
+                if (!delRes.ok) {
+                  const errData = await delRes.json().catch(() => ({}));
+                  flashErr(getApiErrorMessage(errData?.error, errData));
+                  return;
+                }
+                flash(`イベント #${id} を強制削除しました（予約も取り消しました）`);
+                loadEvents();
+              },
+            });
+            return false;
+          }
           flashErr(getApiErrorMessage(data?.error, data));
           return;
         }
@@ -919,7 +1102,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
   const statusLabel = (s: string) => s === "scheduled" ? "開催" : s === "holiday" ? "休み" : "休講";
 
   return (
-    <div>
+    <div className="bg-white rounded-3 shadow-sm p-4">
       <ConfirmModal
         open={modal !== null}
         title={modal?.title ?? ""}
@@ -983,6 +1166,28 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
 
               <span className="form-label">予約数</span>
               <span>{editEvReservations.filter((r) => !editEvToCancel.has(r.id)).length + editEvToAdd.filter((r) => r.userId !== "").length} / {editEvCapacity}</span>
+
+              <span className="form-label" style={{ fontSize: "15px" }}>担当スタッフ（何名でも登録可能）</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                {staff.length === 0 ? (
+                  <span className="text-body-secondary" style={{ fontSize: "14px" }}>スタッフが未登録です（スタッフ管理で追加）</span>
+                ) : (
+                  staff.map((s) => (
+                    <label key={s.id} className="d-flex align-items-center gap-2" style={{ fontSize: "16px", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        style={{ width: "18px", height: "18px", marginTop: 0 }}
+                        checked={editEvStaffIds.includes(s.id)}
+                        onChange={(e) => {
+                          setEditEvStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id));
+                        }}
+                      />
+                      {s.name}
+                    </label>
+                  ))
+                )}
+              </div>
             </div>
 
             <div className="mt-3 pt-3 border-top">
@@ -1158,45 +1363,67 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
         </div>
       )}
 
-      {/* イベント作成（1件 / 一括） */}
-      <div className="card mb-3 card-body">
-        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>イベント作成</h3>
-        <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
-          <button
-            type="button"
-            style={{
-              fontSize: "13px",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              border: eventCreateMode === "single" ? "2px solid #3b82f6" : "1px solid #d1d5db",
-              backgroundColor: eventCreateMode === "single" ? "#eff6ff" : "#fff",
-              color: eventCreateMode === "single" ? "#1d4ed8" : "#374151",
-              fontWeight: eventCreateMode === "single" ? 600 : 400,
-              cursor: "pointer",
-            }}
-            onClick={() => setEventCreateMode("single")}
-          >
-            1件作成
-          </button>
-          <button
-            type="button"
-            style={{
-              fontSize: "13px",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              border: eventCreateMode === "bulk" ? "2px solid #3b82f6" : "1px solid #d1d5db",
-              backgroundColor: eventCreateMode === "bulk" ? "#eff6ff" : "#fff",
-              color: eventCreateMode === "bulk" ? "#1d4ed8" : "#374151",
-              fontWeight: eventCreateMode === "bulk" ? 600 : 400,
-              cursor: "pointer",
-            }}
-            onClick={() => setEventCreateMode("bulk")}
-          >
-            一括作成（曜日×期間）
-          </button>
-        </div>
+      {/* イベント作成ボタン */}
+      <div className="mb-3">
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setCreateEventModalOpen(true)}
+        >
+          イベントを作成
+        </button>
+      </div>
 
-        <div key={eventCreateMode} className="">
+      {/* イベント作成モーダル */}
+      {createEventModalOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9998, animation: "fadeIn 0.2s ease" }}
+          onClick={() => setCreateEventModalOpen(false)}
+        >
+          <div
+            style={{ backgroundColor: "#fff", borderRadius: "12px", padding: "24px", minWidth: "420px", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 30px rgba(0,0,0,0.2)", animation: "slideUp 0.25s ease" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>イベント作成</h3>
+              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setCreateEventModalOpen(false)}>閉じる</button>
+            </div>
+            <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+              <button
+                type="button"
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 14px",
+                  borderRadius: "6px",
+                  border: eventCreateMode === "single" ? "2px solid #3b82f6" : "1px solid #d1d5db",
+                  backgroundColor: eventCreateMode === "single" ? "#eff6ff" : "#fff",
+                  color: eventCreateMode === "single" ? "#1d4ed8" : "#374151",
+                  fontWeight: eventCreateMode === "single" ? 600 : 400,
+                  cursor: "pointer",
+                }}
+                onClick={() => setEventCreateMode("single")}
+              >
+                1件作成
+              </button>
+              <button
+                type="button"
+                style={{
+                  fontSize: "13px",
+                  padding: "6px 14px",
+                  borderRadius: "6px",
+                  border: eventCreateMode === "bulk" ? "2px solid #3b82f6" : "1px solid #d1d5db",
+                  backgroundColor: eventCreateMode === "bulk" ? "#eff6ff" : "#fff",
+                  color: eventCreateMode === "bulk" ? "#1d4ed8" : "#374151",
+                  fontWeight: eventCreateMode === "bulk" ? 600 : 400,
+                  cursor: "pointer",
+                }}
+                onClick={() => setEventCreateMode("bulk")}
+              >
+                一括作成（曜日×期間）
+              </button>
+            </div>
+
+            <div key={eventCreateMode} className="">
         {eventCreateMode === "single" ? (
           <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px auto", gap: "8px", alignItems: "end" }}>
@@ -1220,6 +1447,27 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
               <input type="number" className="form-control" value={newCapacity} onChange={(e) => { const v = Number(e.target.value); setNewCapacity(v); setNewEventReserveList((prev) => (prev.length > v ? prev.slice(0, v) : prev)); }} min={1} />
             </div>
             <button type="button" className="btn btn-primary" onClick={handleCreateEvent}>作成</button>
+          </div>
+          <div className="mt-2">
+            <span className="form-label d-block mb-1" style={{ fontSize: "15px" }}>担当スタッフ（何名でも登録可能）</span>
+            {staff.length === 0 ? (
+              <span className="text-body-secondary" style={{ fontSize: "14px" }}>スタッフがいません。スタッフ管理タブで登録してください。</span>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                {staff.map((s) => (
+                  <label key={s.id} className="d-flex align-items-center gap-2" style={{ fontSize: "16px", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      style={{ width: "18px", height: "18px", marginTop: 0 }}
+                      checked={newEventStaffIds.includes(s.id)}
+                      onChange={(e) => setNewEventStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id))}
+                    />
+                    {s.name}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <div className="mt-3 pt-3 border-top">
             <label className="d-flex align-items-center gap-2 mb-2" style={{ fontSize: "13px" }}>
@@ -1457,6 +1705,27 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
                 ))}
               </div>
             </div>
+            <div className="mb-2">
+              <span className="form-label d-block mb-1" style={{ fontSize: "15px" }}>担当スタッフ（何名でも可・作成する全イベントに同じスタッフを割り当て）</span>
+              {staff.length === 0 ? (
+                <span className="text-body-secondary" style={{ fontSize: "14px" }}>スタッフがいません。スタッフ管理タブで登録してください。</span>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                  {staff.map((s) => (
+                    <label key={s.id} className="d-flex align-items-center gap-2" style={{ fontSize: "16px", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        style={{ width: "18px", height: "18px", marginTop: 0 }}
+                        checked={bulkCreateStaffIds.includes(s.id)}
+                        onChange={(e) => setBulkCreateStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id))}
+                      />
+                      {s.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
               <div>
                 <span className="form-label">開始日</span>
@@ -1591,8 +1860,10 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
             </div>
           </>
         )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 表示切替 + 期間フィルタ */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px", flexWrap: "wrap" }}>
@@ -1804,7 +2075,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
 
       {/* カレンダー表示 */}
       {viewMode === "calendar" && (
-        <div>
+        <div style={{ paddingBottom: "24px" }}>
           <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCalMonth((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))}>◀ 前月</button>
             <span style={{ fontWeight: 600, fontSize: "14px" }}>{calMonth.getFullYear()}年 {calMonth.getMonth() + 1}月</span>
@@ -1910,6 +2181,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
                 <th style={{ width: "64px" }}>定員</th>
                 <th style={{ width: "64px" }}>予約数</th>
                 <th style={{ width: "90px" }}>ステータス</th>
+                <th style={{ width: "120px" }}>スタッフ</th>
                 <th style={{ minWidth: "200px" }}>操作</th>
               </tr>
             </thead>
@@ -1977,6 +2249,9 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
                     {ev.status === "scheduled" ? "● 開催" : ev.status === "holiday" ? "■ 通常休み" : "▲ 休講"}
                   </span>
                 </td>
+                <td style={{ fontSize: "12px", color: "#4b5563" }}>
+                  {Array.isArray(ev.staff) && ev.staff.length > 0 ? ev.staff.map((s) => s.name).join("、") : "—"}
+                </td>
                 <td>
                   <span className="btn-group btn-group-sm">
                     <button type="button" disabled={ev.status === "scheduled"} className="btn btn-success btn-sm" onClick={() => handleStatusChange(ev.id, "scheduled")}>
@@ -1996,7 +2271,7 @@ function EventsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassTy
               </tr>
             ))}
               {events.length === 0 && (
-                <tr><td colSpan={8} className="text-center text-body-secondary py-4">イベントがありません</td></tr>
+                <tr><td colSpan={9} className="text-center text-body-secondary py-4">イベントがありません</td></tr>
               )}
             </tbody>
           </table>
@@ -2026,7 +2301,7 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
       const params = new URLSearchParams();
       if (filterUserId) params.set("userId", String(filterUserId));
       if (filterStatus) params.set("status", filterStatus);
-      const res = await fetch(`${API_BASE}/admin/makeup-credits?${params.toString()}`);
+      const res = await apiFetch(`${getApiBase()}/admin/makeup-credits?${params.toString()}`);
       const data = res.ok ? await res.json() : [];
       setCredits(Array.isArray(data) ? data : []);
     } catch { flashErr("振替権利読み込み失敗"); }
@@ -2036,7 +2311,7 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
 
   const handleGrant = async () => {
     if (!grantUserId) { flashErr("ユーザーを選択してください"); return; }
-    const res = await fetch(`${API_BASE}/admin/makeup-credits`, {
+    const res = await apiFetch(`${getApiBase()}/admin/makeup-credits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2057,7 +2332,7 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
 
   const handleRevoke = async (id: number) => {
     if (!confirm(`振替権利 #${id} を取消しますか？`)) return;
-    const res = await fetch(`${API_BASE}/admin/makeup-credits/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${getApiBase()}/admin/makeup-credits/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       flashErr(getApiErrorMessage(data?.error));
@@ -2067,7 +2342,7 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
   };
 
   const handleRestore = async (id: number) => {
-    const res = await fetch(`${API_BASE}/admin/makeup-credits/${id}`, {
+    const res = await apiFetch(`${getApiBase()}/admin/makeup-credits/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "granted" }),
@@ -2081,7 +2356,7 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
   };
 
   const handleUpdateExpiry = async (id: number, newExpiry: string) => {
-    const res = await fetch(`${API_BASE}/admin/makeup-credits/${id}`, {
+    const res = await apiFetch(`${getApiBase()}/admin/makeup-credits/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ expiresAt: newExpiry || null }),
@@ -2204,6 +2479,153 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
 }
 
 // ================================================================
+// スタッフ管理
+// ================================================================
+function StaffTab({ staffList, reload, flash, flashErr }: { staffList: Staff[]; reload: () => void; flash: (m: string) => void; flashErr: (m: string) => void }) {
+  const [newName, setNewName] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Staff | null>(null);
+
+  const handleCreate = async () => {
+    const trimmed = newName.trim();
+    if (!trimmed) { flashErr("名前は必須です"); return; }
+    const res = await apiFetch(`${getApiBase()}/admin/staff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
+    flash("スタッフを追加しました");
+    setNewName("");
+    reload();
+  };
+
+  const startEdit = (s: Staff) => {
+    setEditId(s.id);
+    setEditName(s.name);
+  };
+
+  const cancelEdit = () => { setEditId(null); };
+
+  const handleUpdate = async () => {
+    if (!editId) return;
+    const trimmed = editName.trim();
+    if (!trimmed) { flashErr("名前は必須です"); return; }
+    const res = await apiFetch(`${getApiBase()}/admin/staff/${editId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
+    flash(`スタッフ #${editId} を更新しました`);
+    setEditId(null);
+    reload();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
+    const res = await apiFetch(`${getApiBase()}/admin/staff/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      flashErr(getApiErrorMessage(data?.error));
+      return;
+    }
+    flash(`スタッフ #${id} を削除しました`);
+    reload();
+  };
+
+  return (
+    <div>
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="スタッフの削除"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmLabel="削除する"
+        confirmColor="#991b1b"
+      >
+        {deleteTarget && (
+          <>スタッフ「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。イベントへの割り当ても解除されます。</>
+        )}
+      </ConfirmModal>
+
+      <div className="card mb-3 card-body">
+        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "8px" }}>スタッフを追加</h3>
+        <div style={{ display: "flex", gap: "8px", alignItems: "end" }}>
+          <div style={{ flex: 1, maxWidth: "300px" }}>
+            <span className="form-label">名前</span>
+            <input type="text" className="form-control" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="例: 山田 太郎" />
+          </div>
+          <button type="button" className="btn btn-primary" onClick={handleCreate}>追加</button>
+        </div>
+      </div>
+
+      <div className="card card-body">
+        <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "12px" }}>登録済みスタッフ</h3>
+        {staffList.length === 0 ? (
+          <p className="text-body-secondary mb-0">スタッフがまだいません。上で追加してください。</p>
+        ) : (
+          <table className="table table-sm">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>名前</th>
+                <th style={{ width: "120px" }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {staffList.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.id}</td>
+                  <td>
+                    {editId === s.id ? (
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        style={{ width: "200px" }}
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleUpdate()}
+                      />
+                    ) : (
+                      s.name
+                    )}
+                  </td>
+                  <td>
+                    {editId === s.id ? (
+                      <>
+                        <button type="button" className="btn btn-success btn-sm me-1" onClick={handleUpdate}>保存</button>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={cancelEdit}>取消</button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEdit(s)}>編集</button>
+                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setDeleteTarget(s)}>削除</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ================================================================
 // クラス種別管理
 // ================================================================
 function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: ClassType[]; reload: () => void; flash: (m: string) => void; flashErr: (m: string) => void }) {
@@ -2222,7 +2644,7 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
 
   const handleCreate = async () => {
     if (!newName.trim()) { flashErr("名前は必須です"); return; }
-    const res = await fetch(`${API_BASE}/admin/class-types`, {
+    const res = await apiFetch(`${getApiBase()}/admin/class-types`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2253,7 +2675,7 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
   const handleUpdate = async () => {
     if (!editId) return;
     if (!editName.trim()) { flashErr("名前は必須です"); return; }
-    const res = await fetch(`${API_BASE}/admin/class-types/${editId}`, {
+    const res = await apiFetch(`${getApiBase()}/admin/class-types/${editId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2280,7 +2702,7 @@ function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: Cl
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setDeleteTarget(null);
-    const res = await fetch(`${API_BASE}/admin/class-types/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${getApiBase()}/admin/class-types/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       flashErr(getApiErrorMessage(data?.error));
