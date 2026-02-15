@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
 import { getApiBase, apiFetch } from "@/app/lib/api";
+import styles from "../../admin.module.scss";
 
 export default function AdminSettingsPasswordPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -58,17 +59,15 @@ export default function AdminSettingsPasswordPage() {
 
   return (
     <div>
-      <nav className="mb-3">
-        <Link href={ROUTES.ADMIN_SETTINGS} className="small text-body-secondary">
-          ← 設定
-        </Link>
+      <nav className={styles.settingsBackNav}>
+        <Link href={ROUTES.ADMIN_SETTINGS}>← 設定</Link>
       </nav>
-      <h1 className="h4 mb-4">パスワードの変更</h1>
-      <div className="card shadow-sm" style={{ maxWidth: "400px" }}>
-        <div className="card-body">
+      <h1 className={styles.settingsPageTitle}>パスワードの変更</h1>
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardBody}>
           <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label">現在のパスワード</label>
+            <div className={styles.settingsFormRow}>
+              <label className={styles.settingsFormLabel}>現在のパスワード</label>
               <input
                 type="password"
                 className="form-control"
@@ -79,8 +78,8 @@ export default function AdminSettingsPasswordPage() {
                 autoComplete="current-password"
               />
             </div>
-            <div className="mb-3">
-              <label className="form-label">新しいパスワード</label>
+            <div className={styles.settingsFormRow}>
+              <label className={styles.settingsFormLabel}>新しいパスワード</label>
               <input
                 type="password"
                 className="form-control"
@@ -92,8 +91,8 @@ export default function AdminSettingsPasswordPage() {
                 autoComplete="new-password"
               />
             </div>
-            <div className="mb-4">
-              <label className="form-label">新しいパスワード（確認）</label>
+            <div className={styles.settingsFormRow}>
+              <label className={styles.settingsFormLabel}>新しいパスワード（確認）</label>
               <input
                 type="password"
                 className="form-control"
@@ -109,8 +108,8 @@ export default function AdminSettingsPasswordPage() {
               {submitting ? "変更中…" : "パスワードを変更する"}
             </button>
           </form>
-          {error && <p className="small text-danger mt-2 mb-0">{error}</p>}
-          {success && <p className="small text-success mt-2 mb-0">パスワードを変更しました。</p>}
+          {error && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageError}`}>{error}</p>}
+          {success && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageSuccess}`}>パスワードを変更しました。</p>}
         </div>
       </div>
     </div>

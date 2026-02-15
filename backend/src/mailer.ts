@@ -33,7 +33,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   const verifyUrl = `${FRONTEND_BASE.replace(/\/$/, "")}/register/verify?token=${encodeURIComponent(token)}`;
   const transport = getTransport();
   if (!transport) {
-    logger.warn("SMTP not configured. Verification email not sent. Link: " + verifyUrl);
+    logger.warn("SMTP not configured. Verification email not sent. (Set SMTP_* env for production)");
     return false;
   }
   try {
@@ -50,7 +50,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
         <p>※心当たりがない場合はこのメールを無視してください。</p>
       `.trim(),
     });
-    logger.info("Verification email sent to " + to);
+    logger.info("Verification email sent");
     return true;
   } catch (e) {
     logger.error("Failed to send verification email: " + (e instanceof Error ? e.message : String(e)));

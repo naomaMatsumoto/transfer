@@ -91,6 +91,8 @@ function AddMemberModal({
   setFurigana,
   email,
   setEmail,
+  password,
+  setPassword,
   address,
   setAddress,
   phone,
@@ -111,6 +113,8 @@ function AddMemberModal({
   setFurigana: (v: string) => void;
   email: string;
   setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
   address: string;
   setAddress: (v: string) => void;
   phone: string;
@@ -158,6 +162,11 @@ function AddMemberModal({
             {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
           </div>
           <div className="mb-2">
+            <label className="form-label">ログイン用パスワード（任意）</label>
+            <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="カレンダー・振替予約で使用" autoComplete="new-password" />
+            <p className="small text-body-secondary mt-1 mb-0">設定すると会員がカレンダーで振替予約できます</p>
+          </div>
+          <div className="mb-2">
             <label className="form-label">住所（任意）</label>
             <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="〇〇市〇〇町1-2-3" />
           </div>
@@ -200,6 +209,8 @@ function EditMemberModal({
   setFurigana,
   email,
   setEmail,
+  password,
+  setPassword,
   address,
   setAddress,
   phone,
@@ -221,6 +232,8 @@ function EditMemberModal({
   setFurigana: (v: string) => void;
   email: string;
   setEmail: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
   address: string;
   setAddress: (v: string) => void;
   phone: string;
@@ -257,6 +270,10 @@ function EditMemberModal({
             <label className="form-label">メール（任意）</label>
             <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} value={email} onChange={(e) => { setEmail(e.target.value); if (formError?.field === "email") setFormError(null); }} placeholder="user@example.com" />
             {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
+          </div>
+          <div className="mb-2">
+            <label className="form-label">ログイン用パスワード（変更時のみ）</label>
+            <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="空欄のままなら変更しません" autoComplete="new-password" />
           </div>
           <div className="mb-2">
             <label className="form-label">住所（任意）</label>
@@ -367,6 +384,7 @@ export default function AdminMembersPage() {
   const [newName, setNewName] = useState("");
   const [newFurigana, setNewFurigana] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newCourseType, setNewCourseType] = useState("");
@@ -377,6 +395,7 @@ export default function AdminMembersPage() {
   const [editName, setEditName] = useState("");
   const [editFurigana, setEditFurigana] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editCourseType, setEditCourseType] = useState("");
@@ -447,6 +466,7 @@ export default function AdminMembersPage() {
           name: newName.trim(),
           furigana: newFurigana.trim() || null,
           email: emailVal,
+          password: newPassword.trim() || null,
           address: newAddress.trim() || null,
           phone: newPhone.trim() || null,
           course_type: newCourseType.trim() || null,
@@ -478,6 +498,7 @@ export default function AdminMembersPage() {
       setNewName("");
       setNewFurigana("");
       setNewEmail("");
+      setNewPassword("");
       setNewAddress("");
       setNewPhone("");
       setNewCourseType("");
@@ -499,6 +520,7 @@ export default function AdminMembersPage() {
     setEditName(m.name);
     setEditFurigana(m.furigana ?? "");
     setEditEmail(m.email ?? "");
+    setEditPassword("");
     setEditAddress(m.address ?? "");
     setEditPhone(m.phone ?? "");
     setEditCourseType(m.course_type ?? "");
@@ -519,18 +541,20 @@ export default function AdminMembersPage() {
       return;
     }
     const emailVal = editEmail.trim() || null;
+    const body: Record<string, unknown> = {
+      name: editName.trim(),
+      furigana: editFurigana.trim() || null,
+      email: emailVal,
+      address: editAddress.trim() || null,
+      phone: editPhone.trim() || null,
+      course_type: editCourseType.trim() || null,
+      stage: editStage,
+    };
+    if (editPassword.trim() !== "") body.password = editPassword.trim();
     const res = await apiFetch(`${getApiBase()}/admin/users/${editId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: editName.trim(),
-        furigana: editFurigana.trim() || null,
-        email: emailVal,
-        address: editAddress.trim() || null,
-        phone: editPhone.trim() || null,
-        course_type: editCourseType.trim() || null,
-        stage: editStage,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -585,6 +609,8 @@ export default function AdminMembersPage() {
         setFurigana={setNewFurigana}
         email={newEmail}
         setEmail={setNewEmail}
+        password={newPassword}
+        setPassword={setNewPassword}
         address={newAddress}
         setAddress={setNewAddress}
         phone={newPhone}
@@ -611,6 +637,8 @@ export default function AdminMembersPage() {
         setFurigana={setEditFurigana}
         email={editEmail}
         setEmail={setEditEmail}
+        password={editPassword}
+        setPassword={setEditPassword}
         address={editAddress}
         setAddress={setEditAddress}
         phone={editPhone}

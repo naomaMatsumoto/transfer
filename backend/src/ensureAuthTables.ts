@@ -59,7 +59,7 @@ export async function ensureAuthTables(): Promise<void> {
         "INSERT INTO accounts (corporation_id, email, password_hash, display_name) VALUES (1, ?, ?, '管理者')",
         ["admin@example.com", hash]
       );
-      logger.info("Created default account: admin@example.com / password");
+      logger.info("Created default account: admin@example.com (initial password in docs)");
     }
 
     // 既存DB: users に store_id がなければ追加
@@ -79,6 +79,15 @@ export async function ensureAuthTables(): Promise<void> {
     if ((evCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL AFTER email");
       logger.info("Added email_verified_at to users");
+    }
+
+    // 既存DB: users に password_hash（店舗登録会員のログイン用）
+    const [pwCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash' LIMIT 1"
+    );
+    if ((pwCol as unknown[]).length === 0) {
+      await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER email_verified_at");
+      logger.info("Added password_hash to users");
     }
 
     await pool.query(`
@@ -133,7 +142,7 @@ export async function ensureAuthTables(): Promise<void> {
         "INSERT INTO platform_admins (email, password_hash, display_name) VALUES (?, ?, '運営管理者')",
         ["ops@example.com", hash]
       );
-      logger.info("Created default platform admin: ops@example.com / ops-password");
+      logger.info("Created default platform admin: ops@example.com (initial password in docs)");
     }
 
     logger.info("Auth tables ready");

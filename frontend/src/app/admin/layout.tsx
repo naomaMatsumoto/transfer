@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { ROUTES, RESERVATION_TABS } from "../routes";
 import { getApiBase, apiFetch } from "../lib/api";
+import styles from "./admin.module.scss";
 
 const TAB_KEYS = RESERVATION_TABS.map((t) => t.key);
 
@@ -48,19 +49,21 @@ function AdminLayoutInner({
 
   if (authOk === null || !authOk) {
     return (
-      <div className="d-flex flex-row vh-100 bg-light align-items-center justify-content-center">
-        <div className="text-secondary">認証確認中…</div>
+      <div className={styles.adminLayout}>
+        <div className={styles.adminMainCentered}>
+          <span className="text-secondary">認証確認中…</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="d-flex flex-row vh-100 bg-light">
-      <aside className="d-flex flex-column flex-shrink-0 bg-white border-end shadow-sm" style={{ width: "240px" }}>
-        <div className="p-3 border-bottom bg-light">
-          <span className="fw-semibold text-primary">管理画面</span>
+    <div className={styles.adminLayout}>
+      <aside className={styles.adminSidebar}>
+        <div className={styles.adminSidebarHeader}>
+          <span className={styles.adminSidebarTitle}>管理画面</span>
         </div>
-        <nav className="nav flex-column p-2 gap-1">
+        <nav className={`nav flex-column ${styles.adminSidebarNav}`}>
           <Link
             href={ROUTES.ADMIN_MEMBERS}
             className={`nav-link rounded ${isMembers ? "active bg-primary text-white" : "text-secondary"}`}
@@ -128,8 +131,8 @@ function AdminLayoutInner({
           </button>
         </nav>
       </aside>
-      <main className="flex-grow-1 overflow-auto p-4">
-        <div className="container-fluid px-0" style={{ maxWidth: "1100px", minWidth: 0 }}>
+      <main className={styles.adminMain}>
+        <div className={styles.adminMainInner}>
           {children}
         </div>
       </main>
@@ -144,12 +147,14 @@ export default function AdminLayout({
 }) {
   return (
     <Suspense fallback={
-      <div className="d-flex flex-row vh-100 bg-light">
-        <aside className="flex-shrink-0 bg-white border-end p-3" style={{ width: "240px" }}>
-          <div className="fw-semibold text-primary">管理画面</div>
-          <nav className="small text-secondary mt-2">読み込み中…</nav>
+      <div className={styles.adminLayout}>
+        <aside className={styles.adminSidebar}>
+          <div className={styles.adminSidebarHeader}>
+            <span className={styles.adminSidebarTitle}>管理画面</span>
+          </div>
+          <nav className={`small text-secondary ${styles.adminSidebarNav}`}>読み込み中…</nav>
         </aside>
-        <main className="flex-grow-1 p-4">読み込み中…</main>
+        <main className={styles.adminMain}>読み込み中…</main>
       </div>
     }>
       <AdminLayoutInner>{children}</AdminLayoutInner>

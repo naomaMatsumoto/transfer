@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
@@ -14,10 +15,11 @@ export default async function updateUser(
     return;
   }
   const id = Number(req.params.id);
-  const { name, furigana, email, address, phone, course_type, stage } = req.body as {
+  const { name, furigana, email, password, address, phone, course_type, stage } = req.body as {
     name?: string;
     furigana?: string | null;
     email?: string;
+    password?: string | null;
     address?: string | null;
     phone?: string | null;
     course_type?: string | null;
@@ -56,6 +58,10 @@ export default async function updateUser(
   if (stage !== undefined) {
     const v = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
     updates.push("stage = ?"); params.push(v);
+  }
+  if (password !== undefined) {
+    const hash = password != null && String(password).trim() !== "" ? await bcrypt.hash(String(password).trim(), 10) : null;
+    updates.push("password_hash = ?"); params.push(hash);
   }
   if (updates.length === 0) {
     res.status(400).json({ error: ERR.MEMBER_UPDATE_EMPTY });

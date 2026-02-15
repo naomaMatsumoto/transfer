@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
 import { getApiBase, apiFetch } from "@/app/lib/api";
+import styles from "../../admin.module.scss";
 
 export default function AdminSettingsCorporationPage() {
   const [corporationName, setCorporationName] = useState("");
@@ -72,20 +73,18 @@ export default function AdminSettingsCorporationPage() {
 
   return (
     <div>
-      <nav className="mb-3">
-        <Link href={ROUTES.ADMIN_SETTINGS} className="small text-body-secondary">
-          ← 設定
-        </Link>
+      <nav className={styles.settingsBackNav}>
+        <Link href={ROUTES.ADMIN_SETTINGS}>← 設定</Link>
       </nav>
-      <h1 className="h4 mb-4">法人名の変更</h1>
-      <div className="card shadow-sm" style={{ maxWidth: "400px" }}>
-        <div className="card-body">
-          <p className="small text-body-secondary mb-3">
+      <h1 className={styles.settingsPageTitle}>法人名の変更</h1>
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardBody}>
+          <p className={styles.settingsCardMuted}>
             現在の法人名: <strong>{corporationName || "—"}</strong>
           </p>
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="form-label">新しい法人名</label>
+            <div className={styles.settingsFormRow}>
+              <label className={styles.settingsFormLabel}>新しい法人名</label>
               <input
                 type="text"
                 className="form-control"
@@ -98,8 +97,8 @@ export default function AdminSettingsCorporationPage() {
               {submitting ? "変更中…" : "変更する"}
             </button>
           </form>
-          {error && <p className="small text-danger mt-2 mb-0">{error}</p>}
-          {success && <p className="small text-success mt-2 mb-0">法人名を変更しました。</p>}
+          {error && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageError}`}>{error}</p>}
+          {success && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageSuccess}`}>法人名を変更しました。</p>}
         </div>
       </div>
     </div>

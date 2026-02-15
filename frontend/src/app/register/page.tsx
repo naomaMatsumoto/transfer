@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ROUTES } from "@/app/routes";
 import { getApiBase } from "@/app/lib/api";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
@@ -80,11 +78,10 @@ export default function MemberRegisterPage() {
           <div className="card-body p-4">
             <div className="text-primary mb-3" style={{ fontSize: "48px" }}>✉</div>
             <h2 className="h5 mb-2">登録を受け付けました</h2>
-            <p className="text-body-secondary mb-4">
+            <p className="text-body-secondary mb-0">
               ご登録のメールアドレスに認証リンクをお送りしました。<br />
               メール内のリンクをクリックして、会員登録を完了してください。
             </p>
-            <Link href={ROUTES.HOME} className="btn btn-outline-primary">カレンダーに戻る</Link>
           </div>
         </div>
       </div>
@@ -166,9 +163,6 @@ export default function MemberRegisterPage() {
               {loading ? "登録中…" : "登録する"}
             </button>
           </form>
-          <p className="small text-center mt-3 mb-0">
-            <Link href={ROUTES.HOME}>カレンダーに戻る</Link>
-          </p>
         </div>
       </div>
     </div>

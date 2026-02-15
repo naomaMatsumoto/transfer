@@ -72,7 +72,7 @@ app.use(
 app.use(express.json());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.path.startsWith("/admin")) logger.info(`${req.method} ${req.path}`);
+  if (req.path.startsWith("/admin")) logger.debug(`${req.method} ${req.path}`);
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   next();
 });
@@ -87,9 +87,9 @@ app.use(
   (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const e = err as { message?: string; sqlMessage?: string; code?: string; stack?: string };
     const msg = e?.sqlMessage ?? (err instanceof Error ? err.message : String(err));
-    const code = e?.code ? ` [${e.code}]` : "";
+    const codePart = e?.code ? ` [${e.code}]` : "";
     const stack = err instanceof Error ? (err as Error).stack : undefined;
-    logger.error(stack ? `Unhandled error${code}: ${msg}\n${stack}` : `Unhandled error${code}: ${msg}`);
+    logger.error(stack ? `Unhandled error${codePart}: ${msg}\n${stack}` : `Unhandled error${codePart}: ${msg}`);
     res.status(500).json({ error: "Internal Server Error" });
   },
 );

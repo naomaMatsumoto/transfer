@@ -19,7 +19,7 @@ export default function RegisterVerifyPage() {
       setErrorMessage("認証リンクが正しくありません。");
       return;
     }
-    fetch(`${getApiBase()}/members/verify?token=${encodeURIComponent(token)}`)
+    fetch(`${getApiBase()}/members/verify?token=${encodeURIComponent(token)}`, { credentials: "include" })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (res.ok) {

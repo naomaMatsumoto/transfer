@@ -44,6 +44,10 @@ export default async function verifyMember(
     conn.release();
   }
 
+  if (req.session) {
+    req.session.memberId = row.user_id;
+  }
+
   res.json({
     message: "メールアドレスの認証が完了しました。会員登録が完了しました。",
   });

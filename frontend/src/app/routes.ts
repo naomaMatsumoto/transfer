@@ -11,6 +11,8 @@ export const ROUTES = {
   CORPORATION_REGISTER: "/corporation/register",
   /** 会員登録（顧客が自分で登録） */
   MEMBER_REGISTER: "/register",
+  /** 会員ログイン（店舗登録アカウントでカレンダー・振替用） */
+  MEMBER_LOGIN: "/login-member",
   /** 管理トップ（/admin/reservations へリダイレクト） */
   ADMIN: "/admin",
   /** 会員管理 */

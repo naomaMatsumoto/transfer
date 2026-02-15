@@ -1,0 +1,110 @@
+@use "../variables" as v;
+
+// ================================================================
+// 設定トップ（メニュー）
+// ================================================================
+.settingsMenuList {
+  display: flex;
+  flex-direction: column;
+  gap: v.$space-2;
+  max-width: 320px;
+}
+
+.settingsMenuItem {
+  display: flex;
+  align-items: center;
+  padding: v.$space-4;
+  background: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  color: v.$color-gray-900;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: v.$color-gray-50;
+    border-color: v.$color-gray-300;
+    color: v.$color-gray-900;
+  }
+}
+
+.settingsMenuItemArrow {
+  margin-left: auto;
+  font-size: v.$font-sm;
+  color: v.$color-gray-400;
+}
+
+// ================================================================
+// 設定サブページ（パスワード・法人名）
+// ================================================================
+.settingsBackNav {
+  margin-bottom: v.$space-3;
+
+  a {
+    font-size: v.$font-sm;
+    color: v.$color-gray-500;
+    text-decoration: none;
+
+    &:hover {
+      color: v.$color-gray-700;
+    }
+  }
+}
+
+.settingsPageTitle {
+  font-size: v.$font-3xl;
+  font-weight: 700;
+  margin-bottom: v.$space-4;
+  color: v.$color-gray-900;
+  letter-spacing: -0.02em;
+}
+
+.settingsCard {
+  max-width: 400px;
+  background: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.settingsCardBody {
+  padding: v.$space-5;
+}
+
+.settingsCardMuted {
+  font-size: v.$font-sm;
+  color: v.$color-gray-500;
+  margin-bottom: v.$space-3;
+}
+
+.settingsFormRow {
+  margin-bottom: v.$space-3;
+
+  &:last-of-type {
+    margin-bottom: v.$space-4;
+  }
+}
+
+.settingsFormLabel {
+  display: block;
+  font-size: v.$font-base;
+  font-weight: 500;
+  color: v.$color-gray-700;
+  margin-bottom: v.$space-1;
+}
+
+.settingsFormMessage {
+  font-size: v.$font-sm;
+  margin-top: v.$space-2;
+  margin-bottom: 0;
+}
+
+.settingsFormMessageError {
+  color: v.$color-danger;
+}
+
+.settingsFormMessageSuccess {
+  color: v.$color-success;
+}

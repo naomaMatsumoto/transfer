@@ -39,17 +39,26 @@ const API_BASE = (() => {
 })();
 const DEMO_USER_ID = 1;
 
+function fetchWithCredentials(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, { ...init, credentials: "include" });
+}
+
 export default function StoreCalendarPage() {
   const params = useParams();
   const storeId = params?.storeId as string | undefined;
   const storeIdNum = storeId ? parseInt(storeId, 10) : NaN;
 
+  const [memberId, setMemberId] = useState<number | null>(null);
+  const [memberChecked, setMemberChecked] = useState(false);
   const [storeName, setStoreName] = useState<string | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [credits, setCredits] = useState<MakeupCredit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  const effectiveUserId = memberId ?? DEMO_USER_ID;
+  const isLoggedIn = memberId != null;
 
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     const now = new Date();
@@ -58,6 +67,16 @@ export default function StoreCalendarPage() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    fetchWithCredentials(`${API_BASE}/members/me`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { id?: number } | null) => {
+        setMemberId(data?.id ?? null);
+      })
+      .catch(() => setMemberId(null))
+      .finally(() => setMemberChecked(true));
   }, []);
 
   useEffect(() => {
@@ -107,17 +126,20 @@ export default function StoreCalendarPage() {
       try {
         const fromStr = toDateStr(gridStart);
         const toStr = toDateStr(gridEnd);
-        const [eventsRes, creditsRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${DEMO_USER_ID}&storeId=${storeIdNum}`),
-          fetch(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(DEMO_USER_ID)}`),
-        ]);
+        const eventsPromise = fetch(
+          `${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${effectiveUserId}&storeId=${storeIdNum}`
+        );
+        const creditsPromise = isLoggedIn
+          ? fetchWithCredentials(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`)
+          : Promise.resolve({ ok: false } as Response);
+        const [eventsRes, creditsRes] = await Promise.allSettled([eventsPromise, creditsPromise]);
         if (eventsRes.status === "fulfilled" && eventsRes.value.ok) {
           setEvents(await eventsRes.value.json());
         } else {
           setEvents([]);
         }
         if (creditsRes.status === "fulfilled" && creditsRes.value.ok) {
-          setCredits(await creditsRes.value.json());
+          setCredits(await (creditsRes.value as Response).json());
         } else {
           setCredits([]);
         }
@@ -128,7 +150,7 @@ export default function StoreCalendarPage() {
       }
     };
     void load();
-  }, [storeIdNum, gridStart, gridEnd]);
+  }, [storeIdNum, gridStart, gridEnd, effectiveUserId, isLoggedIn, memberId]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, EventRow[]>();
@@ -146,10 +168,10 @@ export default function StoreCalendarPage() {
   const handleCreateReservation = async (ev: EventRow, type: "normal" | "makeup", makeupCreditId?: number) => {
     try {
       setError(null);
-      const res = await fetch(`${API_BASE}/reservations`, {
+      const res = await fetchWithCredentials(`${API_BASE}/reservations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: DEMO_USER_ID, eventId: ev.id, reservationType: type, makeupCreditId: makeupCreditId ?? null }),
+        body: JSON.stringify({ userId: effectiveUserId, eventId: ev.id, reservationType: type, makeupCreditId: makeupCreditId ?? null }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -157,12 +179,13 @@ export default function StoreCalendarPage() {
       }
       const fromStr = toDateStr(gridStart);
       const toStr = toDateStr(gridEnd);
-      const [eventsRes, creditsRes] = await Promise.all([
-        fetch(`${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${DEMO_USER_ID}&storeId=${storeIdNum}`),
-        fetch(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(DEMO_USER_ID)}`),
-      ]);
-      setEvents(await eventsRes.json());
-      setCredits(await creditsRes.json());
+      const eventsPromise = fetch(`${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${effectiveUserId}&storeId=${storeIdNum}`);
+      const creditsPromise = isLoggedIn
+        ? fetchWithCredentials(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`)
+        : Promise.resolve({ ok: false } as Response);
+      const [eventsRes, creditsRes] = await Promise.all([eventsPromise, creditsPromise]);
+      setEvents(await (eventsRes as Response).json());
+      if (creditsRes.ok) setCredits(await (creditsRes as Response).json());
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "予約処理中にエラーが発生しました");
     }
@@ -171,17 +194,19 @@ export default function StoreCalendarPage() {
   const handleRegisterAbsence = async (ev: EventRow) => {
     try {
       setError(null);
-      const res = await fetch(`${API_BASE}/absences`, {
+      const res = await fetchWithCredentials(`${API_BASE}/absences`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: DEMO_USER_ID, eventId: ev.id, reason: "Webからの欠席登録" }),
+        body: JSON.stringify({ userId: effectiveUserId, eventId: ev.id, reason: "Webからの欠席登録" }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(getApiErrorMessage(data?.error));
       }
-      const creditsRes = await fetch(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(DEMO_USER_ID)}`);
-      setCredits(await creditsRes.json());
+      if (isLoggedIn) {
+        const creditsRes = await fetchWithCredentials(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`);
+        if (creditsRes.ok) setCredits(await creditsRes.json());
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "欠席登録中にエラーが発生しました");
     }
@@ -223,15 +248,21 @@ export default function StoreCalendarPage() {
         振替管理カレンダー
         {storeName ? ` — ${storeName}` : `（店舗ID: ${storeId}）`}
       </h1>
-      <p className={s.muted} style={{ marginTop: "-0.5rem" }}>
-        デモユーザーID: {DEMO_USER_ID}
-      </p>
+      {memberChecked && !isLoggedIn && (
+        <p className={s.muted} style={{ marginTop: "-0.5rem" }}>
+          振替予約・欠席登録は
+          <Link href={`${ROUTES.MEMBER_LOGIN}?returnTo=${encodeURIComponent(`/stores/${storeIdNum}`)}`} className={s.muted} style={{ textDecoration: "underline" }}>会員ログイン</Link>
+          後にご利用いただけます。（店舗で登録したアカウント）
+        </p>
+      )}
 
       {error && <div className={s.errorBanner}>{error}</div>}
 
       <section className={s.creditsSection}>
         <h2 className={s.sectionTitle}>保有振替権利</h2>
-        {credits.length === 0 ? (
+        {!isLoggedIn ? (
+          <p className={s.muted}>ログインすると振替予約・欠席登録がご利用いただけます。</p>
+        ) : credits.length === 0 ? (
           <p className={s.muted}>現在、振替権利はありません。</p>
         ) : (
           <ul className={s.creditsList}>
@@ -366,7 +397,7 @@ export default function StoreCalendarPage() {
                                   >
                                     通常予約
                                   </button>
-                                  {credits.length > 0 && !isFull && (
+                                  {isLoggedIn && credits.length > 0 && !isFull && (
                                     <button
                                       type="button"
                                       className={s.btnMakeup}
@@ -377,7 +408,7 @@ export default function StoreCalendarPage() {
                                   )}
                                 </>
                               )}
-                              {isReservedByUser && !isHoliday && !isCanceled && (
+                              {isLoggedIn && isReservedByUser && !isHoliday && !isCanceled && (
                                 <button type="button" className={s.btnAbsence} onClick={() => handleRegisterAbsence(ev)}>
                                   欠席登録 → 振替権利付与
                                 </button>
