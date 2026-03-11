@@ -4,37 +4,37 @@
 // Tabs（モダン）
 // ================================================================
 .tabBar {
-  display: flex;
   border-bottom: 1px solid v.$color-gray-200;
-  margin-bottom: v.$space-5;
+  display: flex;
   flex-wrap: wrap;
   gap: v.$space-1;
+  margin-bottom: v.$space-5;
 }
 
 .tab {
-  font-size: v.$font-base;
-  padding: v.$space-3 v.$space-4;
-  border-radius: v.$radius-lg v.$radius-lg 0 0;
+  background-color: transparent;
   border: 1px solid transparent;
   border-bottom: none;
-  background-color: transparent;
-  cursor: pointer;
-  font-weight: 500;
+  border-radius: v.$radius-lg v.$radius-lg 0 0;
   color: v.$color-gray-500;
+  cursor: pointer;
+  font-size: v.$font-base;
+  font-weight: 500;
+  padding: v.$space-3 v.$space-4;
   transition: color 0.15s ease, background 0.15s ease;
 
   &:hover {
-    color: v.$color-gray-700;
     background-color: v.$color-gray-50;
+    color: v.$color-gray-700;
   }
 }
 
 .tabActive {
   background-color: v.$color-white;
+  border-bottom: 1px solid v.$color-white;
+  border-color: v.$color-gray-200;
   color: v.$color-primary;
   font-weight: 600;
-  border-color: v.$color-gray-200;
-  border-bottom: 1px solid v.$color-white;
   margin-bottom: -1px;
 }
 
@@ -42,19 +42,19 @@
 // Card / Form elements（モダン）
 // ================================================================
 .card {
+  background-color: v.$color-white;
   border: 1px solid v.$color-gray-200;
   border-radius: v.$radius-xl;
-  padding: v.$space-5;
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.05);
   margin-bottom: v.$space-4;
-  background-color: v.$color-white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: v.$space-5;
 }
 
 .cardTitle {
+  color: v.$color-gray-900;
   font-size: v.$font-lg;
   font-weight: 600;
   margin-bottom: v.$space-3;
-  color: v.$color-gray-900;
 }
 
 .mutedText {
@@ -65,10 +65,10 @@
 
 // --- Material Design 風 ラベル ---
 .label {
+  color: v.$color-gray-700;
   display: block;
   font-size: v.$font-sm;
   font-weight: 500;
-  color: v.$color-gray-700;
   margin-bottom: v.$space-1;
   transition: color 0.2s ease;
 }
@@ -76,17 +76,17 @@
 // --- Material Design 風 テキスト・セレクト（アンダーライン＋フォーカス） ---
 .input,
 .select {
-  width: 100%;
-  padding: v.$space-2 v.$space-1 v.$space-2 0;
+  background: transparent;
   border: none;
   border-bottom: 1px solid v.$color-gray-300;
   border-radius: 0;
-  font-size: v.$font-base;
-  font-family: inherit;
-  color: v.$color-gray-900;
-  background: transparent;
   box-sizing: border-box;
+  color: v.$color-gray-900;
+  font-family: inherit;
+  font-size: v.$font-base;
+  padding: v.$space-2 v.$space-1 v.$space-2 0;
   transition: border-color 0.2s ease, border-width 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
 
   &::placeholder {
     color: v.$color-gray-400;
@@ -97,42 +97,43 @@
   }
 
   &:focus {
-    outline: none;
-    border-bottom-width: 2px;
     border-bottom-color: v.$color-primary;
+    border-bottom-width: 2px;
     margin-bottom: -1px;
+    outline: none;
   }
 }
 
 .select {
-  padding-right: v.$space-6;
-  cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
   background-position: right 2px center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  padding-right: v.$space-6;
 }
 
 .inputSmall {
   composes: input;
-  width: auto;
   min-width: 80px;
+  width: auto;
 }
 
 // ================================================================
 // Buttons
 // ================================================================
 .btn {
-  font-size: v.$font-md;
-  padding: v.$space-2 v.$space-4 - 2;
-  border-radius: v.$radius-md;
   border: none;
+  border-radius: v.$radius-md;
   color: v.$color-white;
   cursor: pointer;
+  font-size: v.$font-md;
   font-weight: 600;
+  padding: v.$space-2 v.$space-4 - 2;
   transition: opacity 0.15s ease;
 
   &:hover { opacity: 0.85; }
+
   &:disabled {
     background-color: v.$color-gray-300;
     color: v.$color-gray-400;
@@ -141,11 +142,11 @@
   }
 }
 
-.btnPrimary    { composes: btn; background-color: v.$color-primary; }
-.btnSuccess    { composes: btn; background-color: v.$color-success; }
-.btnDanger     { composes: btn; background-color: v.$color-danger; }
-.btnDangerDark { composes: btn; background-color: v.$color-danger-dark; }
-.btnGray       { composes: btn; background-color: v.$color-gray-500; }
+.btnPrimary    { background-color: v.$color-primary; composes: btn; }
+.btnSuccess    { background-color: v.$color-success; composes: btn; }
+.btnDanger     { background-color: v.$color-danger; composes: btn; }
+.btnDangerDark { background-color: v.$color-danger-dark; composes: btn; }
+.btnGray       { background-color: v.$color-gray-500; composes: btn; }
 .btnSm         { font-size: v.$font-sm + 1; }
 
 // ================================================================
@@ -155,30 +156,30 @@
   background-color: v.$color-white;
   border: 1px solid v.$color-gray-200;
   border-radius: v.$radius-lg;
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.06);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .tableCardTable {
-  width: 100%;
   border-collapse: collapse;
   font-size: v.$font-base;
   table-layout: fixed;
+  width: 100%;
 }
 
 .tableCardTable th {
-  padding: v.$space-3 v.$space-3;
-  border-bottom: 1px solid v.$color-gray-200;
-  text-align: left;
-  font-weight: 600;
-  color: v.$color-gray-700;
   background-color: v.$color-gray-50;
+  border-bottom: 1px solid v.$color-gray-200;
+  color: v.$color-gray-700;
+  font-weight: 600;
+  padding: v.$space-3 v.$space-3;
+  text-align: left;
 }
 
 .tableCardTable td {
-  padding: v.$space-3 v.$space-3;
-  border-bottom: 1px solid v.$color-gray-100;
   background-color: v.$color-white;
+  border-bottom: 1px solid v.$color-gray-100;
+  padding: v.$space-3 v.$space-3;
   vertical-align: middle;
 }
 
@@ -200,29 +201,29 @@
 }
 
 .tableCardEmpty {
-  padding: v.$space-6;
-  text-align: center;
   color: v.$color-gray-400;
   font-size: v.$font-base;
+  padding: v.$space-6;
+  text-align: center;
 }
 
 .tableCardActions {
   display: inline-flex;
-  gap: v.$space-2;
   flex-wrap: wrap;
+  gap: v.$space-2;
 }
 
 .table {
-  width: 100%;
   border-collapse: collapse;
   font-size: v.$font-base;
+  width: 100%;
 }
 
 .th {
-  padding: v.$space-2;
-  border-bottom: 1px solid v.$color-gray-200;
-  text-align: left;
   background-color: v.$color-gray-50;
+  border-bottom: 1px solid v.$color-gray-200;
+  padding: v.$space-2;
+  text-align: left;
 }
 
 .td {
@@ -238,75 +239,75 @@
 }
 
 .emptyRow {
+  color: v.$color-gray-400;
   padding: v.$space-4;
   text-align: center;
-  color: v.$color-gray-400;
 }
 
 // ================================================================
 // Status badges
 // ================================================================
 .statusBadge {
-  display: inline-block;
-  padding: v.$space-1 v.$space-3;
   border-radius: v.$radius-full;
+  display: inline-block;
   font-size: v.$font-sm + 1;
   font-weight: 700;
+  padding: v.$space-1 v.$space-3;
 }
 
 .statusScheduled {
-  color: v.$color-success-dark;
   background-color: v.$color-success-bg;
   border: 1px solid v.$color-success-border;
+  color: v.$color-success-dark;
 }
 
 .statusHoliday {
-  color: v.$color-gray-700;
   background-color: v.$color-gray-200;
   border: 1px solid v.$color-gray-300;
+  color: v.$color-gray-700;
 }
 
 .statusCanceled {
-  color: v.$color-danger-dark;
   background-color: v.$color-danger-light;
   border: 1px solid v.$color-danger-border;
+  color: v.$color-danger-dark;
 }
 
 .statusBadgeSm {
-  padding: v.$space-1 / 2 v.$space-2;
   border-radius: v.$radius-sm;
   font-size: v.$font-sm;
   font-weight: 700;
+  padding: v.$space-1 / 2 v.$space-2;
 }
 
 // ================================================================
 // Modal
 // ================================================================
 .modalOverlay {
-  position: fixed;
-  inset: 0;
+  align-items: center;
+  animation: fadeIn 0.2s ease;
   background-color: v.$overlay-bg;
   display: flex;
-  align-items: center;
+  inset: 0;
   justify-content: center;
+  position: fixed;
   z-index: 9999;
-  animation: fadeIn 0.2s ease;
 }
 
 .modalContent {
+  animation: slideUp 0.25s ease;
   background-color: v.$color-white;
   border-radius: v.$radius-xl;
-  padding: v.$space-6;
-  min-width: 360px;
-  max-width: 500px;
   box-shadow: v.$shadow-modal;
-  animation: slideUp 0.25s ease;
+  max-width: 500px;
+  min-width: 360px;
+  padding: v.$space-6;
 }
 
 .modalContentWide {
-  composes: modalContent;
-  min-width: 420px;
+  composes: modalcontent;
   max-width: 520px;
+  min-width: 420px;
 }
 
 .modalTitle {
@@ -316,15 +317,15 @@
 }
 
 .modalBody {
+  color: v.$color-gray-700;
   font-size: v.$font-base;
   margin-bottom: v.$space-4;
-  color: v.$color-gray-700;
 }
 
 .modalFooter {
   display: flex;
-  justify-content: flex-end;
   gap: v.$space-2;
+  justify-content: flex-end;
 }
 
 .modalFooterSplit {
@@ -333,34 +334,34 @@
 }
 
 .modalBtnCancel {
+  background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
+  cursor: pointer;
   font-size: v.$font-base;
   padding: v.$space-2 v.$space-4;
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-300;
-  background-color: v.$color-white;
-  cursor: pointer;
 }
 
 .modalBtnConfirm {
-  font-size: v.$font-base;
-  padding: v.$space-2 v.$space-4;
-  border-radius: v.$radius-md;
-  border: none;
   background-color: v.$color-primary;
+  border: none;
+  border-radius: v.$radius-md;
   color: v.$color-white;
   cursor: pointer;
+  font-size: v.$font-base;
   font-weight: 600;
+  padding: v.$space-2 v.$space-4;
 }
 
 // ================================================================
 // Edit modal grid
 // ================================================================
 .editGrid {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: v.$space-3 v.$space-3;
   align-items: center;
+  display: grid;
   font-size: v.$font-base;
+  gap: v.$space-3 v.$space-3;
+  grid-template-columns: 100px 1fr;
   margin-bottom: v.$space-4;
 }
 
@@ -370,14 +371,14 @@
 }
 
 .editStatusBtn {
-  font-size: v.$font-md;
-  padding: v.$space-1 v.$space-3;
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-300;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
   color: v.$color-gray-500;
-  font-weight: 400;
   cursor: pointer;
+  font-size: v.$font-md;
+  font-weight: 400;
+  padding: v.$space-1 v.$space-3;
 }
 
 .editStatusBtnActive {
@@ -388,20 +389,20 @@
 // View toggle
 // ================================================================
 .viewToggle {
-  display: flex;
-  gap: v.$space-2;
   align-items: center;
-  margin-bottom: v.$space-2;
+  display: flex;
   flex-wrap: wrap;
+  gap: v.$space-2;
+  margin-bottom: v.$space-2;
 }
 
 // ================================================================
 // Form layouts
 // ================================================================
 .formRow {
+  align-items: end;
   display: grid;
   gap: v.$space-2;
-  align-items: end;
 }
 
 .formRow5          { grid-template-columns: 1fr 1fr 1fr 80px auto; }
@@ -413,29 +414,29 @@
 
 .weekdayCheckGroup {
   display: flex;
-  gap: v.$space-2;
   flex-wrap: wrap;
+  gap: v.$space-2;
   margin-top: v.$space-1;
 }
 
 .weekdayCheck {
-  display: flex;
   align-items: center;
-  gap: v.$space-1;
-  font-size: v.$font-base;
-  padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-300;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
   cursor: pointer;
+  display: flex;
+  font-size: v.$font-base;
+  gap: v.$space-1;
+  padding: v.$space-1 v.$space-2;
   user-select: none;
 
   input { display: none; }
 }
 
 .weekdayCheckActive {
-  border: 2px solid v.$color-primary;
   background-color: v.$color-primary-light;
+  border: 2px solid v.$color-primary;
 }
 
 // ================================================================
@@ -448,6 +449,7 @@
       opacity: 0;
       transform: translateY(-10px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -456,9 +458,9 @@
 }
 
 .eventCreateFormContent {
+  animation: eventCreateFormFadeIn 0.35s ease both;
   opacity: 0;
   transform: translateY(-10px);
-  animation: eventCreateFormFadeIn 0.35s ease both;
 }
 
 .colorSun     { color: v.$color-sunday; }

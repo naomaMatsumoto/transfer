@@ -1,8 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { writeAuditLog } from "../../../lib/auditLog";
+import { type InsertResult, isMysqlError } from "../../../types/db";
 
 export default async function createUser(
   req: Request,
@@ -38,7 +40,7 @@ export default async function createUser(
   }
   const addressVal = address == null || String(address).trim() === "" ? null : String(address).trim();
   const phoneVal = phone == null || String(phone).trim() === "" ? null : String(phone).trim();
-  const stageVal = stage && STAGE_VALUES.includes(stage as any) ? stage : "other";
+  const stageVal = stage && (STAGE_VALUES as readonly string[]).includes(stage) ? stage : "other";
   const passwordVal =
     password != null && String(password).trim() !== "" ? await bcrypt.hash(String(password).trim(), 10) : null;
   try {
@@ -46,8 +48,10 @@ export default async function createUser(
       "INSERT INTO users (store_id, name, furigana, email, password_hash, address, phone, course_type, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [storeId, trimmedName, furiganaVal, emailTrimmed, passwordVal, addressVal, phoneVal, course_type ?? null, stageVal],
     );
+    const newId = (result as InsertResult).insertId;
+    void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "member.create", targetType: "user", targetId: newId, detail: { name: trimmedName } });
     res.status(201).json({
-      id: (result as any).insertId,
+      id: newId,
       name: trimmedName,
       furigana: furiganaVal,
       email: emailTrimmed,
@@ -56,8 +60,8 @@ export default async function createUser(
       course_type: course_type ?? null,
       stage: stageVal,
     });
-  } catch (err: any) {
-    if (err.code === "ER_DUP_ENTRY") {
+  } catch (err: unknown) {
+    if (isMysqlError(err) && err.code === "ER_DUP_ENTRY") {
       res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
       return;
     }

@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
+import type { InsertResult, RowDataPacket } from "../../types/db";
 
 export default async function createAbsence(
   req: Request,
@@ -23,7 +24,7 @@ export default async function createAbsence(
       "SELECT id, class_type_id FROM events WHERE id = ? FOR UPDATE",
       [eventId],
     );
-    const eventRow = (events as any[])[0];
+    const eventRow = (events as RowDataPacket[])[0];
     if (!eventRow) {
       await conn.rollback();
       res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
@@ -35,7 +36,7 @@ export default async function createAbsence(
     );
     await conn.commit();
     res.status(201).json({
-      id: (result as any).insertId,
+      id: (result as InsertResult).insertId,
       userId,
       eventId,
       classTypeId: eventRow.class_type_id,

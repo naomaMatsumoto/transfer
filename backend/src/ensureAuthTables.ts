@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { pool } from "./db";
 import logger from "./logger";
@@ -124,6 +125,53 @@ export async function ensureAuthTables(): Promise<void> {
       logger.info("Added store_id to staff");
     }
 
+    // corporations.code (obfuscated URL identifier)
+    const [codeCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'code' LIMIT 1"
+    );
+    if ((codeCol as unknown[]).length === 0) {
+      await pool.query("ALTER TABLE corporations ADD COLUMN code CHAR(12) NULL AFTER id");
+      await pool.query("ALTER TABLE corporations ADD UNIQUE KEY uk_corporations_code (code)");
+      const [existing] = await pool.query("SELECT id FROM corporations WHERE code IS NULL");
+      for (const row of existing as { id: number }[]) {
+        const code = crypto.randomBytes(9).toString("base64url").slice(0, 12);
+        await pool.query("UPDATE corporations SET code = ? WHERE id = ?", [code, row.id]);
+      }
+      logger.info("Added code to corporations");
+    }
+
+    // corporations.status
+    const [statusCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1"
+    );
+    if ((statusCol as unknown[]).length === 0) {
+      await pool.query("ALTER TABLE corporations ADD COLUMN status ENUM('active','suspended') NOT NULL DEFAULT 'active' AFTER name");
+      logger.info("Added status to corporations");
+    }
+
+    // stores.public_id (UUID for public URLs)
+    const [pidCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stores' AND COLUMN_NAME = 'public_id' LIMIT 1"
+    );
+    if ((pidCol as unknown[]).length === 0) {
+      await pool.query("ALTER TABLE stores ADD COLUMN public_id CHAR(36) NULL AFTER id");
+      await pool.query("ALTER TABLE stores ADD UNIQUE KEY uk_stores_public_id (public_id)");
+      const [existing] = await pool.query("SELECT id FROM stores WHERE public_id IS NULL");
+      for (const row of existing as { id: number }[]) {
+        await pool.query("UPDATE stores SET public_id = ? WHERE id = ?", [crypto.randomUUID(), row.id]);
+      }
+      logger.info("Added public_id to stores");
+    }
+
+    // accounts.role
+    const [roleCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'accounts' AND COLUMN_NAME = 'role' LIMIT 1"
+    );
+    if ((roleCol as unknown[]).length === 0) {
+      await pool.query("ALTER TABLE accounts ADD COLUMN role ENUM('admin','staff') NOT NULL DEFAULT 'admin' AFTER display_name");
+      logger.info("Added role to accounts");
+    }
+
     // 運営管理者（SaaS プラットフォーム側）
     await pool.query(`
       CREATE TABLE IF NOT EXISTS platform_admins (
@@ -143,6 +191,31 @@ export async function ensureAuthTables(): Promise<void> {
         ["ops@example.com", hash]
       );
       logger.info("Created default platform admin: ops@example.com (initial password in docs)");
+    }
+
+    // 監査ログ
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        actor_type ENUM('admin','member','platform','system') NOT NULL,
+        actor_id BIGINT UNSIGNED NULL,
+        action VARCHAR(100) NOT NULL,
+        target_type VARCHAR(50) NULL,
+        target_id BIGINT UNSIGNED NULL,
+        detail JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_audit_created (created_at),
+        INDEX idx_audit_action (action)
+      )
+    `);
+
+    // corporations.deleted_at (soft delete)
+    const [delCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'deleted_at' LIMIT 1"
+    );
+    if ((delCol as unknown[]).length === 0) {
+      await pool.query("ALTER TABLE corporations ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");
+      logger.info("Added deleted_at to corporations");
     }
 
     logger.info("Auth tables ready");

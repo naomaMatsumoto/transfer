@@ -57,3 +57,34 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
     return false;
   }
 }
+
+/**
+ * パスワード再設定用メールを送信する
+ */
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
+  const transport = getTransport();
+  if (!transport) {
+    logger.warn("SMTP not configured. Password reset email not sent. (Set SMTP_* env for production)");
+    return false;
+  }
+  try {
+    await transport.sendMail({
+      from: MAIL_FROM,
+      to,
+      subject: "【パスワード再設定】",
+      text: `パスワード再設定のリクエストを受け付けました。以下のリンクをクリックして、新しいパスワードを設定してください。\n\n${resetUrl}\n\nこのリンクは1時間で無効になります。\n\n※心当たりがない場合はこのメールを無視してください。`,
+      html: `
+        <p>パスワード再設定のリクエストを受け付けました。</p>
+        <p>以下のリンクをクリックして、新しいパスワードを設定してください。</p>
+        <p><a href="${resetUrl}">${resetUrl}</a></p>
+        <p>このリンクは1時間で無効になります。</p>
+        <p>※心当たりがない場合はこのメールを無視してください。</p>
+      `.trim(),
+    });
+    logger.info("Password reset email sent");
+    return true;
+  } catch (e) {
+    logger.error("Failed to send password reset email: " + (e instanceof Error ? e.message : String(e)));
+    return false;
+  }
+}

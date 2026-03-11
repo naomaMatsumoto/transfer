@@ -1,0 +1,325 @@
+@use "../variables" as v;
+
+// ================================================================
+// Shared nav item base (placeholder – no output unless extended)
+// ================================================================
+%navItemBase {
+  display: flex;
+  align-items: center;
+  gap: v.$space-2;
+  padding: v.$space-2 v.$space-3;
+  border-radius: v.$radius-md;
+  font-size: v.$font-base;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  background: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+// ================================================================
+// Layout shell
+// ================================================================
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+// ================================================================
+// Sidebar
+// ================================================================
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  flex-shrink: 0;
+  background: v.$color-gray-900;
+  color: v.$color-gray-300;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  padding: v.$space-5;
+  border-bottom: 1px solid v.$color-gray-700;
+}
+
+.logoMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: v.$radius-md;
+  background: v.$color-primary;
+  color: v.$color-white;
+  font-weight: 700;
+  font-size: v.$font-lg;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: v.$font-base;
+  font-weight: 600;
+  color: v.$color-white;
+  line-height: 1.2;
+}
+
+.logoSub {
+  font-size: v.$font-xs;
+  color: v.$color-gray-400;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  padding: v.$space-3;
+  gap: v.$space-1;
+  flex: 1;
+}
+
+.sidebarLabel {
+  padding: v.$space-3 v.$space-3 v.$space-1;
+  font-size: v.$font-xs;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: v.$color-gray-500;
+  font-weight: 600;
+}
+
+.navLink {
+  @extend %navItemBase;
+  color: v.$color-gray-400;
+
+  &:hover {
+    background: v.$color-gray-700;
+    color: v.$color-white;
+  }
+}
+
+.navLinkActive {
+  @extend %navItemBase;
+  background: rgba(v.$color-primary, 0.15);
+  color: v.$color-primary-bg;
+  font-weight: 500;
+
+  &:hover {
+    background: rgba(v.$color-primary, 0.25);
+  }
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.sidebarFooter {
+  padding: v.$space-3;
+  border-top: 1px solid v.$color-gray-700;
+}
+
+.logoutBtn {
+  @extend %navItemBase;
+  color: v.$color-gray-500;
+  font-size: v.$font-sm;
+
+  &:hover {
+    color: v.$color-danger;
+    background: rgba(v.$color-danger, 0.1);
+  }
+}
+
+// ================================================================
+// Main content
+// ================================================================
+.main {
+  flex: 1;
+  background: v.$color-gray-50;
+  padding: v.$space-8;
+  overflow: auto;
+  min-width: 0;
+}
+
+// ================================================================
+// Centered (auth check / login)
+// ================================================================
+.centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: v.$color-gray-50;
+}
+
+// ================================================================
+// Login
+// ================================================================
+.loginCard {
+  width: 100%;
+  max-width: 400px;
+}
+
+.loginHeader {
+  text-align: center;
+  margin-bottom: v.$space-6;
+}
+
+.loginLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: v.$radius-lg;
+  background: v.$color-gray-900;
+  color: v.$color-white;
+  font-weight: 700;
+  font-size: v.$font-xl;
+  margin-bottom: v.$space-3;
+}
+
+// ================================================================
+// Dashboard stats
+// ================================================================
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: v.$space-4;
+  margin-bottom: v.$space-6;
+}
+
+.statCard {
+  background: v.$color-white;
+  border-radius: v.$radius-lg;
+  padding: v.$space-5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid v.$color-gray-200;
+}
+
+.statLabel {
+  font-size: v.$font-sm;
+  color: v.$color-gray-500;
+  margin-bottom: v.$space-1;
+}
+
+.statValue {
+  font-size: v.$font-3xl;
+  font-weight: 700;
+  color: v.$color-gray-900;
+  line-height: 1;
+}
+
+.statSub {
+  font-size: v.$font-xs;
+  color: v.$color-gray-400;
+  margin-top: v.$space-1;
+}
+
+// ================================================================
+// Modal
+// ================================================================
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: v.$overlay-bg;
+  animation: fadeIn 0.15s ease;
+}
+
+.modalCard {
+  width: 440px;
+}
+
+// ================================================================
+// Form field widths
+// ================================================================
+.fieldMinSm {
+  min-width: 140px;
+}
+
+.fieldMinMd {
+  min-width: 180px;
+}
+
+.fieldMinLg {
+  min-width: 200px;
+}
+
+// ================================================================
+// Page header
+// ================================================================
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: v.$space-6;
+}
+
+.pageTitle {
+  font-size: v.$font-3xl;
+  font-weight: 700;
+  color: v.$color-gray-900;
+  margin: 0;
+}
+
+// ================================================================
+// Detail header
+// ================================================================
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: v.$space-3;
+  margin-bottom: v.$space-1;
+}
+
+.detailMeta {
+  font-size: v.$font-sm;
+  color: v.$color-gray-500;
+  margin-bottom: v.$space-5;
+}
+
+// ================================================================
+// Section header (title + action button row)
+// ================================================================
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: v.$space-3;
+}
+
+// ================================================================
+// Filter bar
+// ================================================================
+.filterBar {
+  display: flex;
+  gap: v.$space-2;
+  margin-bottom: v.$space-4;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+// ================================================================
+// Constrained input widths (replace inline maxWidth styles)
+// ================================================================
+.inputNarrow {
+  max-width: 140px;
+}
+
+.inputMedium {
+  max-width: 220px;
+}
+
+.inputWide {
+  max-width: 260px;
+}

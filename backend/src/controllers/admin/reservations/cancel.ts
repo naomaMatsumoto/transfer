@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function cancelReservation(
   req: Request,
@@ -48,6 +49,7 @@ export default async function cancelReservation(
     }
 
     await conn.commit();
+    void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "reservation.cancel_by_admin", targetType: "reservation", targetId: reservationId });
     res.json({ id: reservationId, status: "canceled_by_admin" });
   } catch (err) {
     await conn.rollback();

@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint . && stylelint \"src/**/*.{scss,css}\"",
+    "lint:eslint": "eslint .",
+    "lint:scss": "stylelint \"src/**/*.{scss,css}\"",
+    "lint:scss:fix": "stylelint \"src/**/*.{scss,css}\" --fix",
+    "lint:fix": "eslint . --fix && stylelint \"src/**/*.{scss,css}\" --fix"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
@@ -21,6 +25,9 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "sass": "^1.97.3",
+    "stylelint": "^17.3.0",
+    "stylelint-config-standard-scss": "^17.0.0",
+    "stylelint-order": "^7.0.1",
     "typescript": "^5"
   }
 }

@@ -8,6 +8,10 @@ import s from "./AppShell.module.scss";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
+  const hideShell = pathname?.startsWith("/ops");
+
+  if (hideShell) return <>{children}</>;
+
   const isActive = (path: string) => {
     if (path === ROUTES.HOME) return pathname === "/";
     return pathname?.startsWith(path) ?? false;

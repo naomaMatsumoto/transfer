@@ -1,8 +1,8 @@
 @use "variables" as v;
 
 .page {
-  padding: v.$space-6;
   font-family: v.$font-family-base;
+  padding: v.$space-6;
 }
 
 .title {
@@ -12,19 +12,19 @@
 }
 
 .errorBanner {
+  background-color: v.$color-danger-light;
+  border-radius: v.$radius-sm;
+  color: v.$color-danger-dark;
   margin-bottom: v.$space-4;
   padding: v.$space-2 v.$space-3;
-  border-radius: v.$radius-sm;
-  background-color: v.$color-danger-light;
-  color: v.$color-danger-dark;
 }
 
 .creditsSection {
+  background-color: v.$color-gray-50;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
   margin-bottom: v.$space-6;
   padding: v.$space-3 v.$space-4;
-  border-radius: v.$radius-lg;
-  border: 1px solid v.$color-gray-200;
-  background-color: v.$color-gray-50;
 }
 
 .sectionTitle {
@@ -38,43 +38,43 @@
 }
 
 .creditsList {
-  padding-left: v.$space-5;
   margin: 0;
+  padding-left: v.$space-5;
 }
 
 .creditItem {
-  margin-bottom: v.$space-1;
   font-size: v.$font-lg;
+  margin-bottom: v.$space-1;
 }
 
 .monthNav {
+  align-items: center;
   display: flex;
   gap: v.$space-2;
-  align-items: center;
   margin-bottom: v.$space-2;
 }
 
 .monthBtn {
+  background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-full;
+  cursor: pointer;
   font-size: v.$font-md;
   padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-full;
-  border: 1px solid v.$color-gray-300;
-  background-color: v.$color-white;
-  cursor: pointer;
 }
 
 .calendarGrid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: v.$space-2;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   margin-top: v.$space-2;
 }
 
 .weekdayHeader {
-  text-align: center;
   font-size: v.$font-md;
   font-weight: 600;
   padding-bottom: v.$space-1;
+  text-align: center;
 }
 
 .weekdaySun     { color: v.$color-sunday; }
@@ -82,11 +82,11 @@
 .weekdayDefault { color: v.$color-gray-500; }
 
 .dayCell {
-  border-radius: v.$radius-lg;
-  border: 1px solid v.$color-gray-200;
-  padding: v.$space-2 v.$space-3;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
   min-height: 110px;
+  padding: v.$space-2 v.$space-3;
 }
 
 .dayCellToday {
@@ -103,8 +103,8 @@
 }
 
 .dayNumber {
-  font-weight: 600;
   font-size: v.$font-base;
+  font-weight: 600;
   margin-bottom: v.$space-1;
 }
 
@@ -112,29 +112,29 @@
 .dayNumberSat { color: v.$color-saturday; }
 
 .daySlotCount {
-  font-size: v.$font-sm + 1;
   color: v.$color-gray-500;
+  font-size: v.$font-sm + 1;
 }
 
 .emptyDay {
-  font-size: v.$font-md;
   color: v.$color-gray-400;
+  font-size: v.$font-md;
 }
 
 .eventList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
   gap: v.$space-1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .eventItem {
-  padding: v.$space-2;
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-200;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-md;
+  padding: v.$space-2;
 }
 
 .eventItemReserved {
@@ -164,16 +164,16 @@
 .eventCapacityAvailable { color: v.$color-success; }
 
 .badgeRow {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: v.$space-1;
-  align-items: center;
 }
 
 .badge {
+  border-radius: v.$radius-full;
   font-size: v.$font-sm + 1;
   padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-full;
 }
 
 .badgeHoliday  { background-color: v.$color-gray-200; }
@@ -188,12 +188,12 @@
 }
 
 .btnNormal {
+  background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-full;
+  cursor: pointer;
   font-size: v.$font-md;
   padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-full;
-  border: 1px solid v.$color-gray-300;
-  background-color: v.$color-white;
-  cursor: pointer;
 
   &:disabled {
     background-color: v.$color-gray-50;
@@ -202,21 +202,21 @@
 }
 
 .btnMakeup {
-  font-size: v.$font-md;
-  padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-full;
-  border: 1px solid v.$color-success-accent;
   background-color: v.$color-success-light;
+  border: 1px solid v.$color-success-accent;
+  border-radius: v.$radius-full;
   color: v.$color-success-deep;
   cursor: pointer;
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-2;
 }
 
 .btnAbsence {
-  font-size: v.$font-md;
-  padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-full;
-  border: 1px solid v.$color-warning;
   background-color: v.$color-warning-light;
+  border: 1px solid v.$color-warning;
+  border-radius: v.$radius-full;
   color: v.$color-warning-text;
   cursor: pointer;
+  font-size: v.$font-md;
+  padding: v.$space-1 v.$space-2;
 }

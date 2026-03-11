@@ -2,13 +2,13 @@
 
 // フラッシュメッセージ用ラッパー（画面上部・最前面・アニメーション・自動で消える）
 .flashWrap {
+  animation: flashSlideIn 0.3s ease-out;
+  left: 50%;
+  pointer-events: none;
   position: fixed;
   top: 56px;
-  left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  animation: flashSlideIn 0.3s ease-out;
-  pointer-events: none;
 }
 
 @keyframes flashSlideIn {
@@ -16,6 +16,7 @@
     opacity: 0;
     transform: translateX(-50%) translateY(-100%);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -31,6 +32,7 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(-50%) translateY(-100%);
@@ -38,11 +40,11 @@
 }
 
 .flash {
-  padding: v.$space-3 v.$space-5;
   border-radius: v.$radius-lg;
+  box-shadow: 0 4px 12px rgb(0, 0, 0, 0.15);
   font-size: v.$font-base;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: v.$space-3 v.$space-5;
 }
 
 .flashWrap .flash {
@@ -51,12 +53,12 @@
 
 .flashSuccess {
   background-color: v.$color-success-light;
-  color: v.$color-success-dark;
   border: 1px solid v.$color-success-border;
+  color: v.$color-success-dark;
 }
 
 .flashError {
   background-color: v.$color-danger-light;
-  color: v.$color-danger-dark;
   border: 1px solid v.$color-danger-border;
+  color: v.$color-danger-dark;
 }

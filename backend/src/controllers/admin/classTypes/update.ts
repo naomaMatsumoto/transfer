@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { type UpdateResult, isMysqlError } from "../../../types/db";
 
 export default async function updateClassType(
   req: Request,
@@ -20,7 +21,7 @@ export default async function updateClassType(
     description?: string;
   };
   const sets: string[] = [];
-  const params: any[] = [];
+  const params: (string | number | null)[] = [];
   if (code !== undefined) {
     sets.push("code = ?"); params.push(String(code).trim());
   }
@@ -45,13 +46,13 @@ export default async function updateClassType(
       `UPDATE class_types SET ${sets.join(", ")} WHERE id = ? AND store_id IN (${storeIds.map(() => "?").join(",")})`,
       params,
     );
-    if ((result as any).affectedRows === 0) {
+    if ((result as UpdateResult).affectedRows === 0) {
       res.status(404).json({ error: ERR.CLASS_TYPE_NOT_FOUND });
       return;
     }
     res.json({ id, updated: true });
-  } catch (err: any) {
-    if (err.code === "ER_DUP_ENTRY") {
+  } catch (err: unknown) {
+    if (isMysqlError(err) && err.code === "ER_DUP_ENTRY") {
       res.status(400).json({ error: ERR.CLASS_TYPE_CODE_DUPLICATE });
       return;
     }

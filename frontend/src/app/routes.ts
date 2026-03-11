@@ -29,6 +29,10 @@ export const ROUTES = {
   OPS_LOGIN: "/ops/login",
   /** 運営管理ダッシュボード（法人一覧） */
   OPS_DASHBOARD: "/ops",
+  /** 統計ダッシュボード */
+  OPS_STATS: "/ops/stats",
+  /** 監査ログ */
+  OPS_AUDIT_LOGS: "/ops/audit-logs",
 } as const;
 
 /** 店舗ごとのカレンダーURL（振替予約・欠席登録） */

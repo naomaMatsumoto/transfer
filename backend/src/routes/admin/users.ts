@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { requireAdminRole } from "../../middleware/auth";
 import listUsers from "../../controllers/admin/users/list";
 import createUser from "../../controllers/admin/users/create";
 import updateUser from "../../controllers/admin/users/update";
@@ -10,6 +11,6 @@ const router = Router();
 router.get("/users", asyncHandler(listUsers));
 router.post("/users", asyncHandler(createUser));
 router.patch("/users/:id", asyncHandler(updateUser));
-router.delete("/users/:id", asyncHandler(deleteUser));
+router.delete("/users/:id", requireAdminRole, asyncHandler(deleteUser));
 
 export default router;

@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { type UpdateResult, isMysqlError } from "../../../types/db";
 
 export default async function deleteClassType(
   req: Request,
@@ -20,13 +21,13 @@ export default async function deleteClassType(
       `DELETE FROM class_types WHERE id = ? AND store_id IN (${placeholders})`,
       [id, ...storeIds]
     );
-    if ((result as any).affectedRows === 0) {
+    if ((result as UpdateResult).affectedRows === 0) {
       res.status(404).json({ error: ERR.CLASS_TYPE_NOT_FOUND });
       return;
     }
     res.json({ id, deleted: true });
-  } catch (err: any) {
-    if (err.code === "ER_ROW_IS_REFERENCED_2") {
+  } catch (err: unknown) {
+    if (isMysqlError(err) && err.code === "ER_ROW_IS_REFERENCED_2") {
       res.status(400).json({ error: ERR.CLASS_TYPE_IN_USE });
       return;
     }

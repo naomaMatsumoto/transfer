@@ -41,9 +41,11 @@ const API_ERROR_MESSAGES: Record<string, string> = {
   CREDIT_UPDATE_EMPTY: "更新する項目がありません",
   CREDIT_NOT_FOUND: "振替権利が見つかりません",
 
-  // 予約（管理）
+  // 予約（管理・会員キャンセル）
   RESERVATION_NOT_FOUND: "予約が見つかりません",
+  RESERVATION_NOT_BOOKED: "この予約はキャンセルできません（すでにキャンセル済みまたは完了しています）",
   RESERVATION_CANCEL_NOT_BOOKED: "booked 状態の予約のみキャンセルできます",
+  INVALID_ID: "予約IDが正しくありません",
 
   // 会員（admin/members でも使用）
   MEMBER_NAME_REQUIRED: "名前は必須です",
@@ -73,6 +75,23 @@ const API_ERROR_MESSAGES: Record<string, string> = {
   STORE_NOT_FOUND: "店舗が見つかりません",
   VERIFICATION_TOKEN_INVALID: "認証リンクが無効です。再度会員登録をお願いします。",
   VERIFICATION_TOKEN_EXPIRED: "認証リンクの有効期限が切れています。再度会員登録をお願いします。",
+
+  // 予約受付期限・キャンセル期限
+  BOOKING_DEADLINE_PASSED: "予約受付期限を過ぎています",
+  CANCEL_DEADLINE_PASSED: "キャンセル期限を過ぎています",
+  MEMBER_NOT_ACTIVE: "停止中または退会済みの会員は予約できません",
+
+  // キャンセル待ち
+  EVENT_NOT_FULL: "空きがあります。直接予約できます。",
+  ALREADY_ON_WAITLIST: "すでにキャンセル待ちに登録されています",
+  NOT_ON_WAITLIST: "キャンセル待ちに登録されていません",
+
+  // 会員ステータス
+  MEMBER_PAUSED: "アカウントが一時停止中です。管理者にお問い合わせください。",
+  MEMBER_WITHDRAWN: "退会済みのアカウントです。",
+
+  // 権限
+  FORBIDDEN: "この操作には管理者権限が必要です",
 };
 
 export type ApiErrorExtra = {

@@ -1,96 +1,181 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { getApiBase, apiFetch } from "@/app/lib/api";
+import { opsFetch, postJson, patchJson } from "./api";
+import { CorporationRow, OrganizationType, CorpStatus, ORG_TYPE_LABEL } from "./types";
+import { useSubmit } from "./hooks";
+import { formatDate } from "./utils";
+import { PageHeader, StatCard, StatusBadge, DataTable, Modal, ConfirmModal, Loading, Empty, ErrorAlert, FilterBar } from "./components";
+import s from "./ops.module.scss";
 
-type OrganizationType = "corporation" | "sole_proprietor";
+type StatusFilter = "all" | CorpStatus;
 
-type CorporationRow = {
-  id: number;
-  organization_type: OrganizationType;
-  name: string;
-  created_at: string;
-  store_count: number;
-  account_count: number;
-};
-
-const ORG_TYPE_LABEL: Record<OrganizationType, string> = {
-  corporation: "法人",
-  sole_proprietor: "個人事業主",
-};
+function effectiveStatus(c: CorporationRow): CorpStatus {
+  if (c.deleted_at) return "deleted";
+  return c.status ?? "active";
+}
 
 export default function OpsDashboardPage() {
   const [corporations, setCorporations] = useState<CorporationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const [showModal, setShowModal] = useState(false);
   const [newOrgType, setNewOrgType] = useState<OrganizationType>("corporation");
   const [newName, setNewName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const createSubmit = useSubmit();
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await apiFetch(`${getApiBase()}/ops/corporations`);
-        if (!res.ok) {
-          setError("法人一覧の取得に失敗しました");
-          return;
-        }
-        const data = (await res.json()) as CorporationRow[];
-        setCorporations(Array.isArray(data) ? data : []);
-      } catch {
-        setError("法人一覧の取得に失敗しました");
-      } finally {
-        setLoading(false);
-      }
-    };
-    void load();
+  const [restoreTarget, setRestoreTarget] = useState<CorporationRow | null>(null);
+  const [restoring, setRestoring] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const r = await opsFetch<CorporationRow[]>("/corporations?include_deleted=1");
+    if (r.ok && Array.isArray(r.data)) {
+      setCorporations(r.data);
+    } else {
+      setError("事業者一覧の取得に失敗しました");
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const res = await apiFetch(`${getApiBase()}/ops/corporations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, organizationType: newOrgType }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { id?: number; organization_type?: OrganizationType; error?: string };
-      if (!res.ok) {
-        setCreateError(data.error === "NAME_REQUIRED" ? "名前を入力してください" : "作成に失敗しました");
-        return;
-      }
-      setNewName("");
-      if (data.id != null) {
-        setCorporations((prev) => [
-          ...prev,
-          { id: data.id!, organization_type: data.organization_type ?? newOrgType, name, created_at: new Date().toISOString(), store_count: 0, account_count: 0 },
-        ]);
-      }
-    } catch {
-      setCreateError("作成に失敗しました");
-    } finally {
-      setCreating(false);
-    }
+
+    type CreateResp = { id?: number; code?: string; organization_type?: OrganizationType };
+    await createSubmit.run(
+      () => postJson("/corporations", { name, organizationType: newOrgType }),
+      {
+        errorMsg: "作成に失敗しました",
+        onSuccess: (data) => {
+          const d = data as CreateResp | undefined;
+          setNewName("");
+          setShowModal(false);
+          if (d?.id != null) {
+            setCorporations((prev) => [
+              ...prev,
+              {
+                id: d.id!,
+                code: d.code,
+                organization_type: d.organization_type ?? newOrgType,
+                name,
+                status: "active",
+                deleted_at: null,
+                created_at: new Date().toISOString(),
+                store_count: 0,
+                account_count: 0,
+              },
+            ]);
+          }
+        },
+      },
+    );
   };
+
+  const handleRestore = async () => {
+    if (!restoreTarget) return;
+    setRestoring(true);
+    const code = restoreTarget.code ?? restoreTarget.id;
+    const r = await patchJson(`/corporations/${code}/restore`);
+    setRestoring(false);
+    setRestoreTarget(null);
+    if (r.ok) void load();
+  };
+
+  const activeCorporations = corporations.filter((c) => !c.deleted_at);
+  const totalStores = activeCorporations.reduce((n, c) => n + c.store_count, 0);
+  const totalAccounts = activeCorporations.reduce((n, c) => n + c.account_count, 0);
+  const activeCount = activeCorporations.filter((c) => c.status !== "suspended").length;
+
+  const filtered = useMemo(() => {
+    let list = corporations;
+    if (statusFilter !== "all") {
+      list = list.filter((c) => effectiveStatus(c) === statusFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((c) => c.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [corporations, statusFilter, search]);
 
   return (
     <div>
-      <h1 className="h4 mb-4">事業者一覧（SaaS 運営）</h1>
+      <PageHeader
+        title="事業者管理"
+        action={<button className="btn btn-dark btn-sm" onClick={() => setShowModal(true)}>+ 新規事業者を追加</button>}
+      />
 
-      <div className="card shadow-sm mb-4">
-        <div className="card-body">
-          <h2 className="h6 mb-3">新規事業者を追加</h2>
-          <form onSubmit={handleCreate} className="d-flex gap-2 flex-wrap align-items-end">
-            <div style={{ minWidth: "140px" }}>
-              <label className="form-label small mb-0">種類</label>
+      <div className={s.statsGrid}>
+        <StatCard label="事業者数" value={activeCorporations.length} sub={`稼働中 ${activeCount}`} />
+        <StatCard label="総店舗数" value={totalStores} />
+        <StatCard label="総アカウント数" value={totalAccounts} />
+      </div>
+
+      <ErrorAlert message={error} />
+
+      {!loading && corporations.length > 0 && (
+        <FilterBar>
+          <input
+            type="text"
+            className={`form-control form-control-sm ${s.inputWide}`}
+            placeholder="事業者名で検索…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className={`form-select form-select-sm ${s.inputNarrow}`}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          >
+            <option value="all">すべて</option>
+            <option value="active">稼働中</option>
+            <option value="suspended">停止中</option>
+            <option value="deleted">削除済み</option>
+          </select>
+        </FilterBar>
+      )}
+
+      {loading ? <Loading /> : corporations.length === 0 ? (
+        <Empty text="事業者がまだ登録されていません。" />
+      ) : filtered.length === 0 ? (
+        <Empty text="条件に一致する事業者がありません。" />
+      ) : (
+        <DataTable
+          rows={filtered}
+          rowKey={(c) => c.id}
+          columns={[
+            { key: "name", header: "名前", render: (c) => (
+              <span className={`fw-medium ${c.deleted_at ? "text-body-secondary text-decoration-line-through" : ""}`}>{c.name}</span>
+            )},
+            { key: "type", header: "種類", render: (c) => <span className="small text-body-secondary">{ORG_TYPE_LABEL[c.organization_type ?? "corporation"]}</span> },
+            { key: "status", header: "ステータス", render: (c) => <StatusBadge status={effectiveStatus(c)} /> },
+            { key: "stores", header: "店舗", className: "text-end", render: (c) => c.store_count },
+            { key: "accounts", header: "アカウント", className: "text-end", render: (c) => c.account_count },
+            { key: "date", header: "登録日", render: (c) => <span className="small text-body-secondary">{formatDate(c.created_at)}</span> },
+            { key: "action", header: "", render: (c) => c.deleted_at ? (
+              <button className="btn btn-sm btn-outline-success" onClick={() => setRestoreTarget(c)}>復旧</button>
+            ) : (
+              <Link href={`/ops/corporations/${c.code ?? c.id}`} className="btn btn-sm btn-outline-dark">詳細</Link>
+            )},
+          ]}
+        />
+      )}
+
+      {showModal && (
+        <Modal title="新規事業者を追加" onClose={() => setShowModal(false)}>
+          <form onSubmit={handleCreate}>
+            <div className="mb-3">
+              <label className="form-label small">種類</label>
               <select
                 className="form-select form-select-sm"
                 value={newOrgType}
@@ -100,8 +185,10 @@ export default function OpsDashboardPage() {
                 <option value="sole_proprietor">個人事業主</option>
               </select>
             </div>
-            <div className="flex-grow-1" style={{ minWidth: "200px" }}>
-              <label className="form-label small mb-0">{newOrgType === "sole_proprietor" ? "屋号・事業者名" : "法人名"}</label>
+            <div className="mb-3">
+              <label className="form-label small">
+                {newOrgType === "sole_proprietor" ? "屋号・事業者名" : "法人名"}
+              </label>
               <input
                 type="text"
                 className="form-control form-control-sm"
@@ -110,52 +197,24 @@ export default function OpsDashboardPage() {
                 placeholder={newOrgType === "sole_proprietor" ? "例: 〇〇教室" : "例: 株式会社サンプル"}
               />
             </div>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={creating}>
-              {creating ? "作成中…" : "追加"}
+            {createSubmit.error && <p className="small text-danger mb-2">{createSubmit.error}</p>}
+            <button type="submit" className="btn btn-dark btn-sm w-100" disabled={createSubmit.submitting}>
+              {createSubmit.submitting ? "作成中…" : "追加する"}
             </button>
           </form>
-          {createError && <p className="small text-danger mt-2 mb-0">{createError}</p>}
-        </div>
-      </div>
+        </Modal>
+      )}
 
-      {error && <div className="alert alert-danger">{error}</div>}
-      {loading ? (
-        <p className="text-body-secondary">読み込み中…</p>
-      ) : corporations.length === 0 ? (
-        <p className="text-body-secondary">事業者がまだ登録されていません。上記から追加してください。</p>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover bg-white shadow-sm">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>種類</th>
-                <th>名前</th>
-                <th>店舗数</th>
-                <th>アカウント数</th>
-                <th>登録日</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {corporations.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.id}</td>
-                  <td>{ORG_TYPE_LABEL[c.organization_type ?? "corporation"]}</td>
-                  <td>{c.name}</td>
-                  <td>{c.store_count}</td>
-                  <td>{c.account_count}</td>
-                  <td className="small text-body-secondary">{c.created_at.slice(0, 10)}</td>
-                  <td>
-                    <Link href={`/ops/corporations/${c.id}`} className="btn btn-sm btn-outline-primary">
-                      詳細
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {restoreTarget && (
+        <ConfirmModal
+          title="事業者の復旧"
+          message={`「${restoreTarget.name}」を復旧しますか？\n復旧後は再び一覧に表示され、店舗・アカウントも利用可能になります。`}
+          confirmLabel="復旧する"
+          danger={false}
+          loading={restoring}
+          onConfirm={handleRestore}
+          onCancel={() => setRestoreTarget(null)}
+        />
       )}
     </div>
   );

@@ -1,16 +1,16 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 
-/**
- * 会員登録フォーム用。店舗一覧を返す（公開API）
- */
 export default async function listStoresPublic(
   _req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
   const [rows] = await pool.query(
-    "SELECT id, name FROM stores ORDER BY corporation_id, id ASC"
+    `SELECT s.id, s.name FROM stores s
+     JOIN corporations c ON c.id = s.corporation_id
+     WHERE c.status = 'active' AND c.deleted_at IS NULL
+     ORDER BY s.corporation_id, s.id ASC`
   );
   res.json(rows);
 }

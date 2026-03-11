@@ -11,16 +11,16 @@
 }
 
 .settingsMenuItem {
-  display: flex;
   align-items: center;
-  padding: v.$space-4;
   background: v.$color-white;
   border: 1px solid v.$color-gray-200;
   border-radius: v.$radius-lg;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.06);
   color: v.$color-gray-900;
-  text-decoration: none;
+  display: flex;
   font-weight: 500;
+  padding: v.$space-4;
+  text-decoration: none;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 
   &:hover {
@@ -31,9 +31,9 @@
 }
 
 .settingsMenuItemArrow {
-  margin-left: auto;
-  font-size: v.$font-sm;
   color: v.$color-gray-400;
+  font-size: v.$font-sm;
+  margin-left: auto;
 }
 
 // ================================================================
@@ -43,8 +43,8 @@
   margin-bottom: v.$space-3;
 
   a {
-    font-size: v.$font-sm;
     color: v.$color-gray-500;
+    font-size: v.$font-sm;
     text-decoration: none;
 
     &:hover {
@@ -54,19 +54,19 @@
 }
 
 .settingsPageTitle {
+  color: v.$color-gray-900;
   font-size: v.$font-3xl;
   font-weight: 700;
-  margin-bottom: v.$space-4;
-  color: v.$color-gray-900;
   letter-spacing: -0.02em;
+  margin-bottom: v.$space-4;
 }
 
 .settingsCard {
-  max-width: 400px;
   background: v.$color-white;
   border: 1px solid v.$color-gray-200;
   border-radius: v.$radius-lg;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.06);
+  max-width: 400px;
 }
 
 .settingsCardBody {
@@ -74,8 +74,8 @@
 }
 
 .settingsCardMuted {
-  font-size: v.$font-sm;
   color: v.$color-gray-500;
+  font-size: v.$font-sm;
   margin-bottom: v.$space-3;
 }
 
@@ -88,17 +88,17 @@
 }
 
 .settingsFormLabel {
+  color: v.$color-gray-700;
   display: block;
   font-size: v.$font-base;
   font-weight: 500;
-  color: v.$color-gray-700;
   margin-bottom: v.$space-1;
 }
 
 .settingsFormMessage {
   font-size: v.$font-sm;
-  margin-top: v.$space-2;
   margin-bottom: 0;
+  margin-top: v.$space-2;
 }
 
 .settingsFormMessageError {

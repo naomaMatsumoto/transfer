@@ -275,11 +275,8 @@ function EventsTab({ classTypes, users, staff, flash, flashErr }: { classTypes: 
     setEditEvReserveDropdownOpen(null);
     setEditEvReserveFilter("");
     setEditApplyToFuture("only");
+    void loadEditEventReservations(ev.id);
   };
-
-  useEffect(() => {
-    if (editEvent) loadEditEventReservations(editEvent.id);
-  }, [editEvent?.id, loadEditEventReservations]);
 
   const saveEditEvent = async () => {
     if (!editEvent) return;
@@ -1098,8 +1095,8 @@ function EventsTab({ classTypes, users, staff, flash, flashErr }: { classTypes: 
     return map;
   })();
 
-  const statusColor = (s: string) => s === "scheduled" ? "#059669" : s === "holiday" ? "#6b7280" : "#dc2626";
-  const statusLabel = (s: string) => s === "scheduled" ? "開催" : s === "holiday" ? "休み" : "休講";
+  const _statusColor = (s: string) => s === "scheduled" ? "#059669" : s === "holiday" ? "#6b7280" : "#dc2626";
+  const _statusLabel = (s: string) => s === "scheduled" ? "開催" : s === "holiday" ? "休み" : "休講";
 
   return (
     <div className="bg-white rounded-3 shadow-sm p-4">
@@ -2081,7 +2078,7 @@ function EventsTab({ classTypes, users, staff, flash, flashErr }: { classTypes: 
             <span style={{ fontWeight: 600, fontSize: "14px" }}>{calMonth.getFullYear()}年 {calMonth.getMonth() + 1}月</span>
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCalMonth((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))}>次月 ▶</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", tableLayout: "fixed" } as any}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
             {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
               <div key={w} style={{ textAlign: "center", fontSize: "12px", fontWeight: 600, color: i === 0 ? "#dc2626" : i === 6 ? "#2563eb" : "#6b7280", paddingBottom: "4px" }}>{w}</div>
             ))}
@@ -2296,18 +2293,28 @@ function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassT
   const [grantExpires, setGrantExpires] = useState("");
   const [grantNote, setGrantNote] = useState("");
 
-  const loadCredits = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (filterUserId) params.set("userId", String(filterUserId));
-      if (filterStatus) params.set("status", filterStatus);
-      const res = await apiFetch(`${getApiBase()}/admin/makeup-credits?${params.toString()}`);
-      const data = res.ok ? await res.json() : [];
-      setCredits(Array.isArray(data) ? data : []);
-    } catch { flashErr("振替権利読み込み失敗"); }
+  const fetchCreditsData = async (uId: number | "", st: string) => {
+    const params = new URLSearchParams();
+    if (uId) params.set("userId", String(uId));
+    if (st) params.set("status", st);
+    const res = await apiFetch(`${getApiBase()}/admin/makeup-credits?${params.toString()}`);
+    const data = res.ok ? await res.json() : [];
+    return Array.isArray(data) ? data : [];
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCreditsData(filterUserId, filterStatus)
+      .then((data) => { if (!cancelled) setCredits(data); })
+      .catch(() => { if (!cancelled) flashErr("振替権利読み込み失敗"); });
+    return () => { cancelled = true; };
   }, [filterUserId, filterStatus, flashErr]);
 
-  useEffect(() => { loadCredits(); }, [loadCredits]);
+  const loadCredits = async () => {
+    try {
+      setCredits(await fetchCreditsData(filterUserId, filterStatus));
+    } catch { flashErr("振替権利読み込み失敗"); }
+  };
 
   const handleGrant = async () => {
     if (!grantUserId) { flashErr("ユーザーを選択してください"); return; }

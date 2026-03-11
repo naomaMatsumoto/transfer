@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../db";
 
@@ -16,12 +16,20 @@ export default async function membersLogin(
   }
 
   const [rows] = await pool.query(
-    "SELECT id, password_hash FROM users WHERE email = ? AND status = 'active' LIMIT 1",
+    "SELECT id, password_hash, status FROM users WHERE email = ? LIMIT 1",
     [email]
   );
-  const user = (rows as { id: number; password_hash: string | null }[])[0];
+  const user = (rows as { id: number; password_hash: string | null; status: string }[])[0];
   if (!user) {
     res.status(401).json({ error: "INVALID_EMAIL_OR_PASSWORD" });
+    return;
+  }
+  if (user.status === "paused") {
+    res.status(403).json({ error: "MEMBER_PAUSED", message: "アカウントが一時停止中です。管理者にお問い合わせください。" });
+    return;
+  }
+  if (user.status === "withdrawn") {
+    res.status(403).json({ error: "MEMBER_WITHDRAWN", message: "退会済みのアカウントです。" });
     return;
   }
   if (!user.password_hash) {

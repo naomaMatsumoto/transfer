@@ -1,86 +1,84 @@
 .page {
   --background: #fafafa;
   --foreground: #fff;
-
   --text-primary: #000;
   --text-secondary: #666;
-
   --button-primary-hover: #383838;
   --button-secondary-hover: #f2f2f2;
   --button-secondary-border: #ebebeb;
 
-  display: flex;
-  min-height: 100vh;
   align-items: center;
-  justify-content: center;
-  font-family: var(--font-geist-sans);
   background-color: var(--background);
+  display: flex;
+  font-family: var(--font-geist-sans);
+  justify-content: center;
+  min-height: 100vh;
 }
 
 .main {
-  display: flex;
-  min-height: 100vh;
-  width: 100%;
-  max-width: 800px;
-  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
   background-color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-width: 800px;
+  min-height: 100vh;
   padding: 120px 60px;
+  width: 100%;
 }
 
 .intro {
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
   gap: 24px;
+  text-align: left;
 }
 
 .intro h1 {
-  max-width: 320px;
+  color: var(--text-primary);
   font-size: 40px;
   font-weight: 600;
-  line-height: 48px;
   letter-spacing: -2.4px;
+  line-height: 48px;
+  max-width: 320px;
   text-wrap: balance;
-  color: var(--text-primary);
 }
 
 .intro p {
-  max-width: 440px;
+  color: var(--text-secondary);
   font-size: 18px;
   line-height: 32px;
+  max-width: 440px;
   text-wrap: balance;
-  color: var(--text-secondary);
 }
 
 .intro a {
-  font-weight: 500;
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .ctas {
   display: flex;
   flex-direction: row;
-  width: 100%;
-  max-width: 440px;
-  gap: 16px;
   font-size: 14px;
+  gap: 16px;
+  max-width: 440px;
+  width: 100%;
 }
 
 .ctas a {
-  display: flex;
-  justify-content: center;
   align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
   border: 1px solid transparent;
-  transition: 0.2s;
+  border-radius: 128px;
   cursor: pointer;
-  width: fit-content;
+  display: flex;
   font-weight: 500;
+  height: 40px;
+  justify-content: center;
+  padding: 0 16px;
+  transition: 0.2s;
+  width: fit-content;
 }
 
 a.primary {
@@ -106,7 +104,7 @@ a.secondary {
   }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
   .main {
     padding: 48px 24px;
   }
@@ -117,8 +115,8 @@ a.secondary {
 
   .intro h1 {
     font-size: 32px;
-    line-height: 40px;
     letter-spacing: -1.92px;
+    line-height: 40px;
   }
 }
 
@@ -130,10 +128,8 @@ a.secondary {
   .page {
     --background: #000;
     --foreground: #000;
-
     --text-primary: #ededed;
     --text-secondary: #999;
-
     --button-primary-hover: #ccc;
     --button-secondary-hover: #1a1a1a;
     --button-secondary-border: #1a1a1a;

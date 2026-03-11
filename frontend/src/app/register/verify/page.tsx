@@ -10,16 +10,14 @@ import { getApiErrorMessage } from "@/app/lib/apiErrors";
 export default function RegisterVerifyPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasToken = !!token?.trim();
+  const [status, setStatus] = useState<"loading" | "ok" | "error">(hasToken ? "loading" : "error");
+  const [errorMessage, setErrorMessage] = useState<string | null>(hasToken ? null : "認証リンクが正しくありません。");
 
   useEffect(() => {
-    if (!token?.trim()) {
-      setStatus("error");
-      setErrorMessage("認証リンクが正しくありません。");
-      return;
-    }
-    fetch(`${getApiBase()}/members/verify?token=${encodeURIComponent(token)}`, { credentials: "include" })
+    if (!token?.trim()) return;
+    const controller = new AbortController();
+    fetch(`${getApiBase()}/members/verify?token=${encodeURIComponent(token)}`, { credentials: "include", signal: controller.signal })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
@@ -29,10 +27,12 @@ export default function RegisterVerifyPage() {
           setErrorMessage(getApiErrorMessage(data?.error));
         }
       })
-      .catch(() => {
+      .catch((e: unknown) => {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         setStatus("error");
         setErrorMessage("通信に失敗しました。");
       });
+    return () => controller.abort();
   }, [token]);
 
   if (status === "loading") {

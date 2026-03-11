@@ -44,6 +44,9 @@ function AdminLayoutInner({
   const isMembers = pathname?.startsWith(ROUTES.ADMIN_MEMBERS);
   const isReservations = pathname?.startsWith(ROUTES.ADMIN_RESERVATIONS);
   const isSettings = pathname?.startsWith(ROUTES.ADMIN_SETTINGS);
+  const isStoreSettings = pathname?.startsWith(ROUTES.ADMIN_STORE_SETTINGS);
+  const isReports = pathname?.startsWith(ROUTES.ADMIN_REPORTS);
+  const isAuditLogs = pathname?.startsWith(ROUTES.ADMIN_AUDIT_LOGS);
   const currentTab = searchParams?.get("tab");
   const activeTab = currentTab && TAB_KEYS.includes(currentTab) ? currentTab : "classTypes";
 
@@ -119,6 +122,24 @@ function AdminLayoutInner({
               設定
             </Link>
           )}
+          <Link
+            href={ROUTES.ADMIN_STORE_SETTINGS}
+            className={`nav-link rounded ${isStoreSettings ? "active bg-primary text-white" : "text-secondary"}`}
+          >
+            店舗設定
+          </Link>
+          <Link
+            href={ROUTES.ADMIN_REPORTS}
+            className={`nav-link rounded ${isReports ? "active bg-primary text-white" : "text-secondary"}`}
+          >
+            レポート
+          </Link>
+          <Link
+            href={ROUTES.ADMIN_AUDIT_LOGS}
+            className={`nav-link rounded ${isAuditLogs ? "active bg-primary text-white" : "text-secondary"}`}
+          >
+            操作ログ
+          </Link>
           <Link href={ROUTES.HOME} className="nav-link rounded text-secondary">
             カレンダーに戻る
           </Link>

@@ -1,6 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
+import { checkBookingDeadline } from "../../lib/deadlineCheck";
+import { writeAuditLog } from "../../lib/auditLog";
+import type { InsertResult, RowDataPacket } from "../../types/db";
 
 export default async function createReservation(
   req: Request,
@@ -17,6 +20,14 @@ export default async function createReservation(
     res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
     return;
   }
+
+  const [userRows] = await pool.query("SELECT status FROM users WHERE id = ? LIMIT 1", [userId]);
+  const userStatus = (userRows as { status: string }[])[0]?.status;
+  if (!userStatus || userStatus !== "active") {
+    res.status(403).json({ error: "MEMBER_NOT_ACTIVE", message: "停止中または退会済みの会員は予約できません" });
+    return;
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -27,7 +38,7 @@ export default async function createReservation(
        LEFT JOIN reservations r ON r.event_id = e.id WHERE e.id = ? GROUP BY e.id FOR UPDATE`,
       [eventId],
     );
-    const event = (eventRows as any[])[0];
+    const event = (eventRows as RowDataPacket[])[0];
     if (!event) {
       await conn.rollback();
       res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
@@ -36,6 +47,12 @@ export default async function createReservation(
     if (event.status !== "scheduled") {
       await conn.rollback();
       res.status(400).json({ error: ERR.EVENT_NOT_BOOKABLE });
+      return;
+    }
+    const deadlineMsg = await checkBookingDeadline(eventId, new Date(event.starts_at));
+    if (deadlineMsg) {
+      await conn.rollback();
+      res.status(400).json({ error: "BOOKING_DEADLINE_PASSED", message: deadlineMsg });
       return;
     }
     if (event.reserved_count >= event.capacity) {
@@ -47,7 +64,7 @@ export default async function createReservation(
       "SELECT id FROM reservations WHERE user_id = ? AND event_id = ? AND status IN ('booked','attended') FOR UPDATE",
       [userId, eventId],
     );
-    if ((existing as any[]).length > 0) {
+    if ((existing as RowDataPacket[]).length > 0) {
       await conn.rollback();
       res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
       return;
@@ -63,7 +80,7 @@ export default async function createReservation(
         "SELECT id, status FROM makeup_credits WHERE id = ? AND user_id = ? FOR UPDATE",
         [makeupCreditId, userId],
       );
-      const credit = (credits as any[])[0];
+      const credit = (credits as RowDataPacket[])[0];
       if (!credit || credit.status !== "granted") {
         await conn.rollback();
         res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
@@ -75,7 +92,7 @@ export default async function createReservation(
       "INSERT INTO reservations (user_id, event_id, reservation_type, makeup_credit_id, status, created_at) VALUES (?, ?, ?, ?, 'booked', NOW())",
       [userId, eventId, reservationType, makeupIdToUse],
     );
-    const reservationId = (result as any).insertId;
+    const reservationId = (result as InsertResult).insertId;
     if (reservationType === "makeup" && makeupIdToUse) {
       await conn.query(
         "UPDATE makeup_credits SET status = 'consumed', updated_at = NOW() WHERE id = ?",
@@ -83,6 +100,7 @@ export default async function createReservation(
       );
     }
     await conn.commit();
+    void writeAuditLog({ actorType: "member", actorId: userId, action: "reservation.create", targetType: "reservation", targetId: reservationId, detail: { eventId, reservationType } });
     res.status(201).json({
       id: reservationId,
       userId,

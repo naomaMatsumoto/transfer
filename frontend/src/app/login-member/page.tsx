@@ -89,6 +89,9 @@ export default function MemberLoginPage() {
             </button>
           </form>
           <p className="small text-center mt-3 mb-0">
+            <Link href={ROUTES.FORGOT_PASSWORD}>パスワードをお忘れの方</Link>
+          </p>
+          <p className="small text-center mt-2 mb-0">
             <Link href={ROUTES.HOME}>カレンダーに戻る</Link>
           </p>
         </div>

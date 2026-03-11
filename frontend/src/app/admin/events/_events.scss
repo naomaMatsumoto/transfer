@@ -4,37 +4,37 @@
 // Calendar (admin)
 // ================================================================
 .calNav {
+  align-items: center;
   display: flex;
   gap: v.$space-2;
-  align-items: center;
   margin-bottom: v.$space-2;
 }
 
 .calNavLabel {
-  font-weight: 600;
   font-size: v.$font-lg;
+  font-weight: 600;
 }
 
 .calGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
   gap: v.$space-1;
+  grid-template-columns: repeat(7, 1fr);
 }
 
 .calWeekday {
-  text-align: center;
   font-size: v.$font-md;
   font-weight: 600;
   padding-bottom: v.$space-1;
+  text-align: center;
 }
 
 .calCell {
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-200;
-  padding: v.$space-1 v.$space-2;
-  min-height: 120px;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-md;
+  min-height: 120px;
   overflow: hidden;
+  padding: v.$space-1 v.$space-2;
 }
 
 .calCellToday {
@@ -46,19 +46,19 @@
 }
 
 .calDayNum {
-  font-weight: 700;
   font-size: v.$font-base;
+  font-weight: 700;
   margin-bottom: v.$space-1;
 }
 
 .calEvent {
-  font-size: v.$font-md;
-  padding: v.$space-1 + 1 v.$space-2 - 1;
-  border-radius: v.$radius-md;
-  margin-bottom: v.$space-1;
   border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-md;
   cursor: pointer;
+  font-size: v.$font-md;
+  margin-bottom: v.$space-1;
   overflow: hidden;
+  padding: v.$space-1 + 1 v.$space-2 - 1;
   transition: all 0.2s ease;
 }
 
@@ -72,15 +72,15 @@
 .calEventCanceled  { background-color: v.$color-danger-light; }
 
 .calEventRow1 {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: v.$space-1 + 1;
   margin-bottom: v.$space-1 / 2;
 }
 
 .calEventRow2 {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: v.$space-2;
 }
 
@@ -90,11 +90,11 @@
 }
 
 .calEventName {
+  flex: 1;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-  font-weight: 500;
 }
 
 .calEventCapacity {
@@ -103,14 +103,14 @@
 }
 
 .calCheckbox {
-  width: v.$space-4 - 2;
-  height: v.$space-4 - 2;
   flex-shrink: 0;
+  height: v.$space-4 - 2;
+  width: v.$space-4 - 2;
 }
 
 .calEmptyDay {
-  font-size: v.$font-sm;
   color: v.$color-gray-300;
+  font-size: v.$font-sm;
 }
 
 // ================================================================
@@ -123,20 +123,20 @@
 }
 
 .modeBtn {
-  font-size: v.$font-md;
-  padding: v.$space-1 + 1 v.$space-4 - 2;
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-300;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
   color: v.$color-gray-700;
-  font-weight: 400;
   cursor: pointer;
+  font-size: v.$font-md;
+  font-weight: 400;
+  padding: v.$space-1 + 1 v.$space-4 - 2;
   transition: all 0.25s ease;
 }
 
 .modeBtnActive {
-  border: 2px solid v.$color-primary;
   background-color: v.$color-primary-light;
+  border: 2px solid v.$color-primary;
   color: v.$color-primary-dark;
   font-weight: 700;
 }
@@ -145,29 +145,29 @@
 // Bulk bar
 // ================================================================
 .bulkBar {
-  display: flex;
-  gap: v.$space-2;
   align-items: center;
+  display: flex;
   flex-wrap: wrap;
-  padding: v.$space-3 v.$space-4 - 2;
+  gap: v.$space-2;
   overflow: hidden;
+  padding: v.$space-3 v.$space-4 - 2;
   transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
 }
 
 .bulkBarHidden {
+  border: 1px solid transparent;
+  margin-bottom: 0;
   max-height: 0;
   opacity: 0;
   padding: 0 v.$space-4 - 2;
-  margin-bottom: 0;
-  border: 1px solid transparent;
 }
 
 .bulkBarVisible {
+  border: 1px solid v.$color-gray-200;
+  margin-bottom: v.$space-3;
   max-height: 200px;
   opacity: 1;
   padding: v.$space-3 v.$space-4 - 2;
-  margin-bottom: v.$space-3;
-  border: 1px solid v.$color-gray-200;
 }
 
 .bulkLabel {
@@ -176,8 +176,8 @@
 }
 
 .bulkCount {
-  font-size: v.$font-md;
   color: v.$color-gray-500;
+  font-size: v.$font-md;
 }
 
 .separator {
@@ -187,13 +187,13 @@
 }
 
 .weekdayBtn {
-  font-size: v.$font-sm + 1;
-  padding: v.$space-1 v.$space-2;
-  border-radius: v.$radius-md;
-  border: 1px solid v.$color-gray-300;
   background-color: v.$color-white;
+  border: 1px solid v.$color-gray-300;
+  border-radius: v.$radius-md;
   cursor: pointer;
+  font-size: v.$font-sm + 1;
   font-weight: 600;
+  padding: v.$space-1 v.$space-2;
 }
 
 .weekdayBtnSun     { color: v.$color-sunday; }

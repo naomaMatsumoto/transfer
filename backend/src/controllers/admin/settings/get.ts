@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 
 export default async function getSettings(
@@ -20,5 +20,5 @@ export default async function getSettings(
     res.status(404).json({ error: "NOT_FOUND" });
     return;
   }
-  res.json({ corporationName: row.name });
+  res.json({ corporationName: row.name, role: req.session?.account?.role ?? "admin" });
 }

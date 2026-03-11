@@ -4,10 +4,18 @@ import registerMember from "../controllers/members/register";
 import verifyMember from "../controllers/members/verify";
 import membersMe from "../controllers/members/me";
 import membersLogin from "../controllers/members/login";
+import membersLogout from "../controllers/members/logout";
+import membersUpdatePassword from "../controllers/members/updatePassword";
+import membersForgotPassword from "../controllers/members/forgotPassword";
+import membersResetPassword from "../controllers/members/resetPassword";
 
 const router = Router();
 router.get("/me", asyncHandler(membersMe));
 router.post("/login", asyncHandler(membersLogin));
+router.post("/logout", asyncHandler(membersLogout));
+router.patch("/me/password", asyncHandler(membersUpdatePassword));
+router.post("/forgot-password", asyncHandler(membersForgotPassword));
+router.post("/reset-password", asyncHandler(membersResetPassword));
 router.post("/register", asyncHandler(registerMember));
 router.get("/verify", asyncHandler(verifyMember));
 export default router;

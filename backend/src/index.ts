@@ -1,6 +1,7 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
-import cookieParser from "cookie-parser";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const cookieParser = require("cookie-parser");
 import session from "express-session";
 import MySQLStore from "express-mysql-session";
 import dotenv from "dotenv";
@@ -12,7 +13,8 @@ import { ensureAuthTables } from "./ensureAuthTables";
 dotenv.config();
 
 const SESSION_MAX_AGE_MS = (Number(process.env.SESSION_MAX_AGE_DAYS) || 7) * 24 * 60 * 60 * 1000;
-const MySQLSessionStore = MySQLStore(session);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MySQLSessionStore = MySQLStore(session as any);
 const sessionStore = new MySQLSessionStore({
   host: process.env.DB_HOST || "db",
   port: Number(process.env.DB_PORT) || 3306,
@@ -72,7 +74,9 @@ app.use(
 app.use(express.json());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.path.startsWith("/admin")) logger.debug(`${req.method} ${req.path}`);
+  if (req.path.startsWith("/admin") || req.path.startsWith("/ops")) {
+    logger.debug(`${req.method} ${req.path}`);
+  }
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   next();
 });
