@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
+import { ok } from "../../lib/respond";
 
 export default async function listStoresPublic(
   _req: Request,
@@ -12,5 +13,5 @@ export default async function listStoresPublic(
      WHERE c.status = 'active' AND c.deleted_at IS NULL
      ORDER BY s.corporation_id, s.id ASC`
   );
-  res.json(rows);
+  ok(res, rows);
 }

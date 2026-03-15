@@ -1,22 +1,28 @@
 @use "../variables" as v;
 
+// ----------------------------------------
+// Ops layout – local tokens
+// ----------------------------------------
+$ops-breakpoint-sm: 640px;
+$ops-col-narrow: 140px;
+
 // ================================================================
 // Shared nav item base (placeholder – no output unless extended)
 // ================================================================
-%navItemBase {
-  display: flex;
+%nav-item-base {
   align-items: center;
+  background: none;
+  border: none;
+  border-radius: v.$radius-md;
+  cursor: pointer;
+  display: flex;
+  font-size: v.$font-base;
   gap: v.$space-2;
   padding: v.$space-2 v.$space-3;
-  border-radius: v.$radius-md;
-  font-size: v.$font-base;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
   text-align: left;
-  width: 100%;
-  background: none;
+  text-decoration: none;
   transition: background 0.15s, color 0.15s;
+  width: 100%;
 }
 
 // ================================================================
@@ -31,69 +37,70 @@
 // Sidebar
 // ================================================================
 .sidebar {
-  display: flex;
-  flex-direction: column;
-  width: 240px;
-  flex-shrink: 0;
   background: v.$color-gray-900;
   color: v.$color-gray-300;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 240px;
 }
 
 .sidebarHeader {
-  display: flex;
   align-items: center;
+  border-bottom: 1px solid v.$color-gray-700;
+  display: flex;
   gap: v.$space-3;
   padding: v.$space-5;
-  border-bottom: 1px solid v.$color-gray-700;
 }
 
 .logoMark {
-  display: inline-flex;
   align-items: center;
+  background: v.$color-primary;
+  border-radius: v.$radius-md;
+  color: v.$color-white;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: v.$font-lg;
+  font-weight: 700;
+  height: 32px;
   justify-content: center;
   width: 32px;
-  height: 32px;
-  border-radius: v.$radius-md;
-  background: v.$color-primary;
-  color: v.$color-white;
-  font-weight: 700;
-  font-size: v.$font-lg;
-  flex-shrink: 0;
 }
 
 .logoText {
+  color: v.$color-white;
   font-size: v.$font-base;
   font-weight: 600;
-  color: v.$color-white;
   line-height: 1.2;
 }
 
 .logoSub {
-  font-size: v.$font-xs;
   color: v.$color-gray-400;
+  font-size: v.$font-xs;
   font-weight: 400;
   letter-spacing: 0.04em;
 }
 
 .sidebarNav {
   display: flex;
-  flex-direction: column;
-  padding: v.$space-3;
-  gap: v.$space-1;
   flex: 1;
+  flex-direction: column;
+  gap: v.$space-1;
+  padding: v.$space-3;
 }
 
 .sidebarLabel {
-  padding: v.$space-3 v.$space-3 v.$space-1;
-  font-size: v.$font-xs;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: v.$color-gray-500;
+  font-size: v.$font-xs;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: v.$space-3 v.$space-3 v.$space-1;
+  text-transform: uppercase;
 }
 
 .navLink {
-  @extend %navItemBase;
+  @extend %nav-item-base;
+
   color: v.$color-gray-400;
 
   &:hover {
@@ -103,7 +110,8 @@
 }
 
 .navLinkActive {
-  @extend %navItemBase;
+  @extend %nav-item-base;
+
   background: rgba(v.$color-primary, 0.15);
   color: v.$color-primary-bg;
   font-weight: 500;
@@ -114,25 +122,26 @@
 }
 
 .navIcon {
-  width: 18px;
+  flex-shrink: 0;
   height: 18px;
   opacity: 0.7;
-  flex-shrink: 0;
+  width: 18px;
 }
 
 .sidebarFooter {
-  padding: v.$space-3;
   border-top: 1px solid v.$color-gray-700;
+  padding: v.$space-3;
 }
 
 .logoutBtn {
-  @extend %navItemBase;
+  @extend %nav-item-base;
+
   color: v.$color-gray-500;
   font-size: v.$font-sm;
 
   &:hover {
-    color: v.$color-danger;
     background: rgba(v.$color-danger, 0.1);
+    color: v.$color-danger;
   }
 }
 
@@ -140,49 +149,54 @@
 // Main content
 // ================================================================
 .main {
-  flex: 1;
   background: v.$color-gray-50;
-  padding: v.$space-8;
-  overflow: auto;
+  flex: 1;
   min-width: 0;
+  overflow: auto;
+  padding: v.$space-8;
+}
+
+// Sub-page content area (e.g. corporation detail, store events)
+.page {
+  max-width: 960px;
 }
 
 // ================================================================
 // Centered (auth check / login)
 // ================================================================
 .centered {
-  display: flex;
   align-items: center;
+  background: v.$color-gray-50;
+  display: flex;
   justify-content: center;
   min-height: 100vh;
-  background: v.$color-gray-50;
 }
 
 // ================================================================
 // Login
 // ================================================================
 .loginCard {
-  width: 100%;
   max-width: 400px;
+  width: 100%;
 }
 
 .loginHeader {
-  text-align: center;
   margin-bottom: v.$space-6;
+  text-align: center;
 }
 
 .loginLogo {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: v.$radius-lg;
   background: v.$color-gray-900;
+  border-radius: v.$radius-lg;
   color: v.$color-white;
-  font-weight: 700;
+  display: inline-flex;
   font-size: v.$font-xl;
+  font-weight: 700;
+  height: 48px;
+  justify-content: center;
   margin-bottom: v.$space-3;
+  width: 48px;
 }
 
 // ================================================================
@@ -190,35 +204,35 @@
 // ================================================================
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: v.$space-4;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-bottom: v.$space-6;
 }
 
 .statCard {
   background: v.$color-white;
-  border-radius: v.$radius-lg;
-  padding: v.$space-5;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   border: 1px solid v.$color-gray-200;
+  border-radius: v.$radius-lg;
+  box-shadow: 0 1px 3px rgb(0, 0, 0, 0.06);
+  padding: v.$space-5;
 }
 
 .statLabel {
-  font-size: v.$font-sm;
   color: v.$color-gray-500;
+  font-size: v.$font-sm;
   margin-bottom: v.$space-1;
 }
 
 .statValue {
+  color: v.$color-gray-900;
   font-size: v.$font-3xl;
   font-weight: 700;
-  color: v.$color-gray-900;
   line-height: 1;
 }
 
 .statSub {
-  font-size: v.$font-xs;
   color: v.$color-gray-400;
+  font-size: v.$font-xs;
   margin-top: v.$space-1;
 }
 
@@ -226,14 +240,14 @@
 // Modal
 // ================================================================
 .modalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1050;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  background: v.$overlay-bg;
   animation: fadeIn 0.15s ease;
+  background: v.$overlay-bg;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: fixed;
+  z-index: 1050;
 }
 
 .modalCard {
@@ -241,10 +255,64 @@
 }
 
 // ================================================================
+// Page header
+// ================================================================
+.pageHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: v.$space-6;
+}
+
+.pageTitle {
+  color: v.$color-gray-900;
+  font-size: v.$font-3xl;
+  font-weight: 700;
+  margin: 0;
+}
+
+// ================================================================
+// Detail header
+// ================================================================
+.detailHeader {
+  align-items: center;
+  display: flex;
+  gap: v.$space-3;
+  margin-bottom: v.$space-1;
+}
+
+.detailMeta {
+  color: v.$color-gray-500;
+  font-size: v.$font-sm;
+  margin-bottom: v.$space-5;
+}
+
+// ================================================================
+// Section header (title + action button row)
+// ================================================================
+.sectionHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: v.$space-3;
+}
+
+// ================================================================
+// Filter bar
+// ================================================================
+.filterBar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$space-2;
+  margin-bottom: v.$space-4;
+}
+
+// ================================================================
 // Form field widths
 // ================================================================
 .fieldMinSm {
-  min-width: 140px;
+  min-width: $ops-col-narrow;
 }
 
 .fieldMinMd {
@@ -255,65 +323,9 @@
   min-width: 200px;
 }
 
-// ================================================================
-// Page header
-// ================================================================
-.pageHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: v.$space-6;
-}
-
-.pageTitle {
-  font-size: v.$font-3xl;
-  font-weight: 700;
-  color: v.$color-gray-900;
-  margin: 0;
-}
-
-// ================================================================
-// Detail header
-// ================================================================
-.detailHeader {
-  display: flex;
-  align-items: center;
-  gap: v.$space-3;
-  margin-bottom: v.$space-1;
-}
-
-.detailMeta {
-  font-size: v.$font-sm;
-  color: v.$color-gray-500;
-  margin-bottom: v.$space-5;
-}
-
-// ================================================================
-// Section header (title + action button row)
-// ================================================================
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: v.$space-3;
-}
-
-// ================================================================
-// Filter bar
-// ================================================================
-.filterBar {
-  display: flex;
-  gap: v.$space-2;
-  margin-bottom: v.$space-4;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-// ================================================================
-// Constrained input widths (replace inline maxWidth styles)
-// ================================================================
+// Constrained input widths
 .inputNarrow {
-  max-width: 140px;
+  max-width: $ops-col-narrow;
 }
 
 .inputMedium {
@@ -322,4 +334,67 @@
 
 .inputWide {
   max-width: 260px;
+}
+
+// ================================================================
+// カレンダー設定（店舗ごとテーブル風）
+// ================================================================
+.calendarSettings {
+  &Card {
+    overflow: hidden;
+  }
+
+  &Table {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &Row {
+    align-items: end;
+    border-bottom: 1px solid v.$color-gray-200;
+    display: grid;
+    gap: v.$space-4;
+    grid-template-columns: 1fr $ops-col-narrow $ops-col-narrow auto;
+    padding: v.$space-3 v.$space-4;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    @media (max-width: $ops-breakpoint-sm) {
+      align-items: stretch;
+      gap: v.$space-2;
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &RowHeader {
+    align-items: center;
+    background: v.$color-gray-50;
+    color: v.$color-gray-600;
+    font-size: v.$font-sm;
+    font-weight: 600;
+    padding-bottom: v.$space-2;
+    padding-top: v.$space-2;
+  }
+
+  &Store {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: v.$space-1;
+    min-width: 0;
+  }
+
+  &Field {
+    min-width: 0;
+
+    .form-control {
+      max-width: 100%;
+    }
+  }
+
+  &Actions {
+    flex-shrink: 0;
+  }
 }

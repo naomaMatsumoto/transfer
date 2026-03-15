@@ -1,4 +1,5 @@
 import { type Request, type Response, type NextFunction } from "express";
+import { ok } from "../../../lib/respond";
 
 export default async function opsLogout(
   req: Request,
@@ -8,5 +9,5 @@ export default async function opsLogout(
   if (req.session) {
     delete req.session.platformAdmin;
   }
-  res.json({ ok: true });
+  ok(res, { ok: true });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { getApiBase, apiFetch } from "../../lib/api";
+import { getApiBase, adminGet } from "../../lib/api";
 import styles from "../admin.module.scss";
 
 type MonthRow = {
@@ -40,9 +40,9 @@ export default function ReportsPage() {
     setLoading(true);
     setErr("");
     try {
-      const res = await apiFetch(`${getApiBase()}/admin/reports/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
-      if (!res.ok) throw new Error("Failed");
-      setData(await res.json());
+      const r = await adminGet<{ reservationsByMonth: MonthRow[]; absencesByMonth: { month: string; absence_count: number }[]; memberStats: MemberStats }>(`/reports/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      if (!r.ok) throw new Error("Failed");
+      setData(r.data ?? null);
     } catch {
       setErr("読み込みに失敗しました");
     } finally {

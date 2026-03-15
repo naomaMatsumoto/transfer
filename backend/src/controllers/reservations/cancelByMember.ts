@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { checkCancelDeadline } from "../../lib/deadlineCheck";
 import { writeAuditLog } from "../../lib/auditLog";
+import { unauthorized, badRequest, notFound, ok } from "../../lib/respond";
 
 export default async function cancelReservationByMember(
   req: Request,
@@ -10,13 +11,13 @@ export default async function cancelReservationByMember(
 ): Promise<void> {
   const memberId = req.session?.memberId;
   if (memberId == null || typeof memberId !== "number") {
-    res.status(401).json({ error: "UNAUTHORIZED" });
+    unauthorized(res);
     return;
   }
 
   const reservationId = Number(req.params.id);
   if (!Number.isInteger(reservationId) || reservationId <= 0) {
-    res.status(400).json({ error: "INVALID_ID" });
+    badRequest(res, "INVALID_ID");
     return;
   }
 
@@ -29,17 +30,17 @@ export default async function cancelReservationByMember(
   );
   const reservation = (rows as { id: number; user_id: number; status: string; reservation_type: string; makeup_credit_id: number | null; event_id: number; starts_at: Date }[])[0];
   if (!reservation) {
-    res.status(404).json({ error: "RESERVATION_NOT_FOUND" });
+    notFound(res, "RESERVATION_NOT_FOUND");
     return;
   }
   if (reservation.status !== "booked") {
-    res.status(400).json({ error: "RESERVATION_NOT_BOOKED" });
+    badRequest(res, "RESERVATION_NOT_BOOKED");
     return;
   }
 
   const cancelMsg = await checkCancelDeadline(reservation.event_id, new Date(reservation.starts_at));
   if (cancelMsg) {
-    res.status(400).json({ error: "CANCEL_DEADLINE_PASSED", message: cancelMsg });
+    badRequest(res, "CANCEL_DEADLINE_PASSED", { message: cancelMsg });
     return;
   }
 
@@ -58,7 +59,7 @@ export default async function cancelReservationByMember(
     }
     await conn.commit();
     void writeAuditLog({ actorType: "member", actorId: memberId, action: "reservation.cancel", targetType: "reservation", targetId: reservationId, detail: { eventId: reservation.event_id } });
-    res.json({ id: reservationId, status: "canceled_by_user" });
+    ok(res, { id: reservationId, status: "canceled_by_user" });
   } catch (err) {
     await conn.rollback();
     throw err;

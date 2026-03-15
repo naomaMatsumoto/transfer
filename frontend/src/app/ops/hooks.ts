@@ -39,7 +39,14 @@ export function useOpsData<T>(
 type SubmitState = {
   submitting: boolean;
   error: string | null;
-  run: <T = unknown>(fn: () => Promise<ApiResult<T>>, opts?: { onSuccess?: (data: T | undefined) => void; errorMsg?: string }) => Promise<boolean>;
+  run: <T = unknown>(
+    fn: () => Promise<ApiResult<T>>,
+    opts?: {
+      onSuccess?: (data: T | undefined) => void;
+      errorMsg?: string;
+      onError?: (data: unknown, status?: number) => string | void;
+    },
+  ) => Promise<boolean>;
   clearError: () => void;
 };
 
@@ -55,7 +62,11 @@ export function useSubmit(): SubmitState {
 
   const run = useCallback(async <T = unknown>(
     fn: () => Promise<ApiResult<T>>,
-    opts?: { onSuccess?: (data: T | undefined) => void; errorMsg?: string },
+    opts?: {
+      onSuccess?: (data: T | undefined) => void;
+      errorMsg?: string;
+      onError?: (data: unknown, status?: number) => string | void;
+    },
   ): Promise<boolean> => {
     setSubmitting(true);
     setError(null);
@@ -66,7 +77,8 @@ export function useSubmit(): SubmitState {
       opts?.onSuccess?.(r.data as T | undefined);
       return true;
     }
-    setError(opts?.errorMsg ?? "処理に失敗しました");
+    const customMsg = opts?.onError?.(r.data, r.status);
+    setError(customMsg ?? opts?.errorMsg ?? "処理に失敗しました");
     return false;
   }, []);
 

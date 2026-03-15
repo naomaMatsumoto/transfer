@@ -27,6 +27,9 @@ export default function OpsDashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [newOrgType, setNewOrgType] = useState<OrganizationType>("corporation");
   const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const createSubmit = useSubmit();
 
   const [restoreTarget, setRestoreTarget] = useState<CorporationRow | null>(null);
@@ -51,14 +54,32 @@ export default function OpsDashboardPage() {
     const name = newName.trim();
     if (!name) return;
 
-    type CreateResp = { id?: number; code?: string; organization_type?: OrganizationType };
+    type CreateResp = { id?: number; code?: string; organization_type?: OrganizationType; accountCreated?: boolean };
+    const payload = { name, organizationType: newOrgType } as Record<string, unknown>;
+    const email = newEmail.trim();
+    const password = newPassword;
+    if (email && password) {
+      payload.email = email;
+      payload.displayName = newDisplayName.trim() || undefined;
+      payload.password = password;
+    }
+
     await createSubmit.run(
-      () => postJson("/corporations", { name, organizationType: newOrgType }),
+      () => postJson("/corporations", payload),
       {
         errorMsg: "作成に失敗しました",
+        onError: (data) => {
+          const code = (data as { error?: string })?.error;
+          if (code === "EMAIL_ALREADY_EXISTS") return "このメールアドレスは既に登録されています";
+          if (code === "PASSWORD_TOO_SHORT") return "パスワードは6文字以上で入力してください";
+          return undefined;
+        },
         onSuccess: (data) => {
           const d = data as CreateResp | undefined;
           setNewName("");
+          setNewEmail("");
+          setNewDisplayName("");
+          setNewPassword("");
           setShowModal(false);
           if (d?.id != null) {
             setCorporations((prev) => [
@@ -72,7 +93,7 @@ export default function OpsDashboardPage() {
                 deleted_at: null,
                 created_at: new Date().toISOString(),
                 store_count: 0,
-                account_count: 0,
+                account_count: d.accountCreated ? 1 : 0,
               },
             ]);
           }
@@ -94,7 +115,7 @@ export default function OpsDashboardPage() {
   const activeCorporations = corporations.filter((c) => !c.deleted_at);
   const totalStores = activeCorporations.reduce((n, c) => n + c.store_count, 0);
   const totalAccounts = activeCorporations.reduce((n, c) => n + c.account_count, 0);
-  const activeCount = activeCorporations.filter((c) => c.status !== "suspended").length;
+  const activeCount = activeCorporations.filter((c) => c.status === "active").length;
 
   const filtered = useMemo(() => {
     let list = corporations;
@@ -117,6 +138,8 @@ export default function OpsDashboardPage() {
 
       <div className={s.statsGrid}>
         <StatCard label="事業者数" value={activeCorporations.length} sub={`稼働中 ${activeCount}`} />
+        <StatCard label="審査中" value={corporations.filter((c) => !c.deleted_at && c.status === "pending").length} />
+        <StatCard label="メール送信済み" value={corporations.filter((c) => !c.deleted_at && c.status === "email_sent").length} />
         <StatCard label="総店舗数" value={totalStores} />
         <StatCard label="総アカウント数" value={totalAccounts} />
       </div>
@@ -138,6 +161,8 @@ export default function OpsDashboardPage() {
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
           >
             <option value="all">すべて</option>
+            <option value="pending">審査中</option>
+            <option value="email_sent">メール送信済み</option>
             <option value="active">稼働中</option>
             <option value="suspended">停止中</option>
             <option value="deleted">削除済み</option>
@@ -195,6 +220,39 @@ export default function OpsDashboardPage() {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder={newOrgType === "sole_proprietor" ? "例: 〇〇教室" : "例: 株式会社サンプル"}
+              />
+            </div>
+            <p className="small text-body-secondary mb-2">
+              代表者のメール・パスワードを入力すると、管理画面ログイン用アカウントを同時に作成します。（省略可・後から詳細で追加可能）
+            </p>
+            <div className="mb-3">
+              <label className="form-label small">代表者メールアドレス</label>
+              <input
+                type="email"
+                className="form-control form-control-sm"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="例: owner@example.com"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label small">表示名</label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                value={newDisplayName}
+                onChange={(e) => setNewDisplayName(e.target.value)}
+                placeholder="例: 管理者"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label small">初期パスワード（6文字以上）</label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="メールと両方入力でアカウント作成"
               />
             </div>
             {createSubmit.error && <p className="small text-danger mb-2">{createSubmit.error}</p>}

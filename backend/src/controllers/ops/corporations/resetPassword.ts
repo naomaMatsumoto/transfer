@@ -24,7 +24,7 @@ export default async function resetPassword(
 
   const newPw = crypto.randomBytes(12).toString("base64url").slice(0, 16);
   const hashed = await bcrypt.hash(newPw, 10);
-  await pool.query("UPDATE accounts SET password = ? WHERE id = ?", [hashed, accountId]);
+  await pool.query("UPDATE accounts SET password_hash = ? WHERE id = ?", [hashed, accountId]);
   await opsAudit(req, "account.resetPassword", "account", accountId);
   res.json({ newPassword: newPw });
 }

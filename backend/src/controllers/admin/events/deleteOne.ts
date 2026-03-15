@@ -1,20 +1,22 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
+import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function deleteOneEvent(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const eventId = Number(req.params.id);
-  const storePlaceholders = storeIds.map(() => "?").join(",");
+  const storePlaceholders = ph(storeIds);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -24,7 +26,7 @@ export default async function deleteOneEvent(
     );
     if ((eventScope as unknown[]).length === 0) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      notFound(res, ERR.EVENT_NOT_FOUND);
       return;
     }
     const [reservations] = await conn.query(
@@ -33,8 +35,7 @@ export default async function deleteOneEvent(
     );
     if ((reservations as unknown[]).length > 0) {
       await conn.rollback();
-      res.status(400).json({
-        error: ERR.EVENT_DELETE_HAS_RESERVATIONS,
+      badRequest(res, ERR.EVENT_DELETE_HAS_RESERVATIONS, {
         count: (reservations as unknown[]).length,
       });
       return;
@@ -47,11 +48,11 @@ export default async function deleteOneEvent(
     const [result] = await conn.query("DELETE FROM events WHERE id = ?", [eventId]);
     if ((result as { affectedRows: number }).affectedRows === 0) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      notFound(res, ERR.EVENT_NOT_FOUND);
       return;
     }
     await conn.commit();
-    res.json({ id: eventId, deleted: true });
+    ok(res, { id: eventId, deleted: true });
   } catch (err) {
     await conn.rollback();
     throw err;

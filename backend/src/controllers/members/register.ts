@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { pool } from "../../db";
 import { ERR, isValidEmail } from "../../constants";
 import { sendVerificationEmail } from "../../mailer";
+import { badRequest, created } from "../../lib/respond";
 
 export default async function registerMember(
   req: Request,
@@ -20,21 +21,21 @@ export default async function registerMember(
 
   const trimmedName = name?.trim();
   if (!trimmedName) {
-    res.status(400).json({ error: ERR.MEMBER_NAME_REQUIRED });
+    badRequest(res, ERR.MEMBER_NAME_REQUIRED);
     return;
   }
   if (!storeId || !Number.isInteger(storeId) || storeId < 1) {
-    res.status(400).json({ error: ERR.MEMBER_STORE_REQUIRED });
+    badRequest(res, ERR.MEMBER_STORE_REQUIRED);
     return;
   }
 
   const emailVal = email?.trim() || null;
   if (!emailVal) {
-    res.status(400).json({ error: ERR.MEMBER_EMAIL_REQUIRED });
+    badRequest(res, ERR.MEMBER_EMAIL_REQUIRED);
     return;
   }
   if (!isValidEmail(emailVal)) {
-    res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+    badRequest(res, ERR.MEMBER_EMAIL_INVALID);
     return;
   }
   const [dup] = await pool.query(
@@ -42,7 +43,7 @@ export default async function registerMember(
     [emailVal]
   );
   if ((dup as unknown[]).length > 0) {
-    res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
+    badRequest(res, ERR.MEMBER_EMAIL_DUPLICATE);
     return;
   }
 
@@ -51,7 +52,7 @@ export default async function registerMember(
     [storeId]
   );
   if ((storeRows as unknown[]).length === 0) {
-    res.status(400).json({ error: ERR.STORE_NOT_FOUND });
+    badRequest(res, ERR.STORE_NOT_FOUND);
     return;
   }
 
@@ -79,7 +80,7 @@ export default async function registerMember(
 
     await sendVerificationEmail(emailVal, token);
 
-    res.status(201).json({
+    created(res, {
       id: userId,
       storeId,
       message: "登録を受け付けました。ご登録のメールアドレスに認証リンクをお送りしました。メール内のリンクをクリックして登録を完了してください。",

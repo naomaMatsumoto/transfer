@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
-import { getApiBase, apiFetch } from "@/app/lib/api";
+import { adminPatch } from "@/app/lib/api";
 import styles from "../../admin.module.scss";
 
 export default function AdminSettingsPasswordPage() {
@@ -28,13 +28,9 @@ export default function AdminSettingsPasswordPage() {
     }
     setSubmitting(true);
     try {
-      const res = await apiFetch(`${getApiBase()}/admin/settings/password`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
+      const r = await adminPatch("/settings/password", { currentPassword, newPassword });
+      const data = r.data as { error?: string };
+      if (!r.ok) {
         if (data.error === "CURRENT_PASSWORD_INVALID") {
           setError("現在のパスワードが正しくありません");
         } else if (data.error === "NEW_PASSWORD_TOO_SHORT") {

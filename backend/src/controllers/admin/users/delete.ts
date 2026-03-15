@@ -4,6 +4,8 @@ import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
 import type { RowDataPacket, UpdateResult } from "../../../types/db";
+import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function deleteUser(
   req: Request,
@@ -12,15 +14,15 @@ export default async function deleteUser(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const id = Number(req.params.id);
-  const placeholders = storeIds.map(() => "?").join(",");
+  const placeholders = ph(storeIds);
   const [refCredits] = await pool.query("SELECT 1 FROM makeup_credits WHERE user_id = ? LIMIT 1", [id]);
   const [refRes] = await pool.query("SELECT 1 FROM reservations WHERE user_id = ? LIMIT 1", [id]);
   if ((refCredits as RowDataPacket[]).length > 0 || (refRes as RowDataPacket[]).length > 0) {
-    res.status(400).json({ error: ERR.MEMBER_DELETE_HAS_REFERENCES });
+    badRequest(res, ERR.MEMBER_DELETE_HAS_REFERENCES);
     return;
   }
   const [result] = await pool.query(
@@ -28,9 +30,9 @@ export default async function deleteUser(
     [id, ...storeIds]
   );
   if ((result as UpdateResult).affectedRows === 0) {
-    res.status(404).json({ error: ERR.MEMBER_NOT_FOUND });
+    notFound(res, ERR.MEMBER_NOT_FOUND);
     return;
   }
   void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "member.delete", targetType: "user", targetId: id });
-  res.json({ id, deleted: true });
+  ok(res, { id, deleted: true });
 }

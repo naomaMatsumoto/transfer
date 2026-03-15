@@ -1,16 +1,18 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
+import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function createReservation(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const body = req.body as {
@@ -23,15 +25,15 @@ export default async function createReservation(
   const { userId, eventId, reservationType, makeupCreditId, overrideCapacity } = body;
 
   if (!userId || !eventId || !reservationType) {
-    res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
+    badRequest(res, ERR.RESERVATION_PARAMS_REQUIRED);
     return;
   }
   if (reservationType === "makeup" && !makeupCreditId) {
-    res.status(400).json({ error: ERR.MAKEUP_CREDIT_ID_REQUIRED });
+    badRequest(res, ERR.MAKEUP_CREDIT_ID_REQUIRED);
     return;
   }
 
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -43,7 +45,7 @@ export default async function createReservation(
     const event = (eventRows as { id: number; capacity: number; reserved_count: number }[])[0];
     if (!event) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      notFound(res, ERR.EVENT_NOT_FOUND);
       return;
     }
 
@@ -53,13 +55,13 @@ export default async function createReservation(
     );
     if ((userRows as unknown[]).length === 0) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      notFound(res, ERR.EVENT_NOT_FOUND);
       return;
     }
 
     if (!overrideCapacity && event.reserved_count >= event.capacity) {
       await conn.rollback();
-      res.status(400).json({ error: ERR.EVENT_CAPACITY_FULL_OVERRIDE });
+      badRequest(res, ERR.EVENT_CAPACITY_FULL_OVERRIDE);
       return;
     }
 
@@ -69,7 +71,7 @@ export default async function createReservation(
     );
     if ((existing as unknown[]).length > 0) {
       await conn.rollback();
-      res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
+      badRequest(res, ERR.RESERVATION_ALREADY_EXISTS);
       return;
     }
 
@@ -82,7 +84,7 @@ export default async function createReservation(
       const credit = (credits as { id: number; status: string }[])[0];
       if (!credit || credit.status !== "granted") {
         await conn.rollback();
-        res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
+        badRequest(res, ERR.MAKEUP_CREDIT_NOT_AVAILABLE);
         return;
       }
       makeupIdToUse = credit.id;
@@ -101,7 +103,7 @@ export default async function createReservation(
     }
 
     await conn.commit();
-    res.status(201).json({
+    created(res, {
       id: (result as { insertId: number }).insertId,
       userId,
       eventId,

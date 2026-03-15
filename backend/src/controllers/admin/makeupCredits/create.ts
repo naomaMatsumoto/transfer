@@ -2,6 +2,8 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function createMakeupCredit(
   req: Request,
@@ -10,7 +12,7 @@ export default async function createMakeupCredit(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const body = req.body as {
@@ -22,16 +24,16 @@ export default async function createMakeupCredit(
   };
   const { userId, classTypeId, expiresAt, note, createdBy } = body;
   if (!userId) {
-    res.status(400).json({ error: ERR.CREDIT_USER_ID_REQUIRED });
+    badRequest(res, ERR.CREDIT_USER_ID_REQUIRED);
     return;
   }
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   const [userRows] = await pool.query(
     `SELECT id FROM users WHERE id = ? AND store_id IN (${storePh})`,
     [userId, ...storeIds]
   );
   if ((userRows as unknown[]).length === 0) {
-    res.status(404).json({ error: ERR.CREDIT_NOT_FOUND });
+    notFound(res, ERR.CREDIT_NOT_FOUND);
     return;
   }
   if (classTypeId != null) {
@@ -40,7 +42,7 @@ export default async function createMakeupCredit(
       [classTypeId, ...storeIds]
     );
     if ((ctRows as unknown[]).length === 0) {
-      res.status(404).json({ error: ERR.CLASS_TYPE_NOT_FOUND });
+      notFound(res, ERR.CLASS_TYPE_NOT_FOUND);
       return;
     }
   }
@@ -53,5 +55,5 @@ export default async function createMakeupCredit(
     note ?? null,
     createdBy ?? "admin",
   ]);
-  res.status(201).json({ id: (result as { insertId: number }).insertId });
+  created(res, { id: (result as { insertId: number }).insertId });
 }

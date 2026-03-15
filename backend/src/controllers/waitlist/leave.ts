@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { writeAuditLog } from "../../lib/auditLog";
+import { unauthorized, badRequest, notFound, ok } from "../../lib/respond";
 
 export default async function leaveWaitlist(
   req: Request,
@@ -9,13 +10,13 @@ export default async function leaveWaitlist(
 ): Promise<void> {
   const memberId = req.session?.memberId;
   if (memberId == null || typeof memberId !== "number") {
-    res.status(401).json({ error: "UNAUTHORIZED" });
+    unauthorized(res);
     return;
   }
 
   const eventId = Number(req.params.eventId);
   if (!Number.isInteger(eventId) || eventId <= 0) {
-    res.status(400).json({ error: "INVALID_ID" });
+    badRequest(res, "INVALID_ID");
     return;
   }
 
@@ -24,10 +25,10 @@ export default async function leaveWaitlist(
     [memberId, eventId]
   );
   if ((result as { affectedRows: number }).affectedRows === 0) {
-    res.status(404).json({ error: "NOT_ON_WAITLIST" });
+    notFound(res, "NOT_ON_WAITLIST");
     return;
   }
 
   void writeAuditLog({ actorType: "member", actorId: memberId, action: "waitlist.leave", targetType: "event", targetId: eventId });
-  res.json({ ok: true });
+  ok(res, { ok: true });
 }

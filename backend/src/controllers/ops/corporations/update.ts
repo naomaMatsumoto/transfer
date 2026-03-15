@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { opsAudit } from "../../../lib/opsHelpers";
+import { badRequest, ok } from "../../../lib/respond";
 
 export default async function updateCorporation(
   req: Request,
@@ -13,7 +14,7 @@ export default async function updateCorporation(
   const orgType = organizationType === "sole_proprietor" ? "sole_proprietor" : organizationType === "corporation" ? "corporation" : undefined;
 
   if (!name && !orgType) {
-    res.status(400).json({ error: "UPDATE_EMPTY" });
+    badRequest(res, "UPDATE_EMPTY");
     return;
   }
 
@@ -25,5 +26,5 @@ export default async function updateCorporation(
 
   await pool.query(`UPDATE corporations SET ${sets.join(", ")} WHERE id = ?`, params);
   await opsAudit(req, "corporation.update", "corporation", corp.id, { name, orgType });
-  res.json({ ok: true });
+  ok(res, { ok: true });
 }

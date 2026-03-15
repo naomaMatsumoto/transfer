@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import crypto from "crypto";
 import { pool } from "../../db";
 import { sendPasswordResetEmail } from "../../mailer";
+import { badRequest, ok } from "../../lib/respond";
 
 const FRONTEND_BASE = (process.env.FRONTEND_BASE_URL || process.env.CORS_ORIGIN || "http://localhost:3000").replace(/\/$/, "");
 const RESET_EXPIRES_HOURS = 1;
@@ -14,7 +15,7 @@ export default async function membersForgotPassword(
   const body = req.body as { email?: string };
   const email = body.email != null ? String(body.email).trim().toLowerCase() : "";
   if (!email) {
-    res.status(400).json({ error: "EMAIL_REQUIRED" });
+    badRequest(res, "EMAIL_REQUIRED");
     return;
   }
 
@@ -24,7 +25,7 @@ export default async function membersForgotPassword(
   );
   const user = (rows as { id: number }[])[0];
   if (!user) {
-    res.json({ ok: true });
+    ok(res, { ok: true });
     return;
   }
 
@@ -42,5 +43,5 @@ export default async function membersForgotPassword(
     await sendPasswordResetEmail(to, resetUrl);
   }
 
-  res.json({ ok: true });
+  ok(res, { ok: true });
 }

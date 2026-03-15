@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
+import { unauthorized, notFound, ok } from "../../../lib/respond";
 
 export default async function getSettings(
   req: Request,
@@ -8,7 +9,7 @@ export default async function getSettings(
 ): Promise<void> {
   const corporationId = req.session?.account?.corporationId;
   if (corporationId == null) {
-    res.status(401).json({ error: "UNAUTHORIZED" });
+    unauthorized(res);
     return;
   }
   const [rows] = await pool.query(
@@ -17,8 +18,8 @@ export default async function getSettings(
   );
   const row = (rows as { name: string }[])[0];
   if (!row) {
-    res.status(404).json({ error: "NOT_FOUND" });
+    notFound(res, "NOT_FOUND");
     return;
   }
-  res.json({ corporationName: row.name, role: req.session?.account?.role ?? "admin" });
+  ok(res, { corporationName: row.name, role: req.session?.account?.role ?? "admin" });
 }

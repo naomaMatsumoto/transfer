@@ -1,375 +1,32 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
-import { getApiBase, apiFetch } from "@/app/lib/api";
-const FLASH_VISIBLE_MS = 3000;
-const FLASH_ERR_VISIBLE_MS = 5000;
-const FLASH_EXIT_ANIMATION_MS = 300;
+import { adminGet, adminPost, adminPatch, adminDelete } from "@/app/lib/api";
+import { useFlash } from "@/app/lib/useFlash";
+import {
+  type Member,
+  stageOptions,
+  isValidEmail,
+  isMemberEmailError,
+  ConfirmModal,
+  AddMemberModal,
+  EditMemberModal,
+} from "./_components/MemberModals";
 const MEMBERS_PER_PAGE = 50;
-
-type Member = {
-  id: number;
-  name: string;
-  furigana: string | null;
-  email: string | null;
-  address: string | null;
-  phone: string | null;
-  course_type: string | null;
-  stage: string;
-  status?: string;
-  created_at?: string;
-};
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function isValidEmail(s: string): boolean {
-  return s.length > 0 && s.length <= 255 && EMAIL_REGEX.test(s);
-}
-
-function isMemberEmailError(code: string): boolean {
-  return code === "MEMBER_EMAIL_INVALID" || code === "MEMBER_EMAIL_DUPLICATE";
-}
-
-function ConfirmModal({
-  open,
-  title,
-  children,
-  onConfirm,
-  onCancel,
-  confirmLabel = "実行",
-  confirmColor = "#3b82f6",
-}: {
-  open: boolean;
-  title: string;
-  children: React.ReactNode;
-  onConfirm: () => void;
-  onCancel: () => void;
-  confirmLabel?: string;
-  confirmColor?: string;
-}) {
-  if (!open) return null;
-  return (
-    <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
-      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">{title}</h5>
-          </div>
-          <div className="modal-body">{children}</div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
-              キャンセル
-            </button>
-            <button
-              type="button"
-              className={confirmColor === "#991b1b" ? "btn btn-danger" : "btn btn-primary"}
-              onClick={onConfirm}
-            >
-              {confirmLabel}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const stageOptions = [
-  { value: "preschool", label: "未就学児" },
-  { value: "elementary", label: "小学生" },
-  { value: "junior_high", label: "中学生" },
-  { value: "high_school", label: "高校生" },
-  { value: "adult", label: "大人" },
-  { value: "other", label: "その他" },
-];
-
-function AddMemberModal({
-  open,
-  name,
-  setName,
-  furigana,
-  setFurigana,
-  email,
-  setEmail,
-  password,
-  setPassword,
-  address,
-  setAddress,
-  phone,
-  setPhone,
-  courseType,
-  setCourseType,
-  stage,
-  setStage,
-  formError,
-  setFormError,
-  onSave,
-  onCancel,
-}: {
-  open: boolean;
-  name: string;
-  setName: (v: string) => void;
-  furigana: string;
-  setFurigana: (v: string) => void;
-  email: string;
-  setEmail: (v: string) => void;
-  password: string;
-  setPassword: (v: string) => void;
-  address: string;
-  setAddress: (v: string) => void;
-  phone: string;
-  setPhone: (v: string) => void;
-  courseType: string;
-  setCourseType: (v: string) => void;
-  stage: string;
-  setStage: (v: string) => void;
-  formError: { field: string; message: string } | null;
-  setFormError: (v: { field: string; message: string } | null) => void;
-  onSave: () => void;
-  onCancel: () => void;
-}) {
-  if (!open) return null;
-  return (
-    <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
-      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">会員を新規登録</h5>
-          </div>
-          <div className="modal-body">
-          <div className="d-flex flex-column gap-3 mb-0">
-          <div className="mb-2">
-            <label className="form-label">名前</label>
-            <input
-              type="text"
-              className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`}
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                if (formError?.field === "name") setFormError(null);
-              }}
-              placeholder="山田 太郎"
-            />
-            {formError?.field === "name" && <div className="invalid-feedback d-block">{formError.message}</div>}
-          </div>
-          <div className="mb-2">
-            <label className="form-label">フリガナ（任意）</label>
-            <input type="text" className="form-control" value={furigana} onChange={(e) => setFurigana(e.target.value)} placeholder="ヤマダ タロウ" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">メール（任意）</label>
-            <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} value={email} onChange={(e) => { setEmail(e.target.value); if (formError?.field === "email") setFormError(null); }} placeholder="user@example.com" />
-            {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
-          </div>
-          <div className="mb-2">
-            <label className="form-label">ログイン用パスワード（任意）</label>
-            <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="カレンダー・振替予約で使用" autoComplete="new-password" />
-            <p className="small text-body-secondary mt-1 mb-0">設定すると会員がカレンダーで振替予約できます</p>
-          </div>
-          <div className="mb-2">
-            <label className="form-label">住所（任意）</label>
-            <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="〇〇市〇〇町1-2-3" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">電話番号（任意）</label>
-            <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090-1234-5678" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">コース種別</label>
-            <input type="text" className="form-control" value={courseType} onChange={(e) => setCourseType(e.target.value)} placeholder="—" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">ステータス</label>
-            <select className="form-select" value={stage} onChange={(e) => setStage(e.target.value)}>
-              {stageOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>キャンセル</button>
-            <button type="button" className="btn btn-success" onClick={onSave}>登録</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EditMemberModal({
-  open,
-  editId,
-  name,
-  setName,
-  furigana,
-  setFurigana,
-  email,
-  setEmail,
-  password,
-  setPassword,
-  address,
-  setAddress,
-  phone,
-  setPhone,
-  courseType,
-  setCourseType,
-  stage,
-  setStage,
-  formError,
-  setFormError,
-  onSave,
-  onCancel,
-}: {
-  open: boolean;
-  editId: number | null;
-  name: string;
-  setName: (v: string) => void;
-  furigana: string;
-  setFurigana: (v: string) => void;
-  email: string;
-  setEmail: (v: string) => void;
-  password: string;
-  setPassword: (v: string) => void;
-  address: string;
-  setAddress: (v: string) => void;
-  phone: string;
-  setPhone: (v: string) => void;
-  courseType: string;
-  setCourseType: (v: string) => void;
-  stage: string;
-  setStage: (v: string) => void;
-  formError: { field: string; message: string } | null;
-  setFormError: (v: { field: string; message: string } | null) => void;
-  onSave: () => void;
-  onCancel: () => void;
-}) {
-  if (!open || !editId) return null;
-  return (
-    <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
-      <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">会員を編集（#{editId}）</h5>
-          </div>
-          <div className="modal-body">
-          <div className="d-flex flex-column gap-0 mb-0">
-          <div className="mb-2">
-            <label className="form-label">名前</label>
-            <input type="text" className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`} value={name} onChange={(e) => { setName(e.target.value); if (formError?.field === "name") setFormError(null); }} placeholder="山田 太郎" />
-            {formError?.field === "name" && <div className="invalid-feedback d-block">{formError.message}</div>}
-          </div>
-          <div className="mb-2">
-            <label className="form-label">フリガナ（任意）</label>
-            <input type="text" className="form-control" value={furigana} onChange={(e) => setFurigana(e.target.value)} placeholder="ヤマダ タロウ" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">メール（任意）</label>
-            <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} value={email} onChange={(e) => { setEmail(e.target.value); if (formError?.field === "email") setFormError(null); }} placeholder="user@example.com" />
-            {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
-          </div>
-          <div className="mb-2">
-            <label className="form-label">ログイン用パスワード（変更時のみ）</label>
-            <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="空欄のままなら変更しません" autoComplete="new-password" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">住所（任意）</label>
-            <input type="text" className="form-control" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="〇〇市〇〇町1-2-3" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">電話番号（任意）</label>
-            <input type="tel" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="090-1234-5678" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">コース種別</label>
-            <input type="text" className="form-control" value={courseType} onChange={(e) => setCourseType(e.target.value)} placeholder="—" />
-          </div>
-          <div className="mb-2">
-            <label className="form-label">ステータス</label>
-            <select className="form-select" value={stage} onChange={(e) => setStage(e.target.value)}>
-              {stageOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>キャンセル</button>
-            <button type="button" className="btn btn-success" onClick={onSave}>保存</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
-  const [msgExiting, setMsgExiting] = useState(false);
-  const [errExiting, setErrExiting] = useState(false);
-  const flashTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  useEffect(() => {
-    return () => {
-      flashTimeoutsRef.current.forEach((t) => clearTimeout(t));
-      flashTimeoutsRef.current = [];
-    };
-  }, []);
-
-  const flash = useCallback((m: string) => {
-    setErr("");
-    setErrExiting(false);
-    setMsg(m);
-    setMsgExiting(false);
-    flashTimeoutsRef.current.forEach((t) => clearTimeout(t));
-    flashTimeoutsRef.current = [];
-    flashTimeoutsRef.current.push(
-      setTimeout(() => {
-        setMsgExiting(true);
-        flashTimeoutsRef.current.push(
-          setTimeout(() => {
-            setMsg("");
-          }, FLASH_EXIT_ANIMATION_MS),
-        );
-      }, FLASH_VISIBLE_MS),
-    );
-  }, []);
-
-  const flashErr = useCallback((m: string) => {
-    setMsg("");
-    setMsgExiting(false);
-    setErr(m);
-    setErrExiting(false);
-    flashTimeoutsRef.current.forEach((t) => clearTimeout(t));
-    flashTimeoutsRef.current = [];
-    flashTimeoutsRef.current.push(
-      setTimeout(() => {
-        setErrExiting(true);
-        flashTimeoutsRef.current.push(
-          setTimeout(() => setErr(""), FLASH_EXIT_ANIMATION_MS),
-        );
-      }, FLASH_ERR_VISIBLE_MS),
-    );
-  }, []);
+  const { msg, err, msgExiting, errExiting, flash, flashErr } = useFlash();
 
   const loadMembers = useCallback(async () => {
     try {
-      const res = await apiFetch(`${getApiBase()}/admin/users`);
-      if (!res.ok) throw new Error("failed");
-      const contentType = res.headers.get("content-type");
-      if (!contentType?.includes("application/json")) {
-        throw new Error("APIがJSONを返していません。バックエンドが起動しているか確認してください。");
+      const r = await adminGet<Member[]>("/users");
+      if (r.ok && r.data) {
+        setMembers(r.data);
+      } else {
+        throw new Error("failed");
       }
-      const data = await res.json();
-      setMembers(data);
     } catch (e) {
       const isNetwork = e instanceof TypeError && e.message === "Failed to fetch";
       flashErr(isNetwork ? "バックエンドに接続できません。backend で npm run dev を実行していますか？" : "会員一覧の読み込みに失敗しました");
@@ -459,32 +116,19 @@ export default function AdminMembersPage() {
       return;
     }
     try {
-      const res = await apiFetch(`${getApiBase()}/admin/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newName.trim(),
-          furigana: newFurigana.trim() || null,
-          email: emailVal,
-          password: newPassword.trim() || null,
-          address: newAddress.trim() || null,
-          phone: newPhone.trim() || null,
-          course_type: newCourseType.trim() || null,
-          stage: newStage,
-        }),
+      const r = await adminPost("/users", {
+        name: newName.trim(),
+        furigana: newFurigana.trim() || null,
+        email: emailVal,
+        password: newPassword.trim() || null,
+        address: newAddress.trim() || null,
+        phone: newPhone.trim() || null,
+        course_type: newCourseType.trim() || null,
+        stage: newStage,
       });
-      let data: { error?: string };
-      try {
-        data = await res.json();
-      } catch {
-        setNewFormError({
-          field: "name",
-          message: res.ok ? "応答の解析に失敗しました" : "バックエンドが起動しているか確認してください。",
-        });
-        return;
-      }
-      if (!res.ok) {
-        const code = data.error ?? "";
+      const data = r.data as { error?: string };
+      if (!r.ok) {
+        const code = data?.error ?? "";
         const errMsg = getApiErrorMessage(code);
         setNewFormError({
           field: isMemberEmailError(code) ? "email" : "name",
@@ -551,14 +195,10 @@ export default function AdminMembersPage() {
       stage: editStage,
     };
     if (editPassword.trim() !== "") body.password = editPassword.trim();
-    const res = await apiFetch(`${getApiBase()}/admin/users/${editId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const code = data.error ?? "";
+    const r = await adminPatch(`/users/${editId}`, body);
+    const data = r.data as { error?: string };
+    if (!r.ok) {
+      const code = data?.error ?? "";
       const errMsg = getApiErrorMessage(code);
       setEditFormError({
         field: isMemberEmailError(code) ? "email" : "name",
@@ -576,10 +216,9 @@ export default function AdminMembersPage() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setDeleteTarget(null);
-    const res = await apiFetch(`${getApiBase()}/admin/users/${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) {
-      flashErr(getApiErrorMessage(data.error));
+    const r = await adminDelete(`/users/${id}`);
+    if (!r.ok) {
+      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
       return;
     }
     flash(`会員 #${id} を削除しました`);

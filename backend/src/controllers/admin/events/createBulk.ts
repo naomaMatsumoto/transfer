@@ -1,16 +1,19 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
+import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
+import { syncEventStaff } from "../../../services/eventStaff";
 
 export default async function createBulkEvents(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const body = req.body as {
@@ -35,22 +38,22 @@ export default async function createBulkEvents(
     !dateFrom ||
     !dateTo
   ) {
-    res.status(400).json({ error: ERR.EVENT_BULK_PARAMS_REQUIRED });
+    badRequest(res, ERR.EVENT_BULK_PARAMS_REQUIRED);
     return;
   }
 
-  const placeholders = storeIds.map(() => "?").join(",");
+  const placeholders = ph(storeIds);
   const [ctRows] = await pool.query(
     `SELECT id FROM class_types WHERE id = ? AND store_id IN (${placeholders})`,
     [classTypeId, ...storeIds]
   );
   if ((ctRows as unknown[]).length === 0) {
-    res.status(404).json({ error: ERR.CLASS_TYPE_NOT_FOUND });
+    notFound(res, ERR.CLASS_TYPE_NOT_FOUND);
     return;
   }
 
   const excludeSet = new Set(excludeDates ?? []);
-  const created: { id: number; date: string }[] = [];
+  const createdEvents: { id: number; date: string }[] = [];
 
   const cursor = new Date(dateFrom + "T00:00:00");
   const end = new Date(dateTo + "T00:00:00");
@@ -72,25 +75,13 @@ export default async function createBulkEvents(
         [classTypeId, startsAt, endsAt, capacity ?? 6]
       );
       const eventId = (result as { insertId: number }).insertId;
-      created.push({ id: eventId, date: dateStr });
-      const ids = Array.isArray(staffIds) ? staffIds.filter((id) => Number.isInteger(id) && id > 0) : [];
-      const uniqueIds = [...new Set(ids)];
-      for (const staffId of uniqueIds) {
-        const [staffRows] = await pool.query(
-          `SELECT id FROM staff WHERE id = ? AND store_id IN (${placeholders})`,
-          [staffId, ...storeIds]
-        );
-        if ((staffRows as unknown[]).length > 0) {
-          await pool.query(
-            "INSERT INTO event_staff (event_id, staff_id) VALUES (?, ?)",
-            [eventId, staffId]
-          );
-        }
-      }
+      createdEvents.push({ id: eventId, date: dateStr });
+
+      await syncEventStaff(pool, eventId, staffIds ?? [], storeIds);
     }
 
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  res.status(201).json({ count: created.length, events: created });
+  created(res, { count: createdEvents.length, events: createdEvents });
 }

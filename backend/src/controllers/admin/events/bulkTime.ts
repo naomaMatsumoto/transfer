@@ -1,16 +1,18 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
+import { forbidden, badRequest, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function bulkTimeEvents(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const body = req.body as {
@@ -20,10 +22,10 @@ export default async function bulkTimeEvents(
   };
   const { ids, startTime, endTime } = body;
   if (!ids || ids.length === 0 || !startTime || !endTime) {
-    res.status(400).json({ error: ERR.EVENT_BULK_TIME_PARAMS_REQUIRED });
+    badRequest(res, ERR.EVENT_BULK_TIME_PARAMS_REQUIRED);
     return;
   }
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   let updated = 0;
   for (const id of ids) {
     const [rows] = await pool.query(
@@ -42,5 +44,5 @@ export default async function bulkTimeEvents(
     );
     updated++;
   }
-  res.json({ updated, startTime, endTime });
+  ok(res, { updated, startTime, endTime });
 }

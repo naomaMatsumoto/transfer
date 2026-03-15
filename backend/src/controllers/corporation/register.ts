@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../db";
 import { ERR, isValidEmail } from "../../constants";
+import { badRequest, created } from "../../lib/respond";
 
 export default async function registerCorporation(
   req: Request,
@@ -33,23 +34,23 @@ export default async function registerCorporation(
   const password = adminPassword;
 
   if (!corpName) {
-    res.status(400).json({ error: ERR.CORPORATION_NAME_REQUIRED });
+    badRequest(res, ERR.CORPORATION_NAME_REQUIRED);
     return;
   }
   if (!sName) {
-    res.status(400).json({ error: ERR.STORE_NAME_REQUIRED });
+    badRequest(res, ERR.STORE_NAME_REQUIRED);
     return;
   }
   if (!email) {
-    res.status(400).json({ error: ERR.ADMIN_EMAIL_REQUIRED });
+    badRequest(res, ERR.ADMIN_EMAIL_REQUIRED);
     return;
   }
   if (!isValidEmail(email)) {
-    res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+    badRequest(res, ERR.MEMBER_EMAIL_INVALID);
     return;
   }
   if (!password || String(password).length < 6) {
-    res.status(400).json({ error: ERR.ADMIN_PASSWORD_REQUIRED });
+    badRequest(res, ERR.ADMIN_PASSWORD_REQUIRED);
     return;
   }
 
@@ -58,7 +59,7 @@ export default async function registerCorporation(
     [email]
   );
   if ((existing as unknown[]).length > 0) {
-    res.status(400).json({ error: ERR.ADMIN_EMAIL_ALREADY_USED });
+    badRequest(res, ERR.ADMIN_EMAIL_ALREADY_USED);
     return;
   }
 
@@ -80,7 +81,7 @@ export default async function registerCorporation(
       [corporationId, email, hash, (adminDisplayName ?? "").trim() || null]
     );
     await conn.commit();
-    res.status(201).json({
+    created(res, {
       corporationId,
       message: orgType === "sole_proprietor" ? "個人事業主として登録しました。ログイン画面からログインしてください。" : "法人を登録しました。ログイン画面からログインしてください。",
     });

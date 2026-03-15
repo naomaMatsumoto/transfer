@@ -5,6 +5,8 @@ import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { type InsertResult, isMysqlError } from "../../../types/db";
+import { forbidden, badRequest, created } from "../../../lib/respond";
+import { optStr, normalizeStage } from "../../../lib/validate";
 
 export default async function createUser(
   req: Request,
@@ -13,7 +15,7 @@ export default async function createUser(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const storeId = storeIds[0];
@@ -28,19 +30,19 @@ export default async function createUser(
     stage?: string;
   };
   if (!name || !String(name).trim()) {
-    res.status(400).json({ error: ERR.MEMBER_NAME_REQUIRED });
+    badRequest(res, ERR.MEMBER_NAME_REQUIRED);
     return;
   }
   const trimmedName = String(name).trim();
-  const furiganaVal = furigana != null && String(furigana).trim() !== "" ? String(furigana).trim() : null;
-  const emailTrimmed = email != null && String(email).trim() !== "" ? String(email).trim() : null;
+  const furiganaVal = optStr(furigana);
+  const emailTrimmed = optStr(email);
   if (emailTrimmed !== null && !isValidEmail(emailTrimmed)) {
-    res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+    badRequest(res, ERR.MEMBER_EMAIL_INVALID);
     return;
   }
-  const addressVal = address == null || String(address).trim() === "" ? null : String(address).trim();
-  const phoneVal = phone == null || String(phone).trim() === "" ? null : String(phone).trim();
-  const stageVal = stage && (STAGE_VALUES as readonly string[]).includes(stage) ? stage : "other";
+  const addressVal = optStr(address);
+  const phoneVal = optStr(phone);
+  const stageVal = normalizeStage(stage);
   const passwordVal =
     password != null && String(password).trim() !== "" ? await bcrypt.hash(String(password).trim(), 10) : null;
   try {
@@ -50,7 +52,7 @@ export default async function createUser(
     );
     const newId = (result as InsertResult).insertId;
     void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "member.create", targetType: "user", targetId: newId, detail: { name: trimmedName } });
-    res.status(201).json({
+    created(res, {
       id: newId,
       name: trimmedName,
       furigana: furiganaVal,
@@ -62,7 +64,7 @@ export default async function createUser(
     });
   } catch (err: unknown) {
     if (isMysqlError(err) && err.code === "ER_DUP_ENTRY") {
-      res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
+      badRequest(res, ERR.MEMBER_EMAIL_DUPLICATE);
       return;
     }
     throw err;

@@ -1,4 +1,5 @@
 import { type Request, type Response, type NextFunction } from "express";
+import { unauthorized, ok } from "../../../lib/respond";
 
 export default async function opsMe(
   req: Request,
@@ -6,10 +7,10 @@ export default async function opsMe(
   _next: NextFunction
 ): Promise<void> {
   if (!req.session?.platformAdmin) {
-    res.status(401).json({ error: "UNAUTHORIZED" });
+    unauthorized(res);
     return;
   }
-  res.json({
+  ok(res, {
     id: req.session.platformAdmin.id,
     email: req.session.platformAdmin.email,
   });

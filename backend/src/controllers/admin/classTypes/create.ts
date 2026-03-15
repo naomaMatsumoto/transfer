@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { forbidden, badRequest, created } from "../../../lib/respond";
 
 function generateClassTypeCode(name: string): string {
   const slug = name
@@ -20,14 +21,14 @@ export default async function createClassType(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const storeId = storeIds[0];
   const body = req.body as { code?: string; name?: string; description?: string };
   const { code, name, description } = body;
   if (!name || !String(name).trim()) {
-    res.status(400).json({ error: ERR.CLASS_TYPE_NAME_REQUIRED });
+    badRequest(res, ERR.CLASS_TYPE_NAME_REQUIRED);
     return;
   }
   const trimmedName = String(name).trim();
@@ -39,11 +40,11 @@ export default async function createClassType(
       [storeId, codeToUse, trimmedName, description ?? null]
     );
     const insertId = (result as { insertId: number }).insertId;
-    res.status(201).json({ id: insertId, code: codeToUse, name: trimmedName });
+    created(res, { id: insertId, code: codeToUse, name: trimmedName });
   } catch (err: unknown) {
     const e = err as { code?: string };
     if (e.code === "ER_DUP_ENTRY") {
-      res.status(400).json({ error: ERR.CLASS_TYPE_CODE_DUPLICATE });
+      badRequest(res, ERR.CLASS_TYPE_CODE_DUPLICATE);
       return;
     }
     throw err;

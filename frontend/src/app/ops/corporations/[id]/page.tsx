@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useReducer } from "react";
+import { useState, useReducer, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
@@ -10,6 +10,7 @@ import {
   OrganizationType,
   CorpStatus,
   ORG_TYPE_LABEL,
+  STATUS_CFG,
 } from "../../types";
 import { useOpsData, useSubmit } from "../../hooks";
 import { formatDate } from "../../utils";
@@ -114,14 +115,38 @@ export default function OpsCorporationDetailPage() {
   const [editingStoreId, setEditingStoreId] = useState<number | null>(null);
   const [editStoreName, setEditStoreName] = useState("");
 
+  const [storeCalDays, setStoreCalDays] = useState<Record<number, string>>({});
+  const [storeCalHours, setStoreCalHours] = useState<Record<number, string>>({});
+  const [savingStoreId, setSavingStoreId] = useState<number | null>(null);
+  const [calSaveMsg, setCalSaveMsg] = useState<string | null>(null);
+
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   // sync edit fields when corp loads
   if (corp && editName === "" && editOrgType === "corporation" && corp.name !== "") {
     setEditName(corp.name);
     setEditOrgType(corp.organization_type ?? "corporation");
   }
+
+  useEffect(() => {
+    if (!corp?.stores?.length) return;
+    setStoreCalDays((prev) => {
+      const next = { ...prev };
+      corp.stores.forEach((st) => {
+        next[st.id] = st.booking_deadline_days != null ? String(st.booking_deadline_days) : "";
+      });
+      return next;
+    });
+    setStoreCalHours((prev) => {
+      const next = { ...prev };
+      corp.stores.forEach((st) => {
+        next[st.id] = st.cancel_deadline_hours != null ? String(st.cancel_deadline_hours) : "";
+      });
+      return next;
+    });
+  }, [corp?.stores]);
 
   // ---- handlers ----
   const handleSave = async (e: React.FormEvent) => {
@@ -143,6 +168,12 @@ export default function OpsCorporationDetailPage() {
   const requestToggleStatus = () => {
     if (!corp) return;
     setConfirmTarget(corp.status === "suspended" ? { kind: "activate" } : { kind: "suspend" });
+  };
+
+  const setStatusDirect = async (newStatus: "pending" | "email_sent" | "active" | "suspended") => {
+    if (!corp || corp.status === newStatus) return;
+    const r = await patchJson(`${corpPath}/status`, { status: newStatus });
+    if (r.ok) reload();
   };
 
   const handleAddStore = async (e: React.FormEvent) => {
@@ -169,6 +200,12 @@ export default function OpsCorporationDetailPage() {
       }),
       {
         errorMsg: "アカウントの追加に失敗しました",
+        onError: (data) => {
+          const code = (data as { error?: string })?.error;
+          if (code === "EMAIL_ALREADY_EXISTS") return "このメールアドレスは既に登録されています。別のメールアドレスを入力してください。";
+          if (code === "EMAIL_PASSWORD_REQUIRED") return "メールアドレスとパスワードを入力してください。";
+          return undefined;
+        },
         onSuccess: () => {
           setShowAccModal(false);
           accDispatch({ type: "reset" });
@@ -190,6 +227,25 @@ export default function OpsCorporationDetailPage() {
     if (r.ok) { setEditingStoreId(null); reload(); }
   };
 
+  const handleSaveCalendar = async (storeId: number) => {
+    setCalSaveMsg(null);
+    setSavingStoreId(storeId);
+    try {
+      const days = storeCalDays[storeId]?.trim();
+      const hours = storeCalHours[storeId]?.trim();
+      const r = await putJson(`${corpPath}/stores/${storeId}`, {
+        booking_deadline_days: days === "" ? null : (parseInt(days, 10) || null),
+        cancel_deadline_hours: hours === "" ? null : (parseInt(hours, 10) || null),
+      });
+      if (r.ok) {
+        setCalSaveMsg("保存しました");
+        reload();
+      }
+    } finally {
+      setSavingStoreId(null);
+    }
+  };
+
   const handleConfirmAction = async () => {
     if (!confirmTarget) return;
     setDeleting(true);
@@ -199,6 +255,9 @@ export default function OpsCorporationDetailPage() {
       case "account": {
         const r = await deleteFetch(`${corpPath}/accounts/${confirmTarget.id}`);
         ok = r.ok;
+        if (!r.ok && (r.data as { error?: string })?.error === "AT_LEAST_ONE_ACCOUNT_REQUIRED") {
+          setAccountError("メールアドレスは最低1件必要です。削除できません。");
+        }
         break;
       }
       case "store": {
@@ -227,6 +286,7 @@ export default function OpsCorporationDetailPage() {
     setConfirmTarget(null);
 
     if (ok) {
+      setAccountError(null);
       if (confirmTarget.kind === "corporation") {
         router.push(ROUTES.OPS_DASHBOARD);
       } else {
@@ -324,14 +384,24 @@ export default function OpsCorporationDetailPage() {
             <button type="submit" className="btn btn-dark btn-sm" disabled={saveSubmit.submitting}>
               {saveSubmit.submitting ? "保存中…" : "保存"}
             </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${corp.status === "suspended" ? "btn-outline-success" : "btn-outline-danger"}`}
-              onClick={requestToggleStatus}
-            >
-              {corp.status === "suspended" ? "稼働に戻す" : "停止する"}
-            </button>
           </form>
+          <div className="mt-3 pt-3 border-top">
+            <span className="small text-body-secondary me-2">ステータス:</span>
+            {(["pending", "email_sent", "active", "suspended"] as const).map((st) => {
+              const cfg = STATUS_CFG[st];
+              const isCurrent = corp.status === st;
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  className={`btn btn-sm me-1 ${isCurrent ? cfg.cls.replace("bg-", "btn-") : "btn-outline-secondary"}`}
+                  onClick={() => setStatusDirect(st)}
+                >
+                  {cfg.text}
+                </button>
+              );
+            })}
+          </div>
           {saveMsg && <p className="small text-success mt-2 mb-0">{saveMsg}</p>}
           <hr className="my-3" />
           <button
@@ -394,7 +464,8 @@ export default function OpsCorporationDetailPage() {
               { key: "date", header: "登録日", className: "small text-body-secondary", render: (st) => formatDate(st.created_at) },
               {
                 key: "actions", header: "", render: (store) => (
-                  <div className="d-flex gap-1">
+                  <div className="d-flex gap-1 flex-wrap">
+                    <Link href={`/ops/corporations/${id}/stores/${store.id}/events`} className="btn btn-outline-primary btn-sm">イベント・休講</Link>
                     <button className="btn btn-outline-secondary btn-sm" onClick={() => { setEditingStoreId(store.id); setEditStoreName(store.name); }}>編集</button>
                     <button className="btn btn-outline-danger btn-sm" onClick={() => setConfirmTarget({ kind: "store", id: store.id })}>削除</button>
                   </div>
@@ -405,13 +476,91 @@ export default function OpsCorporationDetailPage() {
         )}
       </section>
 
+      {/* カレンダー設定 */}
+      {corp.stores.length > 0 && (
+        <section className="mb-4">
+          <div className={s.sectionHeader}>
+            <h2 className="h6 mb-0">カレンダー設定</h2>
+          </div>
+          <p className="small text-body-secondary mb-3">店舗ごとに予約受付期限・キャンセル期限を設定できます。空欄は制限なしです。</p>
+          <div className={`card shadow-sm ${s.calendarSettingsCard}`}>
+            <div className="card-body p-0">
+              <div className={s.calendarSettingsTable}>
+                <div className={`${s.calendarSettingsRow} ${s.calendarSettingsRowHeader}`}>
+                  <div className={s.calendarSettingsStore}>店舗</div>
+                  <div className={s.calendarSettingsField}>予約受付期限</div>
+                  <div className={s.calendarSettingsField}>キャンセル期限</div>
+                  <div className={s.calendarSettingsActions}>操作</div>
+                </div>
+                {corp.stores.map((store) => (
+                  <div key={store.id} className={s.calendarSettingsRow}>
+                    <div className={s.calendarSettingsStore}>
+                      <span className="fw-medium">{store.name}</span>
+                      <Link href={`/ops/corporations/${id}/stores/${store.id}/events`} className="btn btn-link btn-sm p-0 ms-1 align-baseline">イベント・休講</Link>
+                    </div>
+                    <div className={s.calendarSettingsField}>
+                      <label className="form-label small mb-0 text-body-secondary">○日前まで</label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        placeholder="制限なし"
+                        min={0}
+                        value={storeCalDays[store.id] ?? ""}
+                        onChange={(e) => setStoreCalDays((prev) => ({ ...prev, [store.id]: e.target.value }))}
+                        aria-label={`${store.name} 予約受付期限`}
+                      />
+                    </div>
+                    <div className={s.calendarSettingsField}>
+                      <label className="form-label small mb-0 text-body-secondary">開始○時間前まで</label>
+                      <input
+                        type="number"
+                        className="form-control form-control-sm"
+                        placeholder="制限なし"
+                        min={0}
+                        value={storeCalHours[store.id] ?? ""}
+                        onChange={(e) => setStoreCalHours((prev) => ({ ...prev, [store.id]: e.target.value }))}
+                        aria-label={`${store.name} キャンセル期限`}
+                      />
+                    </div>
+                    <div className={s.calendarSettingsActions}>
+                      <button
+                        type="button"
+                        className="btn btn-dark btn-sm"
+                        disabled={savingStoreId === store.id}
+                        onClick={() => handleSaveCalendar(store.id)}
+                      >
+                        {savingStoreId === store.id ? "保存中…" : "保存"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {calSaveMsg && <p className="small text-success mt-2 mb-0">{calSaveMsg}</p>}
+        </section>
+      )}
+
       {/* Accounts */}
       <section>
         <div className={s.sectionHeader}>
           <h2 className="h6 mb-0">アカウント一覧</h2>
-          <button className="btn btn-dark btn-sm" onClick={() => setShowAccModal(true)}>+ アカウント追加</button>
+          <button className="btn btn-dark btn-sm" onClick={() => { setShowAccModal(true); setAccountError(null); }}>+ アカウント追加</button>
         </div>
-        {corp.accounts.length === 0 ? <Empty text="アカウントがまだありません。" /> : (
+        {accountError && (
+          <div className="alert alert-warning py-2 mb-2" role="alert">
+            {accountError}
+            <button type="button" className="btn-close btn-sm ms-2 align-middle" onClick={() => setAccountError(null)} aria-label="閉じる" />
+          </div>
+        )}
+        {corp.accounts.length === 0 ? (
+          <>
+            <div className="alert alert-warning mb-3 mb-0">
+              メールアドレス（アカウント）は必ず1件以上登録してください。下のボタンから追加してください。
+            </div>
+            <Empty text="アカウントがまだありません。" />
+          </>
+        ) : (
           <DataTable
             rows={corp.accounts}
             rowKey={(a) => a.id}
@@ -420,15 +569,25 @@ export default function OpsCorporationDetailPage() {
               { key: "display", header: "表示名", render: (a) => <span className="text-body-secondary">{a.display_name ?? "-"}</span> },
               { key: "role", header: "ロール", render: (a) => <span className="badge bg-secondary">{a.role ?? "admin"}</span> },
               {
-                key: "actions", header: "", render: (a) => (
-                  <div className="d-flex gap-1 align-items-center flex-wrap">
-                    <button className="btn btn-outline-secondary btn-sm" onClick={() => handleResetPw(a.id)}>PW リセット</button>
-                    <button className="btn btn-outline-danger btn-sm" onClick={() => setConfirmTarget({ kind: "account", id: a.id })}>削除</button>
-                    {resetResult?.accountId === a.id && (
-                      <span className="small text-success">新PW: <code>{resetResult.password}</code></span>
-                    )}
-                  </div>
-                ),
+                key: "actions", header: "", render: (a) => {
+                  const isOnlyAccount = corp.accounts.length === 1;
+                  return (
+                    <div className="d-flex gap-1 align-items-center flex-wrap">
+                      <button className="btn btn-outline-secondary btn-sm" onClick={() => handleResetPw(a.id)}>PW リセット</button>
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => setConfirmTarget({ kind: "account", id: a.id })}
+                        disabled={isOnlyAccount}
+                        title={isOnlyAccount ? "メールアドレスは最低1件必要です" : undefined}
+                      >
+                        削除
+                      </button>
+                      {resetResult?.accountId === a.id && (
+                        <span className="small text-success">新PW: <code>{resetResult.password}</code></span>
+                      )}
+                    </div>
+                  );
+                },
               },
             ]}
           />

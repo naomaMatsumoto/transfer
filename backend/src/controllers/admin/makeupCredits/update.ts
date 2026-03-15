@@ -2,6 +2,8 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function updateMakeupCredit(
   req: Request,
@@ -10,7 +12,7 @@ export default async function updateMakeupCredit(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const creditId = Number(req.params.id);
@@ -31,19 +33,19 @@ export default async function updateMakeupCredit(
     params.push(note);
   }
   if (sets.length === 0) {
-    res.status(400).json({ error: ERR.CREDIT_UPDATE_EMPTY });
+    badRequest(res, ERR.CREDIT_UPDATE_EMPTY);
     return;
   }
   sets.push("mc.updated_at = NOW()");
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   params.push(creditId, ...storeIds);
   const [result] = await pool.query(
     `UPDATE makeup_credits mc JOIN users u ON u.id = mc.user_id SET ${sets.join(", ")} WHERE mc.id = ? AND u.store_id IN (${storePh})`,
     params
   );
   if ((result as { affectedRows: number }).affectedRows === 0) {
-    res.status(404).json({ error: ERR.CREDIT_NOT_FOUND });
+    notFound(res, ERR.CREDIT_NOT_FOUND);
     return;
   }
-  res.json({ id: creditId, updated: true });
+  ok(res, { id: creditId, updated: true });
 }

@@ -1,18 +1,20 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
+import { forbidden, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function listReservations(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   const conditions: string[] = [
     `(ct.store_id IN (${storePh}) AND u.store_id IN (${storePh}))`,
   ];
@@ -32,5 +34,5 @@ export default async function listReservations(
     where +
     " ORDER BY r.created_at DESC";
   const [rows] = await pool.query(sql, params);
-  res.json(rows);
+  ok(res, rows);
 }

@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
+import { forbidden, badRequest, ok } from "../../../lib/respond";
 
 export default async function updateStoreSettings(
   req: Request,
@@ -10,7 +11,7 @@ export default async function updateStoreSettings(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
 
@@ -30,12 +31,12 @@ export default async function updateStoreSettings(
     params.push(cancel_deadline_hours);
   }
   if (updates.length === 0) {
-    res.status(400).json({ error: "NO_UPDATES" });
+    badRequest(res, "NO_UPDATES");
     return;
   }
 
   params.push(storeIds[0] as unknown as number);
   await pool.query(`UPDATE stores SET ${updates.join(", ")} WHERE id = ?`, params);
   void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "store_settings.update", targetType: "store", targetId: storeIds[0], detail: { booking_deadline_days, cancel_deadline_hours } });
-  res.json({ ok: true });
+  ok(res, { ok: true });
 }

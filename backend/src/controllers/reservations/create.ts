@@ -4,6 +4,7 @@ import { ERR } from "../../constants";
 import { checkBookingDeadline } from "../../lib/deadlineCheck";
 import { writeAuditLog } from "../../lib/auditLog";
 import type { InsertResult, RowDataPacket } from "../../types/db";
+import { badRequest, forbidden, notFound, created } from "../../lib/respond";
 
 export default async function createReservation(
   req: Request,
@@ -17,14 +18,14 @@ export default async function createReservation(
     makeupCreditId?: number | null;
   };
   if (!userId || !eventId || !reservationType) {
-    res.status(400).json({ error: ERR.RESERVATION_PARAMS_REQUIRED });
+    badRequest(res, ERR.RESERVATION_PARAMS_REQUIRED);
     return;
   }
 
   const [userRows] = await pool.query("SELECT status FROM users WHERE id = ? LIMIT 1", [userId]);
   const userStatus = (userRows as { status: string }[])[0]?.status;
   if (!userStatus || userStatus !== "active") {
-    res.status(403).json({ error: "MEMBER_NOT_ACTIVE", message: "停止中または退会済みの会員は予約できません" });
+    forbidden(res, "MEMBER_NOT_ACTIVE", "停止中または退会済みの会員は予約できません");
     return;
   }
 
@@ -41,23 +42,23 @@ export default async function createReservation(
     const event = (eventRows as RowDataPacket[])[0];
     if (!event) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      notFound(res, ERR.EVENT_NOT_FOUND);
       return;
     }
     if (event.status !== "scheduled") {
       await conn.rollback();
-      res.status(400).json({ error: ERR.EVENT_NOT_BOOKABLE });
+      badRequest(res, ERR.EVENT_NOT_BOOKABLE);
       return;
     }
     const deadlineMsg = await checkBookingDeadline(eventId, new Date(event.starts_at));
     if (deadlineMsg) {
       await conn.rollback();
-      res.status(400).json({ error: "BOOKING_DEADLINE_PASSED", message: deadlineMsg });
+      badRequest(res, "BOOKING_DEADLINE_PASSED", { message: deadlineMsg });
       return;
     }
     if (event.reserved_count >= event.capacity) {
       await conn.rollback();
-      res.status(400).json({ error: ERR.EVENT_CAPACITY_FULL });
+      badRequest(res, ERR.EVENT_CAPACITY_FULL);
       return;
     }
     const [existing] = await conn.query(
@@ -66,14 +67,14 @@ export default async function createReservation(
     );
     if ((existing as RowDataPacket[]).length > 0) {
       await conn.rollback();
-      res.status(400).json({ error: ERR.RESERVATION_ALREADY_EXISTS });
+      badRequest(res, ERR.RESERVATION_ALREADY_EXISTS);
       return;
     }
     let makeupIdToUse: number | null = null;
     if (reservationType === "makeup") {
       if (!makeupCreditId) {
         await conn.rollback();
-        res.status(400).json({ error: ERR.MAKEUP_CREDIT_ID_REQUIRED });
+        badRequest(res, ERR.MAKEUP_CREDIT_ID_REQUIRED);
         return;
       }
       const [credits] = await conn.query(
@@ -83,7 +84,7 @@ export default async function createReservation(
       const credit = (credits as RowDataPacket[])[0];
       if (!credit || credit.status !== "granted") {
         await conn.rollback();
-        res.status(400).json({ error: ERR.MAKEUP_CREDIT_NOT_AVAILABLE });
+        badRequest(res, ERR.MAKEUP_CREDIT_NOT_AVAILABLE);
         return;
       }
       makeupIdToUse = credit.id;
@@ -101,7 +102,7 @@ export default async function createReservation(
     }
     await conn.commit();
     void writeAuditLog({ actorType: "member", actorId: userId, action: "reservation.create", targetType: "reservation", targetId: reservationId, detail: { eventId, reservationType } });
-    res.status(201).json({
+    created(res, {
       id: reservationId,
       userId,
       eventId,

@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
 import type { InsertResult, RowDataPacket } from "../../types/db";
+import { badRequest, notFound, created } from "../../lib/respond";
 
 export default async function createAbsence(
   req: Request,
@@ -14,7 +15,7 @@ export default async function createAbsence(
     reason?: string;
   };
   if (!userId || !eventId) {
-    res.status(400).json({ error: ERR.USER_ID_EVENT_ID_REQUIRED });
+    badRequest(res, ERR.USER_ID_EVENT_ID_REQUIRED);
     return;
   }
   const conn = await pool.getConnection();
@@ -27,7 +28,7 @@ export default async function createAbsence(
     const eventRow = (events as RowDataPacket[])[0];
     if (!eventRow) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.EVENT_NOT_FOUND });
+      notFound(res, ERR.EVENT_NOT_FOUND);
       return;
     }
     const [result] = await conn.query(
@@ -35,7 +36,7 @@ export default async function createAbsence(
       [userId, eventRow.class_type_id, eventId, reason ?? null],
     );
     await conn.commit();
-    res.status(201).json({
+    created(res, {
       id: (result as InsertResult).insertId,
       userId,
       eventId,

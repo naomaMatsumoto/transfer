@@ -1,6 +1,8 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { forbidden, badRequest, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function reportSummary(
   req: Request,
@@ -9,15 +11,15 @@ export default async function reportSummary(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
-  const ph = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
 
   const from = req.query.from as string | undefined;
   const to = req.query.to as string | undefined;
   if (!from || !to) {
-    res.status(400).json({ error: "FROM_TO_REQUIRED" });
+    badRequest(res, "FROM_TO_REQUIRED");
     return;
   }
 
@@ -33,7 +35,7 @@ export default async function reportSummary(
      FROM reservations r
      JOIN events e ON e.id = r.event_id
      JOIN class_types ct ON ct.id = e.class_type_id
-     WHERE ct.store_id IN (${ph})
+     WHERE ct.store_id IN (${storePh})
        AND e.starts_at >= ? AND e.starts_at < ?
      GROUP BY month ORDER BY month`,
     [...storeIds, from, to]
@@ -46,7 +48,7 @@ export default async function reportSummary(
      FROM reservations r
      JOIN events e ON e.id = r.event_id
      JOIN class_types ct ON ct.id = e.class_type_id
-     WHERE ct.store_id IN (${ph})
+     WHERE ct.store_id IN (${storePh})
        AND r.status = 'no_show'
        AND e.starts_at >= ? AND e.starts_at < ?
      GROUP BY month ORDER BY month`,
@@ -58,11 +60,11 @@ export default async function reportSummary(
        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_members,
        SUM(CASE WHEN status = 'paused' THEN 1 ELSE 0 END) AS paused_members,
        SUM(CASE WHEN status = 'withdrawn' THEN 1 ELSE 0 END) AS withdrawn_members
-     FROM users WHERE store_id IN (${ph})`,
+     FROM users WHERE store_id IN (${storePh})`,
     storeIds
   );
 
-  res.json({
+  ok(res, {
     reservationsByMonth: reservationRows,
     absencesByMonth: absenceRows,
     memberStats: (memberStats as unknown[])[0],

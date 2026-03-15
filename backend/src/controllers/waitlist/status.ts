@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
+import { badRequest, ok } from "../../lib/respond";
 
 export default async function waitlistStatus(
   req: Request,
@@ -8,7 +9,7 @@ export default async function waitlistStatus(
 ): Promise<void> {
   const eventId = Number(req.params.eventId);
   if (!Number.isInteger(eventId) || eventId <= 0) {
-    res.status(400).json({ error: "INVALID_ID" });
+    badRequest(res, "INVALID_ID");
     return;
   }
 
@@ -28,5 +29,5 @@ export default async function waitlistStatus(
     onWaitlist = (wRows as unknown[]).length > 0;
   }
 
-  res.json({ eventId, waitlistCount: count, onWaitlist });
+  ok(res, { eventId, waitlistCount: count, onWaitlist });
 }

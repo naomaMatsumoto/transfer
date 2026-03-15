@@ -1,14 +1,17 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
+import { ok } from "../../lib/respond";
 
 export default async function getStats(
   _req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const [[summary]] = await pool.query(`
+  const [summaryRows] = await pool.query(`
     SELECT
       (SELECT COUNT(*) FROM corporations WHERE deleted_at IS NULL) AS total_corporations,
+      (SELECT COUNT(*) FROM corporations WHERE status = 'pending' AND deleted_at IS NULL) AS pending_corporations,
+      (SELECT COUNT(*) FROM corporations WHERE status = 'email_sent' AND deleted_at IS NULL) AS email_sent_corporations,
       (SELECT COUNT(*) FROM corporations WHERE status = 'active' AND deleted_at IS NULL) AS active_corporations,
       (SELECT COUNT(*) FROM corporations WHERE status = 'suspended' AND deleted_at IS NULL) AS suspended_corporations,
       (SELECT COUNT(*) FROM stores) AS total_stores,
@@ -17,7 +20,8 @@ export default async function getStats(
       (SELECT COUNT(*) FROM reservations) AS total_reservations,
       (SELECT COUNT(*) FROM reservations WHERE status = 'booked') AS active_reservations,
       (SELECT COUNT(*) FROM events) AS total_events
-  `) as [Record<string, unknown>[]];
+  `);
+  const summary = (summaryRows as Record<string, unknown>[])[0];
 
   const [perCorp] = await pool.query(`
     SELECT
@@ -37,5 +41,5 @@ export default async function getStats(
     ORDER BY c.name ASC
   `);
 
-  res.json({ summary, perCorporation: perCorp });
+  ok(res, { summary, perCorporation: perCorp });
 }

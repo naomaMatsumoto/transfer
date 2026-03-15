@@ -21,6 +21,12 @@ export const ROUTES = {
   ADMIN_RESERVATIONS: "/admin/reservations",
   /** 管理画面：設定（メニュー） */
   ADMIN_SETTINGS: "/admin/settings",
+  /** 店舗設定（予約受付期限・キャンセル期限） */
+  ADMIN_STORE_SETTINGS: "/admin/store-settings",
+  /** レポート・集計 */
+  ADMIN_REPORTS: "/admin/reports",
+  /** 操作ログ */
+  ADMIN_AUDIT_LOGS: "/admin/audit-logs",
   /** パスワードの変更 */
   ADMIN_SETTINGS_PASSWORD: "/admin/settings/password",
   /** 法人名の変更 */
@@ -33,6 +39,10 @@ export const ROUTES = {
   OPS_STATS: "/ops/stats",
   /** 監査ログ */
   OPS_AUDIT_LOGS: "/ops/audit-logs",
+  /** パスワードをお忘れの方 */
+  FORGOT_PASSWORD: "/forgot-password",
+  /** 会員設定 */
+  MEMBER_SETTINGS: "/members/settings",
 } as const;
 
 /** 店舗ごとのカレンダーURL（振替予約・欠席登録） */

@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
+import { badRequest, ok } from "../../lib/respond";
 
 export default async function listEvents(
   req: Request,
@@ -9,13 +10,13 @@ export default async function listEvents(
 ): Promise<void> {
   const { from, to, userId, storeId } = req.query;
   if (!from || !to) {
-    res.status(400).json({ error: ERR.EVENTS_FROM_TO_REQUIRED });
+    badRequest(res, ERR.EVENTS_FROM_TO_REQUIRED);
     return;
   }
   const userIdNum = userId ? Number(userId) : 0;
   const storeIdNum = storeId ? Number(storeId) : 0;
   const whereStore = storeIdNum > 0 ? " AND ct.store_id = ?" : "";
-  const params: (string | number)[] = [userIdNum, from, to];
+  const params: (string | number)[] = [userIdNum, String(from), String(to)];
   if (storeIdNum > 0) params.push(storeIdNum);
   const [rows] = await pool.query(
     `
@@ -38,5 +39,5 @@ export default async function listEvents(
   `,
     params,
   );
-  res.json(rows);
+  ok(res, rows);
 }

@@ -3,15 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
+import { publicGet } from "@/app/lib/api";
 import s from "./calendar.module.scss";
 
 type StoreRow = { id: number; name: string };
-
-const API_BASE = (() => {
-  const u = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  if (u && (u.startsWith("http://") || u.startsWith("https://"))) return u.replace(/\/$/, "");
-  return "http://localhost:4000";
-})();
 
 export default function Home() {
   const [stores, setStores] = useState<StoreRow[]>([]);
@@ -26,10 +21,9 @@ export default function Home() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/stores`);
-        if (res.ok) {
-          const list = (await res.json()) as StoreRow[];
-          setStores(list);
+        const r = await publicGet<StoreRow[]>("/stores");
+        if (r.ok && r.data) {
+          setStores(r.data);
         } else {
           setStores([]);
         }

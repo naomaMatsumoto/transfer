@@ -5,6 +5,8 @@ import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { type UpdateResult, isMysqlError } from "../../../types/db";
+import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { optStr, normalizeStage, ph } from "../../../lib/validate";
 
 export default async function updateUser(
   req: Request,
@@ -13,7 +15,7 @@ export default async function updateUser(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const id = Number(req.params.id);
@@ -32,24 +34,24 @@ export default async function updateUser(
   if (name !== undefined) {
     const v = String(name).trim();
     if (v.length === 0) {
-      res.status(400).json({ error: ERR.MEMBER_NAME_EMPTY });
+      badRequest(res, ERR.MEMBER_NAME_EMPTY);
       return;
     }
     updates.push("name = ?"); params.push(v);
   }
   if (furigana !== undefined) {
-    updates.push("furigana = ?"); params.push(furigana == null || String(furigana).trim() === "" ? null : String(furigana).trim());
+    updates.push("furigana = ?"); params.push(optStr(furigana));
   }
   if (address !== undefined) {
-    updates.push("address = ?"); params.push(address == null || String(address).trim() === "" ? null : String(address).trim());
+    updates.push("address = ?"); params.push(optStr(address));
   }
   if (phone !== undefined) {
-    updates.push("phone = ?"); params.push(phone == null || String(phone).trim() === "" ? null : String(phone).trim());
+    updates.push("phone = ?"); params.push(optStr(phone));
   }
   if (email !== undefined) {
-    const emailVal = email == null || String(email).trim() === "" ? null : String(email).trim();
+    const emailVal = optStr(email);
     if (emailVal !== null && !isValidEmail(emailVal)) {
-      res.status(400).json({ error: ERR.MEMBER_EMAIL_INVALID });
+      badRequest(res, ERR.MEMBER_EMAIL_INVALID);
       return;
     }
     updates.push("email = ?"); params.push(emailVal);
@@ -58,18 +60,17 @@ export default async function updateUser(
     updates.push("course_type = ?"); params.push(course_type === null || course_type === "" ? null : course_type);
   }
   if (stage !== undefined) {
-    const v = stage && (STAGE_VALUES as readonly string[]).includes(stage) ? stage : "other";
-    updates.push("stage = ?"); params.push(v);
+    updates.push("stage = ?"); params.push(normalizeStage(stage));
   }
   if (password !== undefined) {
     const hash = password != null && String(password).trim() !== "" ? await bcrypt.hash(String(password).trim(), 10) : null;
     updates.push("password_hash = ?"); params.push(hash);
   }
   if (updates.length === 0) {
-    res.status(400).json({ error: ERR.MEMBER_UPDATE_EMPTY });
+    badRequest(res, ERR.MEMBER_UPDATE_EMPTY);
     return;
   }
-  const placeholders = storeIds.map(() => "?").join(",");
+  const placeholders = ph(storeIds);
   params.push(id, ...storeIds);
   try {
     const [result] = await pool.query(
@@ -77,14 +78,14 @@ export default async function updateUser(
       params,
     );
     if ((result as UpdateResult).affectedRows === 0) {
-      res.status(404).json({ error: ERR.MEMBER_NOT_FOUND });
+      notFound(res, ERR.MEMBER_NOT_FOUND);
       return;
     }
     void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "member.update", targetType: "user", targetId: id });
-    res.json({ id, updated: true });
+    ok(res, { id, updated: true });
   } catch (err: unknown) {
     if (isMysqlError(err) && err.code === "ER_DUP_ENTRY") {
-      res.status(400).json({ error: ERR.MEMBER_EMAIL_DUPLICATE });
+      badRequest(res, ERR.MEMBER_EMAIL_DUPLICATE);
       return;
     }
     throw err;

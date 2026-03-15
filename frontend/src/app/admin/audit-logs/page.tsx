@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getApiBase, apiFetch } from "../../lib/api";
+import { adminGet } from "../../lib/api";
 import styles from "../admin.module.scss";
 
 type AuditLog = {
@@ -38,11 +38,12 @@ export default function AuditLogsPage() {
   const load = async (off: number) => {
     setLoading(true);
     try {
-      const res = await apiFetch(`${getApiBase()}/admin/audit-logs?limit=${PAGE_SIZE}&offset=${off}`);
-      const d = await res.json();
-      setLogs(d.logs);
-      setTotal(d.total);
-      setOffset(off);
+      const r = await adminGet<{logs: AuditLog[]; total: number}>(`/audit-logs?limit=${PAGE_SIZE}&offset=${off}`);
+      if (r.ok && r.data) {
+        setLogs(r.data.logs);
+        setTotal(r.data.total);
+        setOffset(off);
+      }
     } catch {
       /* empty */
     } finally {

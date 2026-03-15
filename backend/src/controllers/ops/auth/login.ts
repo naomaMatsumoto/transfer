@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
+import { badRequest, unauthorized, serverError, ok } from "../../../lib/respond";
 
 export default async function opsLogin(
   req: Request,
@@ -10,7 +11,7 @@ export default async function opsLogin(
   const body = req.body as { email?: string; password?: string };
   const { email, password } = body;
   if (!email || typeof email !== "string" || !password || typeof password !== "string") {
-    res.status(400).json({ error: "EMAIL_PASSWORD_REQUIRED" });
+    badRequest(res, "EMAIL_PASSWORD_REQUIRED");
     return;
   }
   const [rows] = await pool.query(
@@ -19,20 +20,20 @@ export default async function opsLogin(
   );
   const admin = (rows as { id: number; email: string; password_hash: string; display_name: string | null }[])[0];
   if (!admin) {
-    res.status(401).json({ error: "INVALID_EMAIL_OR_PASSWORD" });
+    unauthorized(res, "INVALID_EMAIL_OR_PASSWORD");
     return;
   }
   const match = await bcrypt.compare(password, admin.password_hash);
   if (!match) {
-    res.status(401).json({ error: "INVALID_EMAIL_OR_PASSWORD" });
+    unauthorized(res, "INVALID_EMAIL_OR_PASSWORD");
     return;
   }
   if (!req.session) {
-    res.status(500).json({ error: "SESSION_NOT_AVAILABLE" });
+    serverError(res, "SESSION_NOT_AVAILABLE");
     return;
   }
   req.session.platformAdmin = { id: admin.id, email: admin.email };
-  res.json({
+  ok(res, {
     id: admin.id,
     email: admin.email,
     displayName: admin.display_name,

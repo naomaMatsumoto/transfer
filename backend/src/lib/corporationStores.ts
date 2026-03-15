@@ -16,3 +16,13 @@ export async function getStoreIdsForRequest(req: Request): Promise<number[]> {
   const list = rows as { id: number }[];
   return Array.isArray(list) ? list.map((r) => r.id) : [];
 }
+
+/**
+ * 現在のリクエストで有効な店舗ID一覧を返す。
+ * - ops の store スコープルート (req.storeId が設定済み) の場合は [req.storeId]
+ * - それ以外は getStoreIdsForRequest(req)（管理画面の法人に属する店舗一覧）
+ */
+export async function getStoreIds(req: Request): Promise<number[]> {
+  if (req.storeId != null) return [req.storeId];
+  return getStoreIdsForRequest(req);
+}

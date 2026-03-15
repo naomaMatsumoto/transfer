@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getApiBase, apiFetch } from "../../lib/api";
+import { adminGet, adminPatch } from "../../lib/api";
 import styles from "../admin.module.scss";
 
 export default function StoreSettingsPage() {
@@ -13,11 +13,14 @@ export default function StoreSettingsPage() {
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    apiFetch(`${getApiBase()}/admin/store-settings`)
-      .then((r) => r.json())
-      .then((d) => {
-        setBookingDays(d.booking_deadline_days != null ? String(d.booking_deadline_days) : "");
-        setCancelHours(d.cancel_deadline_hours != null ? String(d.cancel_deadline_hours) : "");
+    adminGet<{ booking_deadline_days: number | null; cancel_deadline_hours: number | null }>("/store-settings")
+      .then((r) => {
+        if (r.ok && r.data) {
+          setBookingDays(r.data.booking_deadline_days != null ? String(r.data.booking_deadline_days) : "");
+          setCancelHours(r.data.cancel_deadline_hours != null ? String(r.data.cancel_deadline_hours) : "");
+        } else {
+          setErr("読み込みに失敗しました");
+        }
       })
       .catch(() => setErr("読み込みに失敗しました"))
       .finally(() => setLoading(false));
@@ -32,14 +35,10 @@ export default function StoreSettingsPage() {
         booking_deadline_days: bookingDays.trim() === "" ? null : Number(bookingDays),
         cancel_deadline_hours: cancelHours.trim() === "" ? null : Number(cancelHours),
       };
-      const res = await apiFetch(`${getApiBase()}/admin/store-settings`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setErr(d.message || "保存に失敗しました");
+      const r = await adminPatch("/store-settings", body);
+      if (!r.ok) {
+        const d = r.data as { message?: string } | undefined;
+        setErr(d?.message || "保存に失敗しました");
         return;
       }
       setMsg("保存しました");

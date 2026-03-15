@@ -48,7 +48,7 @@ function AdminLayoutInner({
   const isReports = pathname?.startsWith(ROUTES.ADMIN_REPORTS);
   const isAuditLogs = pathname?.startsWith(ROUTES.ADMIN_AUDIT_LOGS);
   const currentTab = searchParams?.get("tab");
-  const activeTab = currentTab && TAB_KEYS.includes(currentTab) ? currentTab : "classTypes";
+  const activeTab = currentTab && (TAB_KEYS as readonly string[]).includes(currentTab) ? currentTab : "classTypes";
 
   if (authOk === null || !authOk) {
     return (

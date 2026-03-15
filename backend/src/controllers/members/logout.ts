@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import type { Session, SessionData } from "express-session";
+import { ok } from "../../lib/respond";
 
 export default async function membersLogout(
   req: Request,
@@ -10,5 +11,5 @@ export default async function membersLogout(
   if (session?.memberId != null) {
     session.memberId = undefined;
   }
-  res.json({ ok: true });
+  ok(res, { ok: true });
 }

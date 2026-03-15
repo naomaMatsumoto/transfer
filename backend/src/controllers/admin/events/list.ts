@@ -1,19 +1,21 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
+import { forbidden, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function listEvents(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const { from, to } = req.query;
-  const storePlaceholders = storeIds.map(() => "?").join(",");
+  const storePlaceholders = ph(storeIds);
   const conditions: string[] = [`ct.store_id IN (${storePlaceholders})`];
   const params: unknown[] = [...storeIds];
   if (from && to) {
@@ -58,5 +60,5 @@ export default async function listEvents(
     }
     return { ...ev, staff };
   });
-  res.json(normalized);
+  ok(res, normalized);
 }

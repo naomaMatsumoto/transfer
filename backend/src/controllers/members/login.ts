@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../db";
+import { badRequest, unauthorized, forbidden, ok } from "../../lib/respond";
 
 export default async function membersLogin(
   req: Request,
@@ -11,7 +12,7 @@ export default async function membersLogin(
   const email = body.email != null ? String(body.email).trim().toLowerCase() : "";
   const password = body.password != null ? String(body.password) : "";
   if (!email || !password) {
-    res.status(400).json({ error: "EMAIL_PASSWORD_REQUIRED" });
+    badRequest(res, "EMAIL_PASSWORD_REQUIRED");
     return;
   }
 
@@ -21,29 +22,29 @@ export default async function membersLogin(
   );
   const user = (rows as { id: number; password_hash: string | null; status: string }[])[0];
   if (!user) {
-    res.status(401).json({ error: "INVALID_EMAIL_OR_PASSWORD" });
+    unauthorized(res, "INVALID_EMAIL_OR_PASSWORD");
     return;
   }
   if (user.status === "paused") {
-    res.status(403).json({ error: "MEMBER_PAUSED", message: "アカウントが一時停止中です。管理者にお問い合わせください。" });
+    forbidden(res, "MEMBER_PAUSED", "アカウントが一時停止中です。管理者にお問い合わせください。");
     return;
   }
   if (user.status === "withdrawn") {
-    res.status(403).json({ error: "MEMBER_WITHDRAWN", message: "退会済みのアカウントです。" });
+    forbidden(res, "MEMBER_WITHDRAWN", "退会済みのアカウントです。");
     return;
   }
   if (!user.password_hash) {
-    res.status(401).json({ error: "PASSWORD_NOT_SET" });
+    unauthorized(res, "PASSWORD_NOT_SET");
     return;
   }
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) {
-    res.status(401).json({ error: "INVALID_EMAIL_OR_PASSWORD" });
+    unauthorized(res, "INVALID_EMAIL_OR_PASSWORD");
     return;
   }
 
   if (req.session) {
     req.session.memberId = user.id;
   }
-  res.json({ id: user.id });
+  ok(res, { id: user.id });
 }

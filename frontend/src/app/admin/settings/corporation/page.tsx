@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
-import { getApiBase, apiFetch } from "@/app/lib/api";
+import { adminGet, adminPatch } from "@/app/lib/api";
 import styles from "../../admin.module.scss";
 
 export default function AdminSettingsCorporationPage() {
@@ -20,13 +20,12 @@ export default function AdminSettingsCorporationPage() {
       setLoading(true);
       setLoadError(null);
       try {
-        const res = await apiFetch(`${getApiBase()}/admin/settings`);
-        if (!res.ok) {
+        const r = await adminGet<{ corporationName?: string }>("/settings");
+        if (!r.ok) {
           setLoadError("設定の取得に失敗しました");
           return;
         }
-        const data = (await res.json()) as { corporationName?: string };
-        const name = data.corporationName ?? "";
+        const name = r.data?.corporationName ?? "";
         setCorporationName(name);
         setInputValue(name);
       } catch {
@@ -49,13 +48,9 @@ export default function AdminSettingsCorporationPage() {
     setSuccess(false);
     setSubmitting(true);
     try {
-      const res = await apiFetch(`${getApiBase()}/admin/settings/corporation`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
+      const r = await adminPatch("/settings/corporation", { name });
+      const data = r.data as { error?: string };
+      if (!r.ok) {
         setError(data.error === "NAME_REQUIRED" ? "法人名を入力してください" : "変更に失敗しました");
         return;
       }

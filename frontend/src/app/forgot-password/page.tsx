@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
-import { getApiBase } from "@/app/lib/api";
+import { publicPost } from "@/app/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -16,14 +16,10 @@ export default function ForgotPasswordPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch(`${getApiBase()}/members/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(data.error === "EMAIL_REQUIRED" ? "メールアドレスを入力してください" : "送信に失敗しました");
+      const r = await publicPost("/members/forgot-password", { email: email.trim().toLowerCase() });
+      if (!r.ok) {
+        const errCode = (r.data as { error?: string })?.error;
+        setError(errCode === "EMAIL_REQUIRED" ? "メールアドレスを入力してください" : "送信に失敗しました");
         return;
       }
       setSent(true);

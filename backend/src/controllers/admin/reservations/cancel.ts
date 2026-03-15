@@ -1,21 +1,23 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
+import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function cancelReservation(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
   const reservationId = Number(req.params.id);
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -27,12 +29,12 @@ export default async function cancelReservation(
     const reservation = (rows as { reservation_type: string; makeup_credit_id: number | null; status: string }[])[0];
     if (!reservation) {
       await conn.rollback();
-      res.status(404).json({ error: ERR.RESERVATION_NOT_FOUND });
+      notFound(res, ERR.RESERVATION_NOT_FOUND);
       return;
     }
     if (reservation.status !== "booked") {
       await conn.rollback();
-      res.status(400).json({ error: ERR.RESERVATION_CANCEL_NOT_BOOKED });
+      badRequest(res, ERR.RESERVATION_CANCEL_NOT_BOOKED);
       return;
     }
 
@@ -50,7 +52,7 @@ export default async function cancelReservation(
 
     await conn.commit();
     void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "reservation.cancel_by_admin", targetType: "reservation", targetId: reservationId });
-    res.json({ id: reservationId, status: "canceled_by_admin" });
+    ok(res, { id: reservationId, status: "canceled_by_admin" });
   } catch (err) {
     await conn.rollback();
     throw err;

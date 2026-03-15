@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { getApiBase } from "@/app/lib/api";
+import { publicGet, publicPost } from "@/app/lib/api";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
 
 type Store = { id: number; name: string };
@@ -21,10 +21,9 @@ export default function MemberRegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${getApiBase()}/stores`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => {
-        const list = Array.isArray(d) ? d : [];
+    publicGet<Store[]>("/stores")
+      .then((r) => {
+        const list = r.ok && Array.isArray(r.data) ? r.data : [];
         setStores(list);
         if (storeParam) setStoreId(Number(storeParam) || "");
         else if (list.length === 1) setStoreId(list[0].id);
@@ -49,20 +48,15 @@ export default function MemberRegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${getApiBase()}/members/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeId: Number(storeId),
-          name: name.trim(),
-          furigana: furigana.trim() || undefined,
-          email: email.trim() || undefined,
-          phone: phone.trim() || undefined,
-        }),
+      const r = await publicPost("/members/register", {
+        storeId: Number(storeId),
+        name: name.trim(),
+        furigana: furigana.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(getApiErrorMessage(data?.error));
+      if (!r.ok) {
+        setError(getApiErrorMessage((r.data as { error?: string })?.error));
         return;
       }
       setSuccess(true);

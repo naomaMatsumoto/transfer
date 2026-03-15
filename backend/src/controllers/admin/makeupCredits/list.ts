@@ -1,6 +1,8 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { forbidden, ok } from "../../../lib/respond";
+import { ph } from "../../../lib/validate";
 
 export default async function listMakeupCredits(
   req: Request,
@@ -9,10 +11,10 @@ export default async function listMakeupCredits(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
-  const storePh = storeIds.map(() => "?").join(",");
+  const storePh = ph(storeIds);
   const conditions: string[] = [`u.store_id IN (${storePh})`];
   const params: unknown[] = [...storeIds];
   const { userId, status } = req.query;
@@ -30,5 +32,5 @@ export default async function listMakeupCredits(
     where +
     " ORDER BY mc.granted_at DESC";
   const [rows] = await pool.query(sql, params);
-  res.json(rows);
+  ok(res, rows);
 }

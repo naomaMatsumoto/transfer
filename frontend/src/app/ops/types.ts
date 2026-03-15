@@ -1,10 +1,12 @@
 export type OrganizationType = "corporation" | "sole_proprietor";
-export type CorpStatus = "active" | "suspended" | "deleted";
+export type CorpStatus = "pending" | "email_sent" | "active" | "suspended" | "deleted";
 
 export type StoreRow = {
   id: number;
   name: string;
   public_id?: string;
+  booking_deadline_days?: number | null;
+  cancel_deadline_hours?: number | null;
   created_at: string;
 };
 
@@ -46,13 +48,17 @@ export const ORG_TYPE_LABEL: Record<OrganizationType, string> = {
 };
 
 export const STATUS_CFG: Record<CorpStatus, { text: string; cls: string }> = {
+  pending: { text: "審査中", cls: "bg-secondary" },
+  email_sent: { text: "メール送信済み", cls: "bg-info" },
   active: { text: "稼働中", cls: "bg-success" },
   suspended: { text: "停止中", cls: "bg-danger" },
-  deleted: { text: "削除済み", cls: "bg-secondary" },
+  deleted: { text: "削除済み", cls: "bg-dark" },
 };
 
 export type StatsSummary = {
   total_corporations: number;
+  pending_corporations?: number;
+  email_sent_corporations?: number;
   active_corporations: number;
   suspended_corporations: number;
   total_stores: number;

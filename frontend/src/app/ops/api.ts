@@ -1,4 +1,5 @@
-import { getApiBase, apiFetch } from "@/app/lib/api";
+import { getApiBase, apiFetch, apiRequest, type ApiResult } from "@/app/lib/api";
+export type { ApiResult } from "@/app/lib/api";
 
 const OPS_BASE = `${getApiBase()}/ops`;
 
@@ -6,23 +7,11 @@ export function opsUrl(path: string): string {
   return `${OPS_BASE}${path}`;
 }
 
-export type ApiResult<T = unknown> = {
-  ok: boolean;
-  data?: T;
-  status?: number;
-};
-
-export async function opsFetch<T = unknown>(
+export function opsFetch<T = unknown>(
   path: string,
   init?: RequestInit,
-): Promise<ApiResult<T>> {
-  try {
-    const res = await apiFetch(opsUrl(path), init);
-    const json = await res.json().catch(() => ({}));
-    return { ok: res.ok, status: res.status, data: json as T };
-  } catch {
-    return { ok: false };
-  }
+): ReturnType<typeof apiRequest<T>> {
+  return apiRequest<T>(opsUrl(path), init);
 }
 
 export function postJson(path: string, body: unknown): Promise<ApiResult> {

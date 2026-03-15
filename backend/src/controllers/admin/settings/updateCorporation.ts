@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
+import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
 
 export default async function updateCorporationName(
   req: Request,
@@ -8,13 +9,13 @@ export default async function updateCorporationName(
 ): Promise<void> {
   const corporationId = req.session?.account?.corporationId;
   if (corporationId == null) {
-    res.status(401).json({ error: "UNAUTHORIZED" });
+    unauthorized(res);
     return;
   }
   const body = req.body as { name?: string };
   const name = body.name != null ? String(body.name).trim() : "";
   if (!name) {
-    res.status(400).json({ error: "NAME_REQUIRED" });
+    badRequest(res, "NAME_REQUIRED");
     return;
   }
   const [result] = await pool.query(
@@ -22,8 +23,8 @@ export default async function updateCorporationName(
     [name, corporationId]
   );
   if ((result as { affectedRows: number }).affectedRows === 0) {
-    res.status(404).json({ error: "NOT_FOUND" });
+    notFound(res, "NOT_FOUND");
     return;
   }
-  res.json({ ok: true, name });
+  ok(res, { ok: true, name });
 }

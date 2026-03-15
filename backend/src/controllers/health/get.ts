@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
+import { ok } from "../../lib/respond";
 
 export default async function getHealth(
   _req: Request,
@@ -7,5 +8,5 @@ export default async function getHealth(
   _next: NextFunction
 ): Promise<void> {
   const [rows] = await pool.query("SELECT 1");
-  res.json({ status: "ok", db: rows });
+  ok(res, { status: "ok", db: rows });
 }

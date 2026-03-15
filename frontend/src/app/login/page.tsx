@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "../routes";
-import { getApiBase } from "../lib/api";
+import { publicPost } from "../lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,17 +17,12 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${getApiBase()}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (data?.error === "INVALID_EMAIL_OR_PASSWORD") {
+      const r = await publicPost("/auth/login", { email: email.trim(), password });
+      if (!r.ok) {
+        const errCode = (r.data as { error?: string })?.error;
+        if (errCode === "INVALID_EMAIL_OR_PASSWORD") {
           setError("メールアドレスまたはパスワードが正しくありません。");
-        } else if (data?.error === "EMAIL_PASSWORD_REQUIRED") {
+        } else if (errCode === "EMAIL_PASSWORD_REQUIRED") {
           setError("メールアドレスとパスワードを入力してください。");
         } else {
           setError("ログインに失敗しました。");

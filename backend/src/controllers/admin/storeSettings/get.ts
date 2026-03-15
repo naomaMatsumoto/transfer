@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { forbidden, notFound, ok } from "../../../lib/respond";
 
 export default async function getStoreSettings(
   req: Request,
@@ -9,7 +10,7 @@ export default async function getStoreSettings(
 ): Promise<void> {
   const storeIds = await getStoreIdsForRequest(req);
   if (storeIds.length === 0) {
-    res.status(403).json({ error: "FORBIDDEN" });
+    forbidden(res);
     return;
   }
 
@@ -19,8 +20,8 @@ export default async function getStoreSettings(
   );
   const store = (rows as Record<string, unknown>[])[0];
   if (!store) {
-    res.status(404).json({ error: "STORE_NOT_FOUND" });
+    notFound(res, "STORE_NOT_FOUND");
     return;
   }
-  res.json(store);
+  ok(res, store);
 }

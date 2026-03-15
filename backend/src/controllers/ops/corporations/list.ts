@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
+import { ok } from "../../../lib/respond";
 
 export default async function listCorporations(
   req: Request,
@@ -21,5 +22,5 @@ export default async function listCorporations(
      ${where}
      ORDER BY c.deleted_at IS NOT NULL, c.id ASC`
   );
-  res.json(rows);
+  ok(res, rows);
 }

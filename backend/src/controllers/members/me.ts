@@ -1,4 +1,5 @@
 import { type Request, type Response, type NextFunction } from "express";
+import { unauthorized, ok } from "../../lib/respond";
 
 export default async function membersMe(
   req: Request,
@@ -7,8 +8,8 @@ export default async function membersMe(
 ): Promise<void> {
   const memberId = req.session?.memberId;
   if (memberId == null || typeof memberId !== "number") {
-    res.status(401).json({ error: "UNAUTHORIZED" });
+    unauthorized(res);
     return;
   }
-  res.json({ id: memberId });
+  ok(res, { id: memberId });
 }

@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
+import { badRequest, ok } from "../../lib/respond";
 
 export default async function verifyMember(
   req: Request,
@@ -9,7 +10,7 @@ export default async function verifyMember(
 ): Promise<void> {
   const token = (req.query.token as string)?.trim();
   if (!token) {
-    res.status(400).json({ error: ERR.VERIFICATION_TOKEN_INVALID });
+    badRequest(res, ERR.VERIFICATION_TOKEN_INVALID);
     return;
   }
 
@@ -19,12 +20,12 @@ export default async function verifyMember(
   );
   const row = (rows as { user_id: number; expires_at: Date }[])[0];
   if (!row) {
-    res.status(400).json({ error: ERR.VERIFICATION_TOKEN_INVALID });
+    badRequest(res, ERR.VERIFICATION_TOKEN_INVALID);
     return;
   }
   if (new Date() > new Date(row.expires_at)) {
     await pool.query("DELETE FROM verification_tokens WHERE token = ?", [token]);
-    res.status(400).json({ error: ERR.VERIFICATION_TOKEN_EXPIRED });
+    badRequest(res, ERR.VERIFICATION_TOKEN_EXPIRED);
     return;
   }
 
@@ -48,7 +49,7 @@ export default async function verifyMember(
     req.session.memberId = row.user_id;
   }
 
-  res.json({
+  ok(res, {
     message: "メールアドレスの認証が完了しました。会員登録が完了しました。",
   });
 }

@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
+import { ok } from "../../../lib/respond";
 
 export default async function listAuditLogs(
   req: Request,
@@ -18,5 +19,5 @@ export default async function listAuditLogs(
   const [countRows] = await pool.query("SELECT COUNT(*) AS total FROM audit_logs");
   const total = (countRows as { total: number }[])[0]?.total ?? 0;
 
-  res.json({ logs: rows, total, limit, offset });
+  ok(res, { logs: rows, total, limit, offset });
 }

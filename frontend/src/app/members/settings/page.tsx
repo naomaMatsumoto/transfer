@@ -4,11 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/app/routes";
-import { getApiBase } from "@/app/lib/api";
-
-function fetchWithCredentials(url: string, init?: RequestInit): Promise<Response> {
-  return fetch(url, { ...init, credentials: "include" });
-}
+import { getApiBase, apiFetch } from "@/app/lib/api";
 
 export default function MemberSettingsPage() {
   const router = useRouter();
@@ -22,7 +18,7 @@ export default function MemberSettingsPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    fetchWithCredentials(`${getApiBase()}/members/me`)
+    apiFetch(`${getApiBase()}/members/me`)
       .then((res) => {
         setAuthorized(res.ok);
         if (!res.ok) router.replace(`${ROUTES.MEMBER_LOGIN}?returnTo=${encodeURIComponent(ROUTES.MEMBER_SETTINGS)}`);
@@ -48,7 +44,7 @@ export default function MemberSettingsPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetchWithCredentials(`${getApiBase()}/members/me/password`, {
+      const res = await apiFetch(`${getApiBase()}/members/me/password`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),

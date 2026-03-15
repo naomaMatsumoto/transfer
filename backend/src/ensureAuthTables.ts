@@ -145,8 +145,18 @@ export async function ensureAuthTables(): Promise<void> {
       "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1"
     );
     if ((statusCol as unknown[]).length === 0) {
-      await pool.query("ALTER TABLE corporations ADD COLUMN status ENUM('active','suspended') NOT NULL DEFAULT 'active' AFTER name");
+      await pool.query("ALTER TABLE corporations ADD COLUMN status ENUM('pending','email_sent','active','suspended') NOT NULL DEFAULT 'active' AFTER name");
       logger.info("Added status to corporations");
+    } else {
+      // Extend ENUM if it only has old values (MySQL: MODIFY to add new enum values)
+      const [enumCol] = await pool.query(
+        "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1"
+      );
+      const enumType = (enumCol as { COLUMN_TYPE: string }[])[0]?.COLUMN_TYPE ?? "";
+      if (enumType.includes("'pending'") === false || enumType.includes("'email_sent'") === false) {
+        await pool.query("ALTER TABLE corporations MODIFY COLUMN status ENUM('pending','email_sent','active','suspended') NOT NULL DEFAULT 'active'");
+        logger.info("Extended corporations.status ENUM with pending, email_sent");
+      }
     }
 
     // stores.public_id (UUID for public URLs)

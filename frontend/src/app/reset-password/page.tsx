@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/app/routes";
-import { getApiBase } from "@/app/lib/api";
+import { publicPost } from "@/app/lib/api";
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -32,13 +32,9 @@ export default function ResetPasswordPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${getApiBase()}/members/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.trim(), newPassword }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
+      const r = await publicPost("/members/reset-password", { token: token.trim(), newPassword });
+      const data = r.data as { error?: string };
+      if (!r.ok) {
         if (data.error === "TOKEN_INVALID") setError("リンクが無効です。再度パスワード再設定を申請してください。");
         else if (data.error === "TOKEN_EXPIRED") setError("リンクの有効期限が切れています。再度パスワード再設定を申請してください。");
         else if (data.error === "NEW_PASSWORD_TOO_SHORT") setError("新しいパスワードは6文字以上で入力してください");
