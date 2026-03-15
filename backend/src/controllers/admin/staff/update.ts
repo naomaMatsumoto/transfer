@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function updateStaff(
   req: Request,
@@ -36,5 +37,13 @@ export default async function updateStaff(
     notFound(res, ERR.STAFF_NOT_FOUND);
     return;
   }
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "staff.update",
+    targetType: "staff",
+    targetId: id,
+    detail: null,
+  });
   ok(res, { id, name: trimmed, updated: true });
 }

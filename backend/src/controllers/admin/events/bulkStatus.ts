@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function bulkStatusEvents(
   req: Request,
@@ -31,5 +32,13 @@ export default async function bulkStatusEvents(
     `UPDATE events e JOIN class_types ct ON ct.id = e.class_type_id SET e.status = ?, e.updated_at = NOW() WHERE e.id IN (${idsPh}) AND ct.store_id IN (${storePh})`,
     [status, ...ids, ...storeIds]
   );
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.bulk_status",
+    targetType: "event",
+    targetId: null,
+    detail: { ids, status },
+  });
   ok(res, { updated: (result as { affectedRows: number }).affectedRows, status });
 }

@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function bulkCapacityEvents(
   req: Request,
@@ -27,6 +28,14 @@ export default async function bulkCapacityEvents(
     `UPDATE events e JOIN class_types ct ON ct.id = e.class_type_id SET e.capacity = ?, e.updated_at = NOW() WHERE e.id IN (${placeholders}) AND ct.store_id IN (${storePh})`,
     [capacity, ...ids, ...storeIds]
   );
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.bulk_capacity",
+    targetType: "event",
+    targetId: null,
+    detail: { ids: ids, capacity },
+  });
   ok(res, {
     updated: (result as { affectedRows: number }).affectedRows,
     capacity,

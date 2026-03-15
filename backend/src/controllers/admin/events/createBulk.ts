@@ -5,6 +5,7 @@ import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { syncEventStaff } from "../../../services/eventStaff";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createBulkEvents(
   req: Request,
@@ -82,6 +83,15 @@ export default async function createBulkEvents(
 
     cursor.setDate(cursor.getDate() + 1);
   }
+
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.create_bulk",
+    targetType: "event",
+    targetId: null,
+    detail: { classTypeId, count: createdEvents.length },
+  });
 
   created(res, { count: createdEvents.length, events: createdEvents });
 }

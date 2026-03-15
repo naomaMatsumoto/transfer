@@ -3,6 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { forbidden, badRequest, created } from "../../../lib/respond";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 function generateClassTypeCode(name: string): string {
   const slug = name
@@ -40,6 +41,14 @@ export default async function createClassType(
       [storeId, codeToUse, trimmedName, description ?? null]
     );
     const insertId = (result as { insertId: number }).insertId;
+    await writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId ?? null,
+      action: "class_type.create",
+      targetType: "class_type",
+      targetId: insertId,
+      detail: { name: trimmedName, code: codeToUse },
+    });
     created(res, { id: insertId, code: codeToUse, name: trimmedName });
   } catch (err: unknown) {
     const e = err as { code?: string };

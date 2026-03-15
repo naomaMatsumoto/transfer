@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createReservation(
   req: Request,
@@ -102,9 +103,18 @@ export default async function createReservation(
       );
     }
 
+    const insertId = (result as { insertId: number }).insertId;
     await conn.commit();
+    await writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId ?? null,
+      action: "reservation.create",
+      targetType: "reservation",
+      targetId: insertId,
+      detail: { eventId, userId, reservationType },
+    });
     created(res, {
-      id: (result as { insertId: number }).insertId,
+      id: insertId,
       userId,
       eventId,
       reservationType,

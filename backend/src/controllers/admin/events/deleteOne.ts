@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function deleteOneEvent(
   req: Request,
@@ -52,6 +53,14 @@ export default async function deleteOneEvent(
       return;
     }
     await conn.commit();
+    await writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId ?? null,
+      action: "event.delete",
+      targetType: "event",
+      targetId: eventId,
+      detail: null,
+    });
     ok(res, { id: eventId, deleted: true });
   } catch (err) {
     await conn.rollback();

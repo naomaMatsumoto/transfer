@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function updateCorporationName(
   req: Request,
@@ -26,5 +27,13 @@ export default async function updateCorporationName(
     notFound(res, "NOT_FOUND");
     return;
   }
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "settings.update_corporation",
+    targetType: "corporation",
+    targetId: req.session?.account?.corporationId ?? null,
+    detail: null,
+  });
   ok(res, { ok: true, name });
 }

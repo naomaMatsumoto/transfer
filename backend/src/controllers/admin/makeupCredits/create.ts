@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createMakeupCredit(
   req: Request,
@@ -55,5 +56,14 @@ export default async function createMakeupCredit(
     note ?? null,
     createdBy ?? "admin",
   ]);
-  created(res, { id: (result as { insertId: number }).insertId });
+  const insertId = (result as { insertId: number }).insertId;
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "credit.create",
+    targetType: "credit",
+    targetId: insertId,
+    detail: { userId },
+  });
+  created(res, { id: insertId });
 }

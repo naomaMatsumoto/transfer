@@ -123,6 +123,7 @@ export default function OpsCorporationDetailPage() {
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [roleChanging, setRoleChanging] = useState<number | null>(null);
 
   // sync edit fields when corp loads
   if (corp && editName === "" && editOrgType === "corporation" && corp.name !== "") {
@@ -218,6 +219,13 @@ export default function OpsCorporationDetailPage() {
   const handleResetPw = async (accountId: number) => {
     const r = await patchJson<{ newPassword: string }>(`${corpPath}/accounts/${accountId}/reset-password`);
     if (r.ok && r.data) setResetResult({ accountId, password: r.data.newPassword });
+  };
+
+  const handleRoleChange = async (accountId: number, newRole: string) => {
+    setRoleChanging(accountId);
+    await patchJson(`${corpPath}/accounts/${accountId}`, { role: newRole });
+    setRoleChanging(null);
+    reload();
   };
 
   const handleSaveStore = async (storeId: number) => {
@@ -567,7 +575,20 @@ export default function OpsCorporationDetailPage() {
             columns={[
               { key: "email", header: "メールアドレス", render: (a) => a.email },
               { key: "display", header: "表示名", render: (a) => <span className="text-body-secondary">{a.display_name ?? "-"}</span> },
-              { key: "role", header: "ロール", render: (a) => <span className="badge bg-secondary">{a.role ?? "admin"}</span> },
+              {
+                key: "role", header: "ロール", render: (a) => (
+                  <select
+                    className="form-select form-select-sm"
+                    style={{ width: "auto", minWidth: "90px" }}
+                    value={a.role ?? "admin"}
+                    disabled={roleChanging === a.id}
+                    onChange={(e) => handleRoleChange(a.id, e.target.value)}
+                  >
+                    <option value="admin">管理者</option>
+                    <option value="staff">スタッフ</option>
+                  </select>
+                ),
+              },
               {
                 key: "actions", header: "", render: (a) => {
                   const isOnlyAccount = corp.accounts.length === 1;

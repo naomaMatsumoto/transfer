@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { forbidden, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function revokeMakeupCredit(
   req: Request,
@@ -25,5 +26,13 @@ export default async function revokeMakeupCredit(
     notFound(res, ERR.CREDIT_NOT_FOUND);
     return;
   }
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "credit.revoke",
+    targetType: "credit",
+    targetId: creditId,
+    detail: null,
+  });
   ok(res, { id: creditId, status: "revoked" });
 }

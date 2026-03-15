@@ -15,6 +15,7 @@ import deleteStore from "../../controllers/ops/corporations/deleteStore";
 import addAccountToCorporation from "../../controllers/ops/corporations/addAccount";
 import resetAccountPassword from "../../controllers/ops/corporations/resetPassword";
 import deleteAccount from "../../controllers/ops/corporations/deleteAccount";
+import updateAccount from "../../controllers/ops/corporations/updateAccount";
 import storeScopedRouter from "./storeScoped";
 
 const router = Router();
@@ -37,6 +38,7 @@ router.use("/:id/stores/:storeId", resolveOpsStore, storeScopedRouter);
 
 router.post("/:id/accounts", asyncHandler(addAccountToCorporation));
 router.patch("/:id/accounts/:accountId/reset-password", asyncHandler(resetAccountPassword));
+router.patch("/:id/accounts/:accountId", asyncHandler(updateAccount));
 router.delete("/:id/accounts/:accountId", asyncHandler(deleteAccount));
 
 export default router;

@@ -5,6 +5,7 @@ import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { type UpdateResult, isMysqlError } from "../../../types/db";
 import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function updateClassType(
   req: Request,
@@ -52,6 +53,14 @@ export default async function updateClassType(
       notFound(res, ERR.CLASS_TYPE_NOT_FOUND);
       return;
     }
+    await writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId ?? null,
+      action: "class_type.update",
+      targetType: "class_type",
+      targetId: id,
+      detail: null,
+    });
     ok(res, { id, updated: true });
   } catch (err: unknown) {
     if (isMysqlError(err) && err.code === "ER_DUP_ENTRY") {

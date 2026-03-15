@@ -5,6 +5,7 @@ import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { syncEventStaff } from "../../../services/eventStaff";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createEvent(
   req: Request,
@@ -42,6 +43,15 @@ export default async function createEvent(
   const insertId = (result as { insertId: number }).insertId;
 
   await syncEventStaff(pool, insertId, staffIds ?? [], storeIds);
+
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.create",
+    targetType: "event",
+    targetId: insertId,
+    detail: { classTypeId, startsAt },
+  });
 
   created(res, { id: insertId });
 }

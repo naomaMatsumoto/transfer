@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function bulkTimeEvents(
   req: Request,
@@ -44,5 +45,13 @@ export default async function bulkTimeEvents(
     );
     updated++;
   }
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.bulk_time",
+    targetType: "event",
+    targetId: null,
+    detail: { ids, startTime, endTime },
+  });
   ok(res, { updated, startTime, endTime });
 }

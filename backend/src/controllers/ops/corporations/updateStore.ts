@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { parseIntParam, getAffectedRows } from "../../../lib/opsHelpers";
+import { parseIntParam, getAffectedRows, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 
 export default async function updateStore(
@@ -56,5 +56,6 @@ export default async function updateStore(
     notFound(res, "STORE_NOT_FOUND");
     return;
   }
+  await opsAudit(req, "store.update", "store", storeId);
   ok(res, { ok: true });
 }

@@ -5,6 +5,7 @@ import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { syncEventStaff } from "../../../services/eventStaff";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function putEventStaff(
   req: Request,
@@ -32,6 +33,15 @@ export default async function putEventStaff(
   }
 
   await syncEventStaff(pool, eventId, staffIds, storeIds, true);
+
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.update_staff",
+    targetType: "event",
+    targetId: eventId,
+    detail: null,
+  });
 
   const [rows] = await pool.query(
     `SELECT s.id, s.name

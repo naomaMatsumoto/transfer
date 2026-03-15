@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function updateEventStatus(
   req: Request,
@@ -31,5 +32,13 @@ export default async function updateEventStatus(
     notFound(res, ERR.EVENT_NOT_FOUND);
     return;
   }
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "event.update_status",
+    targetType: "event",
+    targetId: eventId,
+    detail: { status },
+  });
   ok(res, { id: eventId, status });
 }

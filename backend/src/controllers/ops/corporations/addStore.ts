@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getInsertId } from "../../../lib/opsHelpers";
+import { getInsertId, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, created } from "../../../lib/respond";
 
 export default async function addStore(
@@ -21,5 +21,7 @@ export default async function addStore(
     "INSERT INTO stores (corporation_id, public_id, name) VALUES (?, ?, ?)",
     [corp.id, publicId, name]
   );
-  created(res, { id: getInsertId(result), public_id: publicId, name });
+  const storeId = getInsertId(result);
+  await opsAudit(req, "store.create", "store", storeId, { name, corporationId: corp.id });
+  created(res, { id: storeId, public_id: publicId, name });
 }

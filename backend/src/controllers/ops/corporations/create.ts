@@ -2,7 +2,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getInsertId } from "../../../lib/opsHelpers";
+import { getInsertId, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, conflict, created } from "../../../lib/respond";
 
 export default async function createCorporation(
@@ -61,6 +61,7 @@ export default async function createCorporation(
     }
 
     await conn.commit();
+    await opsAudit(req, "corporation.create", "corporation", corpId, { name, organizationType: orgType });
     created(res, {
       id: corpId,
       code,

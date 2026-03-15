@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function bulkDeleteEvents(
   req: Request,
@@ -55,8 +56,17 @@ export default async function bulkDeleteEvents(
     await conn.query("DELETE FROM reservations WHERE event_id IN (" + allowedPh + ")", allowedIds);
     await conn.query("UPDATE makeup_credits SET source_event_id = NULL WHERE source_event_id IN (" + allowedPh + ")", allowedIds);
     const [result] = await conn.query("DELETE FROM events WHERE id IN (" + allowedPh + ")", allowedIds);
+    const deletedCount = (result as { affectedRows: number }).affectedRows;
     await conn.commit();
-    ok(res, { deleted: (result as { affectedRows: number }).affectedRows });
+    await writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId ?? null,
+      action: "event.bulk_delete",
+      targetType: "event",
+      targetId: null,
+      detail: { ids: allowedIds, count: deletedCount },
+    });
+    ok(res, { deleted: deletedCount });
   } catch (err) {
     await conn.rollback();
     throw err;

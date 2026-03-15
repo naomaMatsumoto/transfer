@@ -3,6 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { getStoreIdsForRequest } from "../../../lib/corporationStores";
 import { forbidden, badRequest, created } from "../../../lib/respond";
+import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createStaff(
   req: Request,
@@ -31,5 +32,13 @@ export default async function createStaff(
     [storeId, trimmed]
   );
   const insertId = (result as { insertId: number }).insertId;
+  await writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId ?? null,
+    action: "staff.create",
+    targetType: "staff",
+    targetId: insertId,
+    detail: { name: trimmed },
+  });
   created(res, { id: insertId, name: trimmed });
 }

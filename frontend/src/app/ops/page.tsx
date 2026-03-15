@@ -1,15 +1,36 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { opsFetch, postJson, patchJson } from "./api";
 import { CorporationRow, OrganizationType, CorpStatus, ORG_TYPE_LABEL } from "./types";
 import { useSubmit } from "./hooks";
 import { formatDate } from "./utils";
-import { PageHeader, StatCard, StatusBadge, DataTable, Modal, ConfirmModal, Loading, Empty, ErrorAlert, FilterBar } from "./components";
+import { PageHeader, StatCard, StatusBadge, DataTable, Modal, ConfirmModal, Loading, Empty, ErrorAlert, FilterBar, Pagination } from "./components";
 import s from "./ops.module.scss";
 
+const CORPS_PER_PAGE = 20;
+
 type StatusFilter = "all" | CorpStatus;
+
+type CorpSummary = {
+  total_active: number;
+  pending: number;
+  email_sent: number;
+  active: number;
+  total_stores: number;
+  total_accounts: number;
+};
+
+type CorporationListResponse = {
+  rows: CorporationRow[];
+  total: number;
+  summary: CorpSummary;
+};
+
+const DEFAULT_SUMMARY: CorpSummary = {
+  total_active: 0, pending: 0, email_sent: 0, active: 0, total_stores: 0, total_accounts: 0,
+};
 
 function effectiveStatus(c: CorporationRow): CorpStatus {
   if (c.deleted_at) return "deleted";
@@ -18,11 +39,16 @@ function effectiveStatus(c: CorporationRow): CorpStatus {
 
 export default function OpsDashboardPage() {
   const [corporations, setCorporations] = useState<CorporationRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState<CorpSummary>(DEFAULT_SUMMARY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
   const [newOrgType, setNewOrgType] = useState<OrganizationType>("corporation");
@@ -35,19 +61,50 @@ export default function OpsDashboardPage() {
   const [restoreTarget, setRestoreTarget] = useState<CorporationRow | null>(null);
   const [restoring, setRestoring] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const r = await opsFetch<CorporationRow[]>("/corporations?include_deleted=1");
-    if (r.ok && Array.isArray(r.data)) {
-      setCorporations(r.data);
-    } else {
-      setError("事業者一覧の取得に失敗しました");
-    }
-    setLoading(false);
-  }, []);
+  const forceReload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  useEffect(() => { void load(); }, [load]);
+  // Debounce search (300ms) and reset page
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const handleStatusChange = (v: StatusFilter) => {
+    setStatusFilter(v);
+    setPage(0);
+  };
+
+  // Fetch corporations from server
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      const qs = new URLSearchParams({
+        limit: String(CORPS_PER_PAGE),
+        offset: String(page * CORPS_PER_PAGE),
+        include_deleted: "1",
+      });
+      if (debouncedSearch) qs.set("search", debouncedSearch);
+      if (statusFilter !== "all") qs.set("status", statusFilter);
+      const r = await opsFetch<CorporationListResponse>(`/corporations?${qs}`);
+      if (!cancelled) {
+        if (r.ok && r.data) {
+          setCorporations(r.data.rows);
+          setTotal(r.data.total);
+          setSummary(r.data.summary);
+        } else {
+          setError("事業者一覧の取得に失敗しました");
+        }
+        setLoading(false);
+      }
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, [page, debouncedSearch, statusFilter, reloadKey]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,29 +131,13 @@ export default function OpsDashboardPage() {
           if (code === "PASSWORD_TOO_SHORT") return "パスワードは6文字以上で入力してください";
           return undefined;
         },
-        onSuccess: (data) => {
-          const d = data as CreateResp | undefined;
+        onSuccess: (_data) => {
           setNewName("");
           setNewEmail("");
           setNewDisplayName("");
           setNewPassword("");
           setShowModal(false);
-          if (d?.id != null) {
-            setCorporations((prev) => [
-              ...prev,
-              {
-                id: d.id!,
-                code: d.code,
-                organization_type: d.organization_type ?? newOrgType,
-                name,
-                status: "active",
-                deleted_at: null,
-                created_at: new Date().toISOString(),
-                store_count: 0,
-                account_count: d.accountCreated ? 1 : 0,
-              },
-            ]);
-          }
+          forceReload();
         },
       },
     );
@@ -109,25 +150,10 @@ export default function OpsDashboardPage() {
     const r = await patchJson(`/corporations/${code}/restore`);
     setRestoring(false);
     setRestoreTarget(null);
-    if (r.ok) void load();
+    if (r.ok) forceReload();
   };
 
-  const activeCorporations = corporations.filter((c) => !c.deleted_at);
-  const totalStores = activeCorporations.reduce((n, c) => n + c.store_count, 0);
-  const totalAccounts = activeCorporations.reduce((n, c) => n + c.account_count, 0);
-  const activeCount = activeCorporations.filter((c) => c.status === "active").length;
-
-  const filtered = useMemo(() => {
-    let list = corporations;
-    if (statusFilter !== "all") {
-      list = list.filter((c) => effectiveStatus(c) === statusFilter);
-    }
-    const q = search.trim().toLowerCase();
-    if (q) {
-      list = list.filter((c) => c.name.toLowerCase().includes(q));
-    }
-    return list;
-  }, [corporations, statusFilter, search]);
+  const totalPages = Math.ceil(total / CORPS_PER_PAGE);
 
   return (
     <div>
@@ -137,46 +163,42 @@ export default function OpsDashboardPage() {
       />
 
       <div className={s.statsGrid}>
-        <StatCard label="事業者数" value={activeCorporations.length} sub={`稼働中 ${activeCount}`} />
-        <StatCard label="審査中" value={corporations.filter((c) => !c.deleted_at && c.status === "pending").length} />
-        <StatCard label="メール送信済み" value={corporations.filter((c) => !c.deleted_at && c.status === "email_sent").length} />
-        <StatCard label="総店舗数" value={totalStores} />
-        <StatCard label="総アカウント数" value={totalAccounts} />
+        <StatCard label="事業者数" value={summary.total_active} sub={`稼働中 ${summary.active}`} />
+        <StatCard label="審査中" value={summary.pending} />
+        <StatCard label="メール送信済み" value={summary.email_sent} />
+        <StatCard label="総店舗数" value={summary.total_stores} />
+        <StatCard label="総アカウント数" value={summary.total_accounts} />
       </div>
 
       <ErrorAlert message={error} />
 
-      {!loading && corporations.length > 0 && (
-        <FilterBar>
-          <input
-            type="text"
-            className={`form-control form-control-sm ${s.inputWide}`}
-            placeholder="事業者名で検索…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select
-            className={`form-select form-select-sm ${s.inputNarrow}`}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          >
-            <option value="all">すべて</option>
-            <option value="pending">審査中</option>
-            <option value="email_sent">メール送信済み</option>
-            <option value="active">稼働中</option>
-            <option value="suspended">停止中</option>
-            <option value="deleted">削除済み</option>
-          </select>
-        </FilterBar>
-      )}
+      <FilterBar>
+        <input
+          type="text"
+          className={`form-control form-control-sm ${s.inputWide}`}
+          placeholder="事業者名で検索…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className={`form-select form-select-sm ${s.inputNarrow}`}
+          value={statusFilter}
+          onChange={(e) => handleStatusChange(e.target.value as StatusFilter)}
+        >
+          <option value="all">すべて</option>
+          <option value="pending">審査中</option>
+          <option value="email_sent">メール送信済み</option>
+          <option value="active">稼働中</option>
+          <option value="suspended">停止中</option>
+          <option value="deleted">削除済み</option>
+        </select>
+      </FilterBar>
 
       {loading ? <Loading /> : corporations.length === 0 ? (
-        <Empty text="事業者がまだ登録されていません。" />
-      ) : filtered.length === 0 ? (
-        <Empty text="条件に一致する事業者がありません。" />
+        <Empty text={debouncedSearch || statusFilter !== "all" ? "条件に一致する事業者がありません。" : "事業者がまだ登録されていません。"} />
       ) : (
         <DataTable
-          rows={filtered}
+          rows={corporations}
           rowKey={(c) => c.id}
           columns={[
             { key: "name", header: "名前", render: (c) => (
@@ -194,6 +216,15 @@ export default function OpsDashboardPage() {
             )},
           ]}
         />
+      )}
+
+      {total > 0 && (
+        <div className="d-flex align-items-center justify-content-between mt-3">
+          <span className="small text-body-secondary">
+            {page * CORPS_PER_PAGE + 1}–{Math.min((page + 1) * CORPS_PER_PAGE, total)} / {total} 件
+          </span>
+          <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+        </div>
       )}
 
       {showModal && (
