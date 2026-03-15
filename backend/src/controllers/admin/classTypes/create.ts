@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, created } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
 
@@ -20,7 +20,7 @@ export default async function createClassType(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
     forbidden(res);
     return;

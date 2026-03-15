@@ -64,7 +64,7 @@ const CONFIRM_CFG: Record<ConfirmTarget["kind"], { title: string; message: strin
   },
   corporation: {
     title: "事業者削除",
-    message: "この事業者を削除しますか？\n削除後は一覧に表示されなくなります。",
+    message: "この事業者を削除しますか？\n削除後は一覧に表示されなくなります（後から復旧可能）。",
     label: "削除する",
     danger: true,
   },
@@ -101,8 +101,6 @@ export default function OpsCorporationDetailPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const saveSubmit = useSubmit();
 
-  // togglingStatus removed — handled via confirmTarget
-
   const [newStoreName, setNewStoreName] = useState("");
   const storeSubmit = useSubmit();
 
@@ -118,7 +116,7 @@ export default function OpsCorporationDetailPage() {
   const [storeCalDays, setStoreCalDays] = useState<Record<number, string>>({});
   const [storeCalHours, setStoreCalHours] = useState<Record<number, string>>({});
   const [savingStoreId, setSavingStoreId] = useState<number | null>(null);
-  const [calSaveMsg, setCalSaveMsg] = useState<string | null>(null);
+  const [calSavedStoreId, setCalSavedStoreId] = useState<number | null>(null);
 
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -136,14 +134,18 @@ export default function OpsCorporationDetailPage() {
     setStoreCalDays((prev) => {
       const next = { ...prev };
       corp.stores.forEach((st) => {
-        next[st.id] = st.booking_deadline_days != null ? String(st.booking_deadline_days) : "";
+        if (!(st.id in prev)) {
+          next[st.id] = st.booking_deadline_days != null ? String(st.booking_deadline_days) : "";
+        }
       });
       return next;
     });
     setStoreCalHours((prev) => {
       const next = { ...prev };
       corp.stores.forEach((st) => {
-        next[st.id] = st.cancel_deadline_hours != null ? String(st.cancel_deadline_hours) : "";
+        if (!(st.id in prev)) {
+          next[st.id] = st.cancel_deadline_hours != null ? String(st.cancel_deadline_hours) : "";
+        }
       });
       return next;
     });
@@ -164,11 +166,6 @@ export default function OpsCorporationDetailPage() {
         },
       },
     );
-  };
-
-  const requestToggleStatus = () => {
-    if (!corp) return;
-    setConfirmTarget(corp.status === "suspended" ? { kind: "activate" } : { kind: "suspend" });
   };
 
   const setStatusDirect = async (newStatus: "pending" | "email_sent" | "active" | "suspended") => {
@@ -217,6 +214,7 @@ export default function OpsCorporationDetailPage() {
   };
 
   const handleResetPw = async (accountId: number) => {
+    setResetResult(null);
     const r = await patchJson<{ newPassword: string }>(`${corpPath}/accounts/${accountId}/reset-password`);
     if (r.ok && r.data) setResetResult({ accountId, password: r.data.newPassword });
   };
@@ -236,7 +234,7 @@ export default function OpsCorporationDetailPage() {
   };
 
   const handleSaveCalendar = async (storeId: number) => {
-    setCalSaveMsg(null);
+    setCalSavedStoreId(null);
     setSavingStoreId(storeId);
     try {
       const days = storeCalDays[storeId]?.trim();
@@ -246,7 +244,8 @@ export default function OpsCorporationDetailPage() {
         cancel_deadline_hours: hours === "" ? null : (parseInt(hours, 10) || null),
       });
       if (r.ok) {
-        setCalSaveMsg("保存しました");
+        setCalSavedStoreId(storeId);
+        setTimeout(() => setCalSavedStoreId(null), 2000);
         reload();
       }
     } finally {
@@ -336,12 +335,14 @@ export default function OpsCorporationDetailPage() {
 
   return (
     <div>
+      {/* Breadcrumb */}
       <nav className="mb-3">
         <Link href={ROUTES.OPS_DASHBOARD} className="small text-body-secondary text-decoration-none">
           ← 事業者一覧
         </Link>
       </nav>
 
+      {/* Deleted alert */}
       {isDeleted && (
         <div className="alert alert-warning d-flex align-items-center justify-content-between mb-4">
           <span>この事業者は削除済みです。復旧すると再び利用可能になります。</span>
@@ -362,63 +363,78 @@ export default function OpsCorporationDetailPage() {
         {corp.code && <> / Code: <code>{corp.code}</code></>}
       </p>
 
-      {/* Edit card */}
-      <div className="card shadow-sm mb-4">
-        <div className="card-header bg-white">
-          <span className="fw-semibold small">基本情報の編集</span>
-        </div>
-        <div className="card-body">
-          <form onSubmit={handleSave} className="d-flex gap-2 flex-wrap align-items-end">
-            <div className={s.fieldMinSm}>
-              <label className="form-label small mb-0">種類</label>
-              <select
-                className="form-select form-select-sm"
-                value={editOrgType}
-                onChange={(e) => setEditOrgType(e.target.value as OrganizationType)}
-              >
-                <option value="corporation">法人</option>
-                <option value="sole_proprietor">個人事業主</option>
-              </select>
+      {/* Management cards: basic info + status side by side */}
+      <div className="row g-3 mb-4">
+        {/* Basic info */}
+        <div className="col-lg-6">
+          <div className="card shadow-sm h-100">
+            <div className="card-header bg-white py-2">
+              <span className="fw-semibold small">基本情報の編集</span>
             </div>
-            <div className={`flex-grow-1 ${s.fieldMinLg}`}>
-              <label className="form-label small mb-0">名前</label>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn btn-dark btn-sm" disabled={saveSubmit.submitting}>
-              {saveSubmit.submitting ? "保存中…" : "保存"}
-            </button>
-          </form>
-          <div className="mt-3 pt-3 border-top">
-            <span className="small text-body-secondary me-2">ステータス:</span>
-            {(["pending", "email_sent", "active", "suspended"] as const).map((st) => {
-              const cfg = STATUS_CFG[st];
-              const isCurrent = corp.status === st;
-              return (
-                <button
-                  key={st}
-                  type="button"
-                  className={`btn btn-sm me-1 ${isCurrent ? cfg.cls.replace("bg-", "btn-") : "btn-outline-secondary"}`}
-                  onClick={() => setStatusDirect(st)}
-                >
-                  {cfg.text}
+            <div className="card-body">
+              <form onSubmit={handleSave} className="d-flex gap-2 flex-wrap align-items-end">
+                <div className={s.fieldMinSm}>
+                  <label className="form-label small mb-1">種類</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={editOrgType}
+                    onChange={(e) => setEditOrgType(e.target.value as OrganizationType)}
+                  >
+                    <option value="corporation">法人</option>
+                    <option value="sole_proprietor">個人事業主</option>
+                  </select>
+                </div>
+                <div className={`flex-grow-1 ${s.fieldMinLg}`}>
+                  <label className="form-label small mb-1">名前</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
+                <button type="submit" className="btn btn-dark btn-sm" disabled={saveSubmit.submitting}>
+                  {saveSubmit.submitting ? "保存中…" : "保存"}
                 </button>
-              );
-            })}
+              </form>
+              {saveSubmit.error && <p className="small text-danger mt-2 mb-0">{saveSubmit.error}</p>}
+              {saveMsg && <p className="small text-success mt-2 mb-0">{saveMsg}</p>}
+            </div>
           </div>
-          {saveMsg && <p className="small text-success mt-2 mb-0">{saveMsg}</p>}
-          <hr className="my-3" />
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-danger"
-            onClick={() => setConfirmTarget({ kind: "corporation" })}
-          >
-            この事業者を削除
-          </button>
+        </div>
+
+        {/* Status management */}
+        <div className="col-lg-6">
+          <div className="card shadow-sm h-100">
+            <div className="card-header bg-white py-2">
+              <span className="fw-semibold small">ステータス管理</span>
+            </div>
+            <div className="card-body">
+              <p className="small text-body-secondary mb-2">
+                現在: <StatusBadge status={displayStatus} />
+              </p>
+              <div className="d-flex gap-1 flex-wrap">
+                {(["pending", "email_sent", "active", "suspended"] as const).map((st) => {
+                  const cfg = STATUS_CFG[st];
+                  const isCurrent = corp.status === st;
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      className={`btn btn-sm ${isCurrent ? cfg.cls.replace("bg-", "btn-") : "btn-outline-secondary"}`}
+                      disabled={isCurrent || isDeleted}
+                      onClick={() => setStatusDirect(st)}
+                    >
+                      {cfg.text}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="small text-body-secondary mt-2 mb-0">
+                ボタンをクリックしてステータスを変更します。
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -427,11 +443,13 @@ export default function OpsCorporationDetailPage() {
         <div className={s.sectionHeader}>
           <h2 className="h6 mb-0">店舗一覧</h2>
         </div>
+
+        {/* Add store form */}
         <div className="card shadow-sm mb-3">
-          <div className="card-body">
-            <form onSubmit={handleAddStore} className="d-flex gap-2 flex-wrap align-items-end mb-0">
+          <div className="card-body py-3">
+            <form onSubmit={handleAddStore} className="d-flex gap-2 flex-wrap align-items-end">
               <div className={s.fieldMinMd}>
-                <label className="form-label small mb-0">新規店舗名</label>
+                <label className="form-label small mb-1">新規店舗名</label>
                 <input
                   type="text"
                   className="form-control form-control-sm"
@@ -441,130 +459,159 @@ export default function OpsCorporationDetailPage() {
                 />
               </div>
               <button type="submit" className="btn btn-dark btn-sm" disabled={storeSubmit.submitting}>
-                {storeSubmit.submitting ? "追加中…" : "店舗を追加"}
+                {storeSubmit.submitting ? "追加中…" : "+ 店舗を追加"}
               </button>
             </form>
             {storeSubmit.error && <p className="small text-danger mt-2 mb-0">{storeSubmit.error}</p>}
           </div>
         </div>
-        {corp.stores.length === 0 ? <Empty text="店舗がまだありません。" /> : (
-          <DataTable
-            rows={corp.stores}
-            rowKey={(st) => st.id}
-            columns={[
-              {
-                key: "name", header: "店舗名", render: (store) =>
-                  editingStoreId === store.id ? (
-                    <div className="d-flex gap-1">
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        value={editStoreName}
-                        onChange={(e) => setEditStoreName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Escape" && setEditingStoreId(null)}
-                      />
-                      <button className="btn btn-dark btn-sm" onClick={() => handleSaveStore(store.id)}>保存</button>
-                      <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingStoreId(null)}>×</button>
-                    </div>
-                  ) : <span className="fw-medium">{store.name}</span>,
-              },
-              { key: "pid", header: "Public ID", className: "small text-body-secondary", render: (st) => <code>{st.public_id ?? "-"}</code> },
-              { key: "date", header: "登録日", className: "small text-body-secondary", render: (st) => formatDate(st.created_at) },
-              {
-                key: "actions", header: "", render: (store) => (
-                  <div className="d-flex gap-1 flex-wrap">
-                    <Link href={`/ops/corporations/${id}/stores/${store.id}/events`} className="btn btn-outline-primary btn-sm">イベント・休講</Link>
-                    <button className="btn btn-outline-secondary btn-sm" onClick={() => { setEditingStoreId(store.id); setEditStoreName(store.name); }}>編集</button>
-                    <button className="btn btn-outline-danger btn-sm" onClick={() => setConfirmTarget({ kind: "store", id: store.id })}>削除</button>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        )}
-      </section>
 
-      {/* カレンダー設定 */}
-      {corp.stores.length > 0 && (
-        <section className="mb-4">
-          <div className={s.sectionHeader}>
-            <h2 className="h6 mb-0">カレンダー設定</h2>
-          </div>
-          <p className="small text-body-secondary mb-3">店舗ごとに予約受付期限・キャンセル期限を設定できます。空欄は制限なしです。</p>
-          <div className={`card shadow-sm ${s.calendarSettingsCard}`}>
-            <div className="card-body p-0">
-              <div className={s.calendarSettingsTable}>
-                <div className={`${s.calendarSettingsRow} ${s.calendarSettingsRowHeader}`}>
-                  <div className={s.calendarSettingsStore}>店舗</div>
-                  <div className={s.calendarSettingsField}>予約受付期限</div>
-                  <div className={s.calendarSettingsField}>キャンセル期限</div>
-                  <div className={s.calendarSettingsActions}>操作</div>
-                </div>
-                {corp.stores.map((store) => (
-                  <div key={store.id} className={s.calendarSettingsRow}>
-                    <div className={s.calendarSettingsStore}>
-                      <span className="fw-medium">{store.name}</span>
-                      <Link href={`/ops/corporations/${id}/stores/${store.id}/events`} className="btn btn-link btn-sm p-0 ms-1 align-baseline">イベント・休講</Link>
+        {/* Store list */}
+        {corp.stores.length === 0 ? (
+          <Empty text="店舗がまだありません。" />
+        ) : (
+          <div className="d-flex flex-column gap-2">
+            {corp.stores.map((store) => (
+              <div key={store.id} className="card shadow-sm">
+                <div className="card-body py-3">
+                  {/* Row 1: name + actions */}
+                  <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <div className="flex-grow-1 min-width-0">
+                      {editingStoreId === store.id ? (
+                        <div className="d-flex gap-1 align-items-center">
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={editStoreName}
+                            onChange={(e) => setEditStoreName(e.target.value)}
+                            onKeyDown={(e) => e.key === "Escape" && setEditingStoreId(null)}
+                            autoFocus
+                          />
+                          <button className="btn btn-dark btn-sm text-nowrap" onClick={() => handleSaveStore(store.id)}>保存</button>
+                          <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingStoreId(null)}>×</button>
+                        </div>
+                      ) : (
+                        <div className="d-flex align-items-baseline gap-2 flex-wrap">
+                          <span className="fw-medium">{store.name}</span>
+                          {store.public_id && <code className="small text-body-secondary">{store.public_id}</code>}
+                          <span className="small text-body-secondary">{formatDate(store.created_at)}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className={s.calendarSettingsField}>
-                      <label className="form-label small mb-0 text-body-secondary">○日前まで</label>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        placeholder="制限なし"
-                        min={0}
-                        value={storeCalDays[store.id] ?? ""}
-                        onChange={(e) => setStoreCalDays((prev) => ({ ...prev, [store.id]: e.target.value }))}
-                        aria-label={`${store.name} 予約受付期限`}
-                      />
-                    </div>
-                    <div className={s.calendarSettingsField}>
-                      <label className="form-label small mb-0 text-body-secondary">開始○時間前まで</label>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        placeholder="制限なし"
-                        min={0}
-                        value={storeCalHours[store.id] ?? ""}
-                        onChange={(e) => setStoreCalHours((prev) => ({ ...prev, [store.id]: e.target.value }))}
-                        aria-label={`${store.name} キャンセル期限`}
-                      />
-                    </div>
-                    <div className={s.calendarSettingsActions}>
-                      <button
-                        type="button"
-                        className="btn btn-dark btn-sm"
-                        disabled={savingStoreId === store.id}
-                        onClick={() => handleSaveCalendar(store.id)}
+                    <div className="d-flex gap-1 flex-shrink-0">
+                      <Link
+                        href={`/ops/corporations/${id}/stores/${store.id}/events`}
+                        className="btn btn-outline-primary btn-sm text-nowrap"
                       >
-                        {savingStoreId === store.id ? "保存中…" : "保存"}
+                        イベント・休講
+                      </Link>
+                      {editingStoreId !== store.id && (
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => { setEditingStoreId(store.id); setEditStoreName(store.name); }}
+                        >
+                          名前編集
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => setConfirmTarget({ kind: "store", id: store.id })}
+                      >
+                        削除
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {calSaveMsg && <p className="small text-success mt-2 mb-0">{calSaveMsg}</p>}
-        </section>
-      )}
 
-      {/* Accounts */}
-      <section>
-        <div className={s.sectionHeader}>
-          <h2 className="h6 mb-0">アカウント一覧</h2>
-          <button className="btn btn-dark btn-sm" onClick={() => { setShowAccModal(true); setAccountError(null); }}>+ アカウント追加</button>
-        </div>
-        {accountError && (
-          <div className="alert alert-warning py-2 mb-2" role="alert">
-            {accountError}
-            <button type="button" className="btn-close btn-sm ms-2 align-middle" onClick={() => setAccountError(null)} aria-label="閉じる" />
+                  {/* Row 2: Calendar settings */}
+                  <div className="mt-2 pt-2 border-top d-flex gap-3 align-items-end flex-wrap">
+                    <span className="small text-body-secondary text-nowrap">カレンダー設定:</span>
+                    <div>
+                      <label className="form-label small mb-1 text-body-secondary">予約受付期限</label>
+                      <div className="d-flex align-items-center gap-1">
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          style={{ width: "80px" }}
+                          placeholder="制限なし"
+                          min={0}
+                          value={storeCalDays[store.id] ?? ""}
+                          onChange={(e) => setStoreCalDays((prev) => ({ ...prev, [store.id]: e.target.value }))}
+                          aria-label={`${store.name} 予約受付期限`}
+                        />
+                        <span className="small text-body-secondary text-nowrap">日前</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="form-label small mb-1 text-body-secondary">キャンセル期限</label>
+                      <div className="d-flex align-items-center gap-1">
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          style={{ width: "80px" }}
+                          placeholder="制限なし"
+                          min={0}
+                          value={storeCalHours[store.id] ?? ""}
+                          onChange={(e) => setStoreCalHours((prev) => ({ ...prev, [store.id]: e.target.value }))}
+                          aria-label={`${store.name} キャンセル期限`}
+                        />
+                        <span className="small text-body-secondary text-nowrap">時間前</span>
+                      </div>
+                    </div>
+                    <div className="d-flex align-items-end gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-dark btn-sm text-nowrap"
+                        disabled={savingStoreId === store.id}
+                        onClick={() => handleSaveCalendar(store.id)}
+                      >
+                        {savingStoreId === store.id ? "保存中…" : "設定保存"}
+                      </button>
+                      {calSavedStoreId === store.id && (
+                        <span className="small text-success text-nowrap">保存しました</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
+      </section>
+
+      {/* Accounts */}
+      <section className="mb-4">
+        <div className={s.sectionHeader}>
+          <h2 className="h6 mb-0">アカウント一覧</h2>
+          <button
+            className="btn btn-dark btn-sm"
+            onClick={() => { setShowAccModal(true); setAccountError(null); }}
+          >
+            + アカウント追加
+          </button>
+        </div>
+
+        {accountError && (
+          <div className="alert alert-warning d-flex align-items-center justify-content-between py-2 mb-3" role="alert">
+            <span className="small">{accountError}</span>
+            <button type="button" className="btn-close btn-sm ms-2" onClick={() => setAccountError(null)} aria-label="閉じる" />
+          </div>
+        )}
+
+        {/* PW reset result */}
+        {resetResult && (
+          <div className="alert alert-success d-flex align-items-center justify-content-between py-2 mb-3">
+            <span className="small">
+              パスワードをリセットしました。新しいパスワード:{" "}
+              <code className="fw-bold">{resetResult.password}</code>
+            </span>
+            <button type="button" className="btn-close btn-sm ms-2" onClick={() => setResetResult(null)} aria-label="閉じる" />
+          </div>
+        )}
+
         {corp.accounts.length === 0 ? (
           <>
-            <div className="alert alert-warning mb-3 mb-0">
-              メールアドレス（アカウント）は必ず1件以上登録してください。下のボタンから追加してください。
+            <div className="alert alert-warning mb-3">
+              アカウントは最低1件登録してください。右上のボタンから追加できます。
             </div>
             <Empty text="アカウントがまだありません。" />
           </>
@@ -573,8 +620,8 @@ export default function OpsCorporationDetailPage() {
             rows={corp.accounts}
             rowKey={(a) => a.id}
             columns={[
-              { key: "email", header: "メールアドレス", render: (a) => a.email },
-              { key: "display", header: "表示名", render: (a) => <span className="text-body-secondary">{a.display_name ?? "-"}</span> },
+              { key: "email", header: "メールアドレス", render: (a) => <span className="small">{a.email}</span> },
+              { key: "display", header: "表示名", render: (a) => <span className="small text-body-secondary">{a.display_name ?? "-"}</span> },
               {
                 key: "role", header: "ロール", render: (a) => (
                   <select
@@ -593,19 +640,18 @@ export default function OpsCorporationDetailPage() {
                 key: "actions", header: "", render: (a) => {
                   const isOnlyAccount = corp.accounts.length === 1;
                   return (
-                    <div className="d-flex gap-1 align-items-center flex-wrap">
-                      <button className="btn btn-outline-secondary btn-sm" onClick={() => handleResetPw(a.id)}>PW リセット</button>
+                    <div className="d-flex gap-1">
+                      <button className="btn btn-outline-secondary btn-sm" onClick={() => handleResetPw(a.id)}>
+                        PW リセット
+                      </button>
                       <button
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => setConfirmTarget({ kind: "account", id: a.id })}
                         disabled={isOnlyAccount}
-                        title={isOnlyAccount ? "メールアドレスは最低1件必要です" : undefined}
+                        title={isOnlyAccount ? "アカウントは最低1件必要です" : undefined}
                       >
                         削除
                       </button>
-                      {resetResult?.accountId === a.id && (
-                        <span className="small text-success">新PW: <code>{resetResult.password}</code></span>
-                      )}
                     </div>
                   );
                 },
@@ -614,6 +660,29 @@ export default function OpsCorporationDetailPage() {
           />
         )}
       </section>
+
+      {/* Danger zone */}
+      {!isDeleted && (
+        <section>
+          <div className="card border-danger">
+            <div className="card-header bg-danger bg-opacity-10 py-2">
+              <span className="fw-semibold small text-danger">危険な操作</span>
+            </div>
+            <div className="card-body">
+              <p className="small text-body-secondary mb-3">
+                事業者を削除すると一覧に表示されなくなります。削除後も「削除済み」フィルターから復旧できます。
+              </p>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => setConfirmTarget({ kind: "corporation" })}
+              >
+                この事業者を削除する
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Add account modal */}
       {showAccModal && (
@@ -646,7 +715,7 @@ export default function OpsCorporationDetailPage() {
         </Modal>
       )}
 
-      {/* Delete confirm modal */}
+      {/* Confirm modal */}
       {confirmTarget && confirmCfg && (
         <ConfirmModal
           title={confirmCfg.title}

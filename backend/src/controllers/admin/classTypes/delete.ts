@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
 import { type UpdateResult, isMysqlError } from "../../../types/db";
 import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
@@ -12,7 +12,7 @@ export default async function deleteClassType(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
     forbidden(res);
     return;

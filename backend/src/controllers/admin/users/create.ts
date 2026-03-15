@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { type InsertResult, isMysqlError } from "../../../types/db";
 import { forbidden, badRequest, created } from "../../../lib/respond";
@@ -13,7 +13,7 @@ export default async function createUser(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
     forbidden(res);
     return;
