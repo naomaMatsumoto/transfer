@@ -1,4 +1,5 @@
 @use "../variables" as v;
+@use "../mixins" as mix;
 
 // ================================================================
 // Tabs（モダン）
@@ -65,52 +66,17 @@
 
 // --- Material Design 風 ラベル ---
 .label {
-  color: v.$color-gray-700;
-  display: block;
-  font-size: v.$font-sm;
-  font-weight: 500;
-  margin-bottom: v.$space-1;
-  transition: color 0.2s ease;
+  @include mix.label-style;
 }
 
 // --- Material Design 風 テキスト・セレクト（アンダーライン＋フォーカス） ---
-.input,
-.select {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid v.$color-gray-300;
-  border-radius: 0;
-  box-sizing: border-box;
-  color: v.$color-gray-900;
-  font-family: inherit;
-  font-size: v.$font-base;
-  padding: v.$space-2 v.$space-1 v.$space-2 0;
-  transition: border-color 0.2s ease, border-width 0.2s ease, box-shadow 0.2s ease;
-  width: 100%;
-
-  &::placeholder {
-    color: v.$color-gray-400;
-  }
-
-  &:hover {
-    border-bottom-color: v.$color-gray-400;
-  }
-
-  &:focus {
-    border-bottom-color: v.$color-primary;
-    border-bottom-width: 2px;
-    margin-bottom: -1px;
-    outline: none;
-  }
+.input {
+  @include mix.input-style;
 }
 
 .select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-position: right 2px center;
-  background-repeat: no-repeat;
-  cursor: pointer;
-  padding-right: v.$space-6;
+  @include mix.input-style;
+  @include mix.select-extra;
 }
 
 .inputSmall {
@@ -123,23 +89,9 @@
 // Buttons
 // ================================================================
 .btn {
-  border: none;
-  border-radius: v.$radius-md;
-  color: v.$color-white;
-  cursor: pointer;
+  @include mix.btn-base;
   font-size: v.$font-md;
-  font-weight: 600;
-  padding: v.$space-2 v.$space-4 - 2;
-  transition: opacity 0.15s ease;
-
-  &:hover { opacity: 0.85; }
-
-  &:disabled {
-    background-color: v.$color-gray-300;
-    color: v.$color-gray-400;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
+  padding: v.$space-2 14px;
 }
 
 .btnPrimary    { background-color: v.$color-primary; composes: btn; }
@@ -147,7 +99,7 @@
 .btnDanger     { background-color: v.$color-danger; composes: btn; }
 .btnDangerDark { background-color: v.$color-danger-dark; composes: btn; }
 .btnGray       { background-color: v.$color-gray-500; composes: btn; }
-.btnSm         { font-size: v.$font-sm + 1; }
+.btnSm         { font-size: 11px; }
 
 // ================================================================
 // Table（クラス種別・イベント等で共通のモジュール）
@@ -250,7 +202,7 @@
 .statusBadge {
   border-radius: v.$radius-full;
   display: inline-block;
-  font-size: v.$font-sm + 1;
+  font-size: 11px;
   font-weight: 700;
   padding: v.$space-1 v.$space-3;
 }
@@ -277,7 +229,7 @@
   border-radius: v.$radius-sm;
   font-size: v.$font-sm;
   font-weight: 700;
-  padding: v.$space-1 / 2 v.$space-2;
+  padding: 2px v.$space-2;
 }
 
 // ================================================================
@@ -305,7 +257,7 @@
 }
 
 .modalContentWide {
-  composes: modalcontent;
+  composes: modalContent;
   max-width: 520px;
   min-width: 420px;
 }
@@ -405,12 +357,12 @@
   gap: v.$space-2;
 }
 
-.formRow5          { grid-template-columns: 1fr 1fr 1fr 80px auto; }
-.formRow4          { grid-template-columns: 1fr 100px 100px 70px; }
-.formRow4auto      { grid-template-columns: 1fr 1fr 1fr auto; }
-.formRow5credit     { grid-template-columns: 1fr 1fr 1fr 1fr auto; }
-.formRow5proxy      { grid-template-columns: 1fr 100px 100px 100px auto; }
-.formRowClassType   { grid-template-columns: 150px 1fr 1fr auto; }
+.formRow5        { grid-template-columns: 1fr 1fr 1fr 80px auto; }
+.formRow4        { grid-template-columns: 1fr 100px 100px 70px; }
+.formRow4auto    { grid-template-columns: 1fr 1fr 1fr auto; }
+.formRow5credit  { grid-template-columns: 1fr 1fr 1fr 1fr auto; }
+.formRow5proxy   { grid-template-columns: 1fr 100px 100px 100px auto; }
+.formRowClassType { grid-template-columns: 150px 1fr 1fr auto; }
 
 .weekdayCheckGroup {
   display: flex;
@@ -440,9 +392,8 @@
 }
 
 // ================================================================
-// Misc colors
-// ================================================================
 // フォーム内容の切替アニメーション（イベント作成 1件/一括 など）
+// ================================================================
 :global {
   @keyframes eventCreateFormFadeIn {
     from {
@@ -463,6 +414,9 @@
   transform: translateY(-10px);
 }
 
+// ================================================================
+// Color / font utilities
+// ================================================================
 .colorSun     { color: v.$color-sunday; }
 .colorSat     { color: v.$color-saturday; }
 .colorGray    { color: v.$color-gray-500; }

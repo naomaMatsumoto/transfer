@@ -1,4 +1,5 @@
 // Admin スタイルのエントリ（フォルダ階層で partial を分割）
+// _mixins.scss は各 partial 内で直接 @use しているため、ここでの読み込みは不要
 @use "layout";
 @use "flash";
 @use "shared";

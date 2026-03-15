@@ -75,7 +75,7 @@
   align-items: center;
   display: flex;
   gap: v.$space-1 + 1;
-  margin-bottom: v.$space-1 / 2;
+  margin-bottom: 2px;
 }
 
 .calEventRow2 {
@@ -183,7 +183,7 @@
 .separator {
   border-left: 1px solid v.$color-gray-300;
   height: v.$space-5;
-  margin: 0 v.$space-1 / 2;
+  margin: 0 2px;
 }
 
 .weekdayBtn {
