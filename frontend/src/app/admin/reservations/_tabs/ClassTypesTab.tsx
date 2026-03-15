@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getApiErrorMessage } from "@/app/lib/apiErrors";
+import { extractApiError } from "@/app/lib/apiErrors";
 import { adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { ConfirmModal } from "../_components/ConfirmModal";
 import type { ClassType } from "../types";
@@ -28,7 +28,7 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
       description: newDesc.trim() || null,
     });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
     flash("クラス種別を作成しました");
@@ -54,7 +54,7 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
       description: editDesc.trim() || null,
     });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
     flash(`クラス種別 #${editId} を更新しました`);
@@ -72,7 +72,7 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
     setDeleteTarget(null);
     const r = await adminDelete(`/class-types/${id}`);
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
     flash(`クラス種別 #${id} を削除しました`);

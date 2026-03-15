@@ -11,6 +11,8 @@ import storesRoutes from "./routes/stores.routes";
 import membersRoutes from "./routes/members.routes";
 import opsRoutes from "./routes/ops";
 import { requireAuth } from "./middleware/auth";
+import { requireStoreAccess } from "./lib/corporationStores";
+import { asyncHandler } from "./middleware/asyncHandler";
 
 /**
  * 全ルートを一括登録するルーター
@@ -35,7 +37,7 @@ router.use(eventsRoutes);
 router.use(makeupCreditsRoutes);
 router.use(absencesRoutes);
 router.use(reservationsRoutes);
-router.use("/admin", requireAuth, adminRoutes);
+router.use("/admin", requireAuth, asyncHandler(requireStoreAccess), adminRoutes);
 router.use("/ops", opsRoutes);
 
 export default router;

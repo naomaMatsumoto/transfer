@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, unauthorized, serverError, ok } from "../../lib/respond";
+import { normalizeEmail } from "../../lib/validate";
 
 export default async function login(
   req: Request,
@@ -12,12 +13,12 @@ export default async function login(
   const body = req.body as { email?: string; password?: string };
   const { email, password } = body;
   if (!email || typeof email !== "string" || !password || typeof password !== "string") {
-    badRequest(res, "EMAIL_PASSWORD_REQUIRED");
+    badRequest(res, ERR.EMAIL_PASSWORD_REQUIRED);
     return;
   }
   const [rows] = await pool.query(
     "SELECT id, corporation_id, email, password_hash, display_name FROM accounts WHERE email = ? LIMIT 1",
-    [email.trim().toLowerCase()]
+    [normalizeEmail(email) ?? email.trim().toLowerCase()]
   );
   const account = (rows as { id: number; corporation_id: number; email: string; password_hash: string; display_name: string | null }[])[0];
   if (!account) {

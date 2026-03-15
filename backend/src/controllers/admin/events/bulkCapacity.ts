@@ -1,8 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
-import { forbidden, badRequest, ok } from "../../../lib/respond";
+import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
@@ -11,11 +10,7 @@ export default async function bulkCapacityEvents(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const body = req.body as { ids?: number[]; capacity?: number };
   const { ids, capacity } = body;
   if (!ids || ids.length === 0 || capacity == null || capacity < 0) {

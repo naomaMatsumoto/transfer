@@ -1,9 +1,8 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
 import { type UpdateResult, isMysqlError } from "../../../types/db";
-import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
@@ -12,11 +11,7 @@ export default async function updateClassType(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const id = Number(req.params.id);
   const { code, name, description } = req.body as {
     code?: string;

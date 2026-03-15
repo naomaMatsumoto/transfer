@@ -1,8 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
-import { forbidden, badRequest, created } from "../../../lib/respond";
+import { badRequest, created } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { isMysqlError } from "../../../types/db";
 
@@ -21,11 +20,7 @@ export default async function createClassType(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const storeId = storeIds[0];
   const body = req.body as { code?: string; name?: string; description?: string };
   const { code, name, description } = body;

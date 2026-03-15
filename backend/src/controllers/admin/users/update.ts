@@ -2,10 +2,9 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { type UpdateResult, isMysqlError } from "../../../types/db";
-import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { badRequest, notFound, ok } from "../../../lib/respond";
 import { optStr, normalizeStage, ph } from "../../../lib/validate";
 
 export default async function updateUser(
@@ -13,11 +12,7 @@ export default async function updateUser(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const id = Number(req.params.id);
   const { name, furigana, email, password, address, phone, course_type, stage } = req.body as {
     name?: string;

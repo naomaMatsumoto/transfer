@@ -1,7 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getStoreIds } from "../../../lib/corporationStores";
-import { forbidden, badRequest, ok } from "../../../lib/respond";
+import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
 export default async function reportSummary(
@@ -9,11 +8,7 @@ export default async function reportSummary(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const storePh = ph(storeIds);
 
   const from = req.query.from as string | undefined;

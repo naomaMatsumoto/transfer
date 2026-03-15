@@ -1,8 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
-import { forbidden, badRequest, created } from "../../../lib/respond";
+import { badRequest, created } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createStaff(
@@ -10,11 +9,7 @@ export default async function createStaff(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const storeId = storeIds[0];
   const body = req.body as { name?: string };
   const name = body.name;

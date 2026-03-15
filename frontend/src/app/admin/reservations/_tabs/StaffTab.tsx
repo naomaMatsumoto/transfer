@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getApiErrorMessage } from "@/app/lib/apiErrors";
+import { extractApiError } from "@/app/lib/apiErrors";
 import { adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { ConfirmModal } from "../_components/ConfirmModal";
 import type { Staff } from "../types";
@@ -17,7 +17,7 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
     if (!trimmed) { flashErr("名前は必須です"); return; }
     const r = await adminPost("/staff", { name: trimmed });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
     flash("スタッフを追加しました");
@@ -38,7 +38,7 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
     if (!trimmed) { flashErr("名前は必須です"); return; }
     const r = await adminPatch(`/staff/${editId}`, { name: trimmed });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
     flash(`スタッフ #${editId} を更新しました`);
@@ -52,7 +52,7 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
     setDeleteTarget(null);
     const r = await adminDelete(`/staff/${id}`);
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
     flash(`スタッフ #${id} を削除しました`);

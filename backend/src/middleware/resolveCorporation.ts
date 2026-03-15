@@ -8,6 +8,7 @@ declare global {
       corporation?: { id: number; code: string; name: string; status: string; deleted_at: string | null };
       /** Set by resolveOpsStore: store id (numeric) when in ops store-scoped route */
       storeId?: number;
+      storeIds?: number[];
     }
   }
 }

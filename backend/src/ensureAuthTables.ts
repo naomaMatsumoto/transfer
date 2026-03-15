@@ -228,6 +228,24 @@ export async function ensureAuthTables(): Promise<void> {
       logger.info("Added deleted_at to corporations");
     }
 
+    // staff テーブルと event_staff テーブル
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS staff (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS event_staff (
+        event_id BIGINT UNSIGNED NOT NULL,
+        staff_id BIGINT UNSIGNED NOT NULL,
+        PRIMARY KEY (event_id, staff_id),
+        CONSTRAINT fk_event_staff_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        CONSTRAINT fk_event_staff_staff FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
+      )
+    `);
     logger.info("Auth tables ready");
   } catch (e) {
     logger.error("Failed to ensure auth tables: " + (e instanceof Error ? e.message : String(e)));

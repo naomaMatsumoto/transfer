@@ -5,16 +5,19 @@ import { getApiErrorMessage } from "@/app/lib/apiErrors";
 import { adminGet, adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { useFlash } from "@/app/lib/useFlash";
 import { FlashToast } from "@/app/lib/FlashToast";
+import { ConfirmModal } from "@/app/lib/ConfirmModal";
+import { useMemberForm, type MemberFormError } from "@/app/lib/useMemberForm";
+import { usePagination } from "@/app/lib/usePagination";
 import {
   type Member,
   stageOptions,
   isValidEmail,
   isMemberEmailError,
-  ConfirmModal,
   AddMemberModal,
   EditMemberModal,
 } from "./_components/MemberModals";
 import styles from "../admin.module.scss";
+
 const MEMBERS_PER_PAGE = 50;
 
 export default function AdminMembersPage() {
@@ -39,31 +42,16 @@ export default function AdminMembersPage() {
     loadMembers();
   }, [loadMembers]);
 
-  // 新規
-  const [newName, setNewName] = useState("");
-  const [newFurigana, setNewFurigana] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newAddress, setNewAddress] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [newCourseType, setNewCourseType] = useState("");
-  const [newStage, setNewStage] = useState<string>("other");
-
-  // 編集中
+  // フォーム状態（新規・編集）
+  const { form: newForm, setForm: setNewForm, reset: resetNewForm } = useMemberForm();
+  const { form: editForm, setForm: setEditForm } = useMemberForm();
   const [editId, setEditId] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editFurigana, setEditFurigana] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPassword, setEditPassword] = useState("");
-  const [editAddress, setEditAddress] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editCourseType, setEditCourseType] = useState("");
-  const [editStage, setEditStage] = useState<string>("other");
-
   const [deleteTarget, setDeleteTarget] = useState<Member | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newFormError, setNewFormError] = useState<MemberFormError | null>(null);
+  const [editFormError, setEditFormError] = useState<MemberFormError | null>(null);
 
-  // フィルター
+  // フィルター・ページネーション
   const [filterKeyword, setFilterKeyword] = useState("");
   const [filterStage, setFilterStage] = useState<string>("");
 
@@ -87,68 +75,48 @@ export default function AdminMembersPage() {
     return list;
   }, [members, filterKeyword, filterStage]);
 
-  const [page, setPage] = useState(1);
-  const totalFiltered = filteredMembers.length;
-  const totalPages = Math.max(1, Math.ceil(totalFiltered / MEMBERS_PER_PAGE));
-  const paginatedMembers = useMemo(
-    () => filteredMembers.slice((page - 1) * MEMBERS_PER_PAGE, page * MEMBERS_PER_PAGE),
-    [filteredMembers, page]
-  );
-
-  useEffect(() => {
-    setPage((p) => (p > totalPages && totalPages > 0 ? totalPages : p));
-  }, [totalPages]);
+  const { page, setPage, totalPages, paginatedItems: paginatedMembers, total: totalFiltered } = usePagination(filteredMembers, MEMBERS_PER_PAGE);
 
   useEffect(() => {
     setPage(1);
-  }, [filterKeyword, filterStage]);
+  }, [filterKeyword, filterStage, setPage]);
 
-  const [newFormError, setNewFormError] = useState<{ field: string; message: string } | null>(null);
-  const [editFormError, setEditFormError] = useState<{ field: string; message: string } | null>(null);
-
+  // CRUD ハンドラ
   const handleCreate = async () => {
     setNewFormError(null);
-    if (!newName.trim()) {
+    if (!newForm.name.trim()) {
       setNewFormError({ field: "name", message: "名前は必須です" });
       return;
     }
-    const emailVal = newEmail.trim() || null;
+    const emailVal = newForm.email.trim() || null;
     if (emailVal !== null && !isValidEmail(emailVal)) {
       setNewFormError({ field: "email", message: "メールアドレスの形式が正しくありません" });
       return;
     }
     try {
       const r = await adminPost("/users", {
-        name: newName.trim(),
-        furigana: newFurigana.trim() || null,
+        name: newForm.name.trim(),
+        furigana: newForm.furigana.trim() || null,
         email: emailVal,
-        password: newPassword.trim() || null,
-        address: newAddress.trim() || null,
-        phone: newPhone.trim() || null,
-        course_type: newCourseType.trim() || null,
-        stage: newStage,
+        password: newForm.password.trim() || null,
+        address: newForm.address.trim() || null,
+        phone: newForm.phone.trim() || null,
+        course_type: newForm.courseType.trim() || null,
+        stage: newForm.stage,
       });
       const data = r.data as { error?: string };
       if (!r.ok) {
         const code = data?.error ?? "";
-        const errMsg = getApiErrorMessage(code);
         setNewFormError({
           field: isMemberEmailError(code) ? "email" : "name",
-          message: errMsg,
+          message: getApiErrorMessage(code),
         });
         return;
       }
       flash("会員を追加しました");
       setShowAddModal(false);
       setNewFormError(null);
-      setNewName("");
-      setNewFurigana("");
-      setNewEmail("");
-      setNewPassword("");
-      setNewAddress("");
-      setNewPhone("");
-      setNewCourseType("");
-      setNewStage("other");
+      resetNewForm();
       loadMembers();
     } catch (e) {
       const isNetwork = e instanceof TypeError && e.message === "Failed to fetch";
@@ -163,14 +131,16 @@ export default function AdminMembersPage() {
 
   const startEdit = (m: Member) => {
     setEditId(m.id);
-    setEditName(m.name);
-    setEditFurigana(m.furigana ?? "");
-    setEditEmail(m.email ?? "");
-    setEditPassword("");
-    setEditAddress(m.address ?? "");
-    setEditPhone(m.phone ?? "");
-    setEditCourseType(m.course_type ?? "");
-    setEditStage(m.stage || "other");
+    setEditForm({
+      name: m.name,
+      furigana: m.furigana ?? "",
+      email: m.email ?? "",
+      password: "",
+      address: m.address ?? "",
+      phone: m.phone ?? "",
+      courseType: m.course_type ?? "",
+      stage: m.stage || "other",
+    });
     setEditFormError(null);
   };
 
@@ -182,29 +152,28 @@ export default function AdminMembersPage() {
   const handleUpdate = async () => {
     if (!editId) return;
     setEditFormError(null);
-    if (!editName.trim()) {
+    if (!editForm.name.trim()) {
       setEditFormError({ field: "name", message: "名前は必須です" });
       return;
     }
-    const emailVal = editEmail.trim() || null;
+    const emailVal = editForm.email.trim() || null;
     const body: Record<string, unknown> = {
-      name: editName.trim(),
-      furigana: editFurigana.trim() || null,
+      name: editForm.name.trim(),
+      furigana: editForm.furigana.trim() || null,
       email: emailVal,
-      address: editAddress.trim() || null,
-      phone: editPhone.trim() || null,
-      course_type: editCourseType.trim() || null,
-      stage: editStage,
+      address: editForm.address.trim() || null,
+      phone: editForm.phone.trim() || null,
+      course_type: editForm.courseType.trim() || null,
+      stage: editForm.stage,
     };
-    if (editPassword.trim() !== "") body.password = editPassword.trim();
+    if (editForm.password.trim() !== "") body.password = editForm.password.trim();
     const r = await adminPatch(`/users/${editId}`, body);
     const data = r.data as { error?: string };
     if (!r.ok) {
       const code = data?.error ?? "";
-      const errMsg = getApiErrorMessage(code);
       setEditFormError({
         field: isMemberEmailError(code) ? "email" : "name",
-        message: errMsg,
+        message: getApiErrorMessage(code),
       });
       return;
     }
@@ -234,22 +203,8 @@ export default function AdminMembersPage() {
 
       <AddMemberModal
         open={showAddModal}
-        name={newName}
-        setName={setNewName}
-        furigana={newFurigana}
-        setFurigana={setNewFurigana}
-        email={newEmail}
-        setEmail={setNewEmail}
-        password={newPassword}
-        setPassword={setNewPassword}
-        address={newAddress}
-        setAddress={setNewAddress}
-        phone={newPhone}
-        setPhone={setNewPhone}
-        courseType={newCourseType}
-        setCourseType={setNewCourseType}
-        stage={newStage}
-        setStage={setNewStage}
+        form={newForm}
+        setForm={setNewForm}
         formError={newFormError}
         setFormError={setNewFormError}
         onSave={handleCreate}
@@ -262,22 +217,8 @@ export default function AdminMembersPage() {
       <EditMemberModal
         open={editId !== null}
         editId={editId}
-        name={editName}
-        setName={setEditName}
-        furigana={editFurigana}
-        setFurigana={setEditFurigana}
-        email={editEmail}
-        setEmail={setEditEmail}
-        password={editPassword}
-        setPassword={setEditPassword}
-        address={editAddress}
-        setAddress={setEditAddress}
-        phone={editPhone}
-        setPhone={setEditPhone}
-        courseType={editCourseType}
-        setCourseType={setEditCourseType}
-        stage={editStage}
-        setStage={setEditStage}
+        form={editForm}
+        setForm={setEditForm}
         formError={editFormError}
         setFormError={setEditFormError}
         onSave={handleUpdate}
@@ -336,63 +277,63 @@ export default function AdminMembersPage() {
 
       <div className="card shadow-sm overflow-hidden">
         <div className="table-responsive" style={{ overflowX: "auto" }}>
-        <table className="table table-striped table-hover mb-0" style={{ minWidth: "960px" }}>
-          <thead>
-            <tr>
-              <th style={{ width: "56px" }}>ID</th>
-              <th>名前</th>
-              <th>フリガナ</th>
-              <th>メール</th>
-              <th>住所</th>
-              <th>電話番号</th>
-              <th>コース種別</th>
-              <th>ステータス</th>
-              <th>登録日</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedMembers.map((m) => (
-              <tr key={m.id}>
-                <td>{m.id}</td>
-                <td className="fw-semibold">{m.name}</td>
-                <td className="text-body-secondary">{m.furigana ?? "—"}</td>
-                <td className="text-body-secondary">{m.email ?? "—"}</td>
-                <td className="text-body-secondary">{m.address ?? "—"}</td>
-                <td className="text-body-secondary">{m.phone ?? "—"}</td>
-                <td className="text-body-secondary">{m.course_type ?? "—"}</td>
-                <td>
-                  <span className="badge bg-success">
-                    {stageOptions.find((o) => o.value === m.stage)?.label ?? m.stage ?? "—"}
-                  </span>
-                </td>
-                <td className="text-body-secondary">
-                  {m.created_at ? new Date(m.created_at).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }) : "—"}
-                </td>
-                <td>
-                  <div className="btn-group btn-group-sm">
-                    <button type="button" className="btn btn-primary" onClick={() => startEdit(m)}>編集</button>
-                    <button type="button" className="btn btn-danger" onClick={() => setDeleteTarget(m)}>削除</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredMembers.length === 0 && (
+          <table className="table table-striped table-hover mb-0" style={{ minWidth: "960px" }}>
+            <thead>
               <tr>
-                <td colSpan={10} className="text-center text-body-secondary py-4">
-                  {members.length === 0 ? "会員がありません" : "条件に一致する会員がありません"}
-                </td>
+                <th style={{ width: "56px" }}>ID</th>
+                <th>名前</th>
+                <th>フリガナ</th>
+                <th>メール</th>
+                <th>住所</th>
+                <th>電話番号</th>
+                <th>コース種別</th>
+                <th>ステータス</th>
+                <th>登録日</th>
+                <th>操作</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginatedMembers.map((m) => (
+                <tr key={m.id}>
+                  <td>{m.id}</td>
+                  <td className="fw-semibold">{m.name}</td>
+                  <td className="text-body-secondary">{m.furigana ?? "—"}</td>
+                  <td className="text-body-secondary">{m.email ?? "—"}</td>
+                  <td className="text-body-secondary">{m.address ?? "—"}</td>
+                  <td className="text-body-secondary">{m.phone ?? "—"}</td>
+                  <td className="text-body-secondary">{m.course_type ?? "—"}</td>
+                  <td>
+                    <span className="badge bg-success">
+                      {stageOptions.find((o) => o.value === m.stage)?.label ?? m.stage ?? "—"}
+                    </span>
+                  </td>
+                  <td className="text-body-secondary">
+                    {m.created_at ? new Date(m.created_at).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }) : "—"}
+                  </td>
+                  <td>
+                    <div className="btn-group btn-group-sm">
+                      <button type="button" className="btn btn-primary" onClick={() => startEdit(m)}>編集</button>
+                      <button type="button" className="btn btn-danger" onClick={() => setDeleteTarget(m)}>削除</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredMembers.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="text-center text-body-secondary py-4">
+                    {members.length === 0 ? "会員がありません" : "条件に一致する会員がありません"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {totalFiltered > 0 && (
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 py-2">
           <span className="small text-body-secondary">
-            {(page - 1) * MEMBERS_PER_PAGE + 1}-{Math.min(page * MEMBERS_PER_PAGE, totalFiltered)} / {totalFiltered} 件
+            {(page - 1) * MEMBERS_PER_PAGE + 1}–{Math.min(page * MEMBERS_PER_PAGE, totalFiltered)} / {totalFiltered} 件
           </span>
           <div className="d-flex align-items-center gap-1">
             <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>前へ</button>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getApiErrorMessage } from "@/app/lib/apiErrors";
+import { useState, useEffect, useCallback } from "react";
+import { extractApiError } from "@/app/lib/apiErrors";
 import { adminGet, adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import type { ClassType, User, AdminCredit } from "../types";
 
@@ -16,27 +16,19 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
   const [grantExpires, setGrantExpires] = useState("");
   const [grantNote, setGrantNote] = useState("");
 
-  const fetchCreditsData = async (uId: number | "", st: string) => {
+  const loadCredits = useCallback(async () => {
     const params = new URLSearchParams();
-    if (uId) params.set("userId", String(uId));
-    if (st) params.set("status", st);
-    const r = await adminGet<AdminCredit[]>(`/makeup-credits?${params.toString()}`);
-    return r.ok && Array.isArray(r.data) ? r.data : [];
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchCreditsData(filterUserId, filterStatus)
-      .then((data) => { if (!cancelled) setCredits(data); })
-      .catch(() => { if (!cancelled) flashErr("振替権利読み込み失敗"); });
-    return () => { cancelled = true; };
+    if (filterUserId) params.set("userId", String(filterUserId));
+    if (filterStatus) params.set("status", filterStatus);
+    try {
+      const r = await adminGet<AdminCredit[]>(`/makeup-credits?${params.toString()}`);
+      setCredits(r.ok && Array.isArray(r.data) ? r.data : []);
+    } catch { flashErr("振替権利読み込み失敗"); }
   }, [filterUserId, filterStatus, flashErr]);
 
-  const loadCredits = async () => {
-    try {
-      setCredits(await fetchCreditsData(filterUserId, filterStatus));
-    } catch { flashErr("振替権利読み込み失敗"); }
-  };
+  useEffect(() => {
+    loadCredits();
+  }, [loadCredits]);
 
   const handleGrant = async () => {
     if (!grantUserId) { flashErr("ユーザーを選択してください"); return; }
@@ -48,38 +40,43 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
       createdBy: "admin",
     });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
-    flash("振替権利を付与しました"); setGrantUserId(""); setGrantClassType(""); setGrantExpires(""); setGrantNote(""); loadCredits();
+    flash("振替権利を付与しました");
+    setGrantUserId(""); setGrantClassType(""); setGrantExpires(""); setGrantNote("");
+    loadCredits();
   };
 
   const handleRevoke = async (id: number) => {
     if (!confirm(`振替権利 #${id} を取消しますか？`)) return;
     const r = await adminDelete(`/makeup-credits/${id}`);
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
-    flash(`振替権利 #${id} を取消しました`); loadCredits();
+    flash(`振替権利 #${id} を取消しました`);
+    loadCredits();
   };
 
   const handleRestore = async (id: number) => {
     const r = await adminPatch(`/makeup-credits/${id}`, { status: "granted" });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
-    flash(`振替権利 #${id} を復活しました`); loadCredits();
+    flash(`振替権利 #${id} を復活しました`);
+    loadCredits();
   };
 
   const handleUpdateExpiry = async (id: number, newExpiry: string) => {
     const r = await adminPatch(`/makeup-credits/${id}`, { expiresAt: newExpiry || null });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      flashErr(extractApiError(r.data));
       return;
     }
-    flash(`振替権利 #${id} の期限を変更しました`); loadCredits();
+    flash(`振替権利 #${id} の期限を変更しました`);
+    loadCredits();
   };
 
   return (
@@ -129,7 +126,7 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
         <button type="button" className="btn btn-primary" onClick={loadCredits}>検索</button>
       </div>
 
-      {/* 一覧（共通 tableCard モジュール） */}
+      {/* 一覧 */}
       <div className="card mb-3">
         <table className="table table-striped table-hover mb-0">
           <thead>
@@ -182,8 +179,7 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
               </tr>
             ))}
             {credits.length === 0 && (
-              <tr><td colSpan={9} className="text-center text-body-secondary py-4">振替権利がありません</td>
-            </tr>
+              <tr><td colSpan={9} className="text-center text-body-secondary py-4">振替権利がありません</td></tr>
             )}
           </tbody>
         </table>

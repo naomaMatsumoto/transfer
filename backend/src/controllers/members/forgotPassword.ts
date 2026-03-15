@@ -20,10 +20,10 @@ export default async function membersForgotPassword(
   }
 
   const [rows] = await pool.query(
-    "SELECT id FROM users WHERE email = ? AND status = 'active' LIMIT 1",
+    "SELECT id, email FROM users WHERE email = ? AND status = 'active' LIMIT 1",
     [email]
   );
-  const user = (rows as { id: number }[])[0];
+  const user = (rows as { id: number; email: string | null }[])[0];
   if (!user) {
     ok(res, { ok: true });
     return;
@@ -36,8 +36,7 @@ export default async function membersForgotPassword(
     [user.id, token, expiresAt]
   );
 
-  const [userEmail] = await pool.query("SELECT email FROM users WHERE id = ?", [user.id]);
-  const to = (userEmail as { email: string | null }[])[0]?.email;
+  const to = user.email;
   if (to) {
     const resetUrl = `${FRONTEND_BASE}/reset-password?token=${encodeURIComponent(token)}`;
     await sendPasswordResetEmail(to, resetUrl);

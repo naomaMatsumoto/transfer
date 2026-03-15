@@ -1,9 +1,8 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
-import { forbidden, badRequest, notFound, ok } from "../../../lib/respond";
+import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
 export default async function cancelReservation(
@@ -11,11 +10,7 @@ export default async function cancelReservation(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const reservationId = Number(req.params.id);
   const storePh = ph(storeIds);
   const conn = await pool.getConnection();

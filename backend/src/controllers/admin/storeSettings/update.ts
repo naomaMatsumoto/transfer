@@ -1,19 +1,14 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getStoreIds } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
-import { forbidden, badRequest, ok } from "../../../lib/respond";
+import { badRequest, ok } from "../../../lib/respond";
 
 export default async function updateStoreSettings(
   req: Request,
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
 
   const { booking_deadline_days, cancel_deadline_hours } = req.body as {
     booking_deadline_days?: number | null;

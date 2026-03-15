@@ -100,6 +100,15 @@ export type ApiErrorExtra = {
 };
 
 /**
+ * ApiResult.data から直接エラーメッセージを取得するユーティリティ。
+ * `getApiErrorMessage((r.data as { error?: string })?.error)` の代替として使用。
+ */
+export function extractApiError(data: unknown): string {
+  const res = data as ({ error?: string } & ApiErrorExtra) | undefined;
+  return getApiErrorMessage(res?.error, res);
+}
+
+/**
  * バックエンドが返す error コード（とオプションの count/details）から表示用日本語を返す
  */
 export function getApiErrorMessage(

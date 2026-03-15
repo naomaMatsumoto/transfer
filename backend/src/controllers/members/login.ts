@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../db";
+import { ERR } from "../../constants";
 import { badRequest, unauthorized, forbidden, ok } from "../../lib/respond";
 
 export default async function membersLogin(
@@ -12,7 +13,7 @@ export default async function membersLogin(
   const email = body.email != null ? String(body.email).trim().toLowerCase() : "";
   const password = body.password != null ? String(body.password) : "";
   if (!email || !password) {
-    badRequest(res, "EMAIL_PASSWORD_REQUIRED");
+    badRequest(res, ERR.EMAIL_PASSWORD_REQUIRED);
     return;
   }
 
@@ -26,15 +27,15 @@ export default async function membersLogin(
     return;
   }
   if (user.status === "paused") {
-    forbidden(res, "MEMBER_PAUSED", "アカウントが一時停止中です。管理者にお問い合わせください。");
+    forbidden(res, ERR.MEMBER_PAUSED, "アカウントが一時停止中です。管理者にお問い合わせください。");
     return;
   }
   if (user.status === "withdrawn") {
-    forbidden(res, "MEMBER_WITHDRAWN", "退会済みのアカウントです。");
+    forbidden(res, ERR.MEMBER_WITHDRAWN, "退会済みのアカウントです。");
     return;
   }
   if (!user.password_hash) {
-    unauthorized(res, "PASSWORD_NOT_SET");
+    unauthorized(res, ERR.PASSWORD_NOT_SET);
     return;
   }
   const match = await bcrypt.compare(password, user.password_hash);

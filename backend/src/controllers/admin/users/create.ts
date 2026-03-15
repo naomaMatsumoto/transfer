@@ -2,10 +2,9 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { ERR, STAGE_VALUES, isValidEmail } from "../../../constants";
-import { getStoreIds } from "../../../lib/corporationStores";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { type InsertResult, isMysqlError } from "../../../types/db";
-import { forbidden, badRequest, created } from "../../../lib/respond";
+import { badRequest, created } from "../../../lib/respond";
 import { optStr, normalizeStage } from "../../../lib/validate";
 
 export default async function createUser(
@@ -13,11 +12,7 @@ export default async function createUser(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIds(req);
-  if (storeIds.length === 0) {
-    forbidden(res);
-    return;
-  }
+  const storeIds = req.storeIds!;
   const storeId = storeIds[0];
   const { name, furigana, email, password, address, phone, course_type, stage } = req.body as {
     name?: string;

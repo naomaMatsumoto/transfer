@@ -1,4 +1,5 @@
 import { pool } from "../db";
+import logger from "../logger";
 
 export type ActorType = "admin" | "member" | "platform" | "system";
 
@@ -22,7 +23,7 @@ export async function writeAuditLog(params: {
         params.detail ? JSON.stringify(params.detail) : null,
       ]
     );
-  } catch {
-    // ログ書き込みの失敗で本体処理を止めない
+  } catch (e) {
+    logger.error("audit log write failed: " + (e instanceof Error ? e.message : String(e)));
   }
 }

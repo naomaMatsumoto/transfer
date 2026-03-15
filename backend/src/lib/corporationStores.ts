@@ -1,5 +1,6 @@
-import { type Request } from "express";
+import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../db";
+import { forbidden } from "./respond";
 
 /**
  * ログイン中の法人に属する店舗ID一覧を取得する（内部実装）。
@@ -24,4 +25,23 @@ async function getStoreIdsForRequest(req: Request): Promise<number[]> {
 export async function getStoreIds(req: Request): Promise<number[]> {
   if (req.storeId != null) return [req.storeId];
   return getStoreIdsForRequest(req);
+}
+
+/**
+ * Admin ルート用ミドルウェア。
+ * getStoreIds で店舗IDリストを取得し、req.storeIds にセットする。
+ * 店舗が0件（ログイン不正・未設定）なら 403 を返して処理を止める。
+ */
+export async function requireStoreAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const ids = await getStoreIds(req);
+  if (ids.length === 0) {
+    forbidden(res);
+    return;
+  }
+  req.storeIds = ids;
+  next();
 }
