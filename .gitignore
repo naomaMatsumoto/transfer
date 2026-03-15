@@ -1,2 +1,33 @@
-backend/node_modules/axios/lib/helpers/buildURL.js
-backend/node_modules/
+# ─── Dependencies ────────────────────────────────────────────
+node_modules/
+
+# ─── Build outputs ───────────────────────────────────────────
+backend/dist/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# ─── Environment variables ───────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Logs ────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ─── OS / Editor ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ─── TypeScript ──────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Misc ────────────────────────────────────────────────────
+*.pem
+.vercel

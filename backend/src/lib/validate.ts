@@ -34,3 +34,8 @@ export function ph(arr: unknown[]): string {
 export function isValidId(v: unknown): v is number {
   return typeof v === "number" && Number.isInteger(v) && v > 0;
 }
+
+/** パスワードとして有効か（6文字以上の文字列）*/
+export function isValidPassword(v: unknown): v is string {
+  return typeof v === "string" && v.length >= 6;
+}

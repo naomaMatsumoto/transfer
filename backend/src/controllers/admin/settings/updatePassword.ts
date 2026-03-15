@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
+import { isValidPassword } from "../../../lib/validate";
 
 export default async function updatePassword(
   req: Request,
@@ -20,7 +21,7 @@ export default async function updatePassword(
     badRequest(res, "CURRENT_AND_NEW_PASSWORD_REQUIRED");
     return;
   }
-  if (String(newPassword).length < 6) {
+  if (!isValidPassword(newPassword)) {
     badRequest(res, "NEW_PASSWORD_TOO_SHORT");
     return;
   }

@@ -27,23 +27,37 @@ export default async function bulkTimeEvents(
     return;
   }
   const storePh = ph(storeIds);
+  const idsPh = ph(ids);
+  const [fetchRows] = await pool.query(
+    `SELECT e.id, e.starts_at FROM events e
+     JOIN class_types ct ON ct.id = e.class_type_id
+     WHERE e.id IN (${idsPh}) AND ct.store_id IN (${storePh})`,
+    [...ids, ...storeIds]
+  );
+  const validRows = (fetchRows as { id: number; starts_at: string }[]).filter((r) => {
+    const d = (r.starts_at ?? "").toString().slice(0, 10);
+    return d.length >= 10;
+  });
   let updated = 0;
-  for (const id of ids) {
-    const [rows] = await pool.query(
-      `SELECT e.starts_at, e.ends_at FROM events e JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePh})`,
-      [id, ...storeIds]
-    );
-    const row = (rows as { starts_at: string; ends_at: string }[])[0];
-    if (!row) continue;
-    const dateStr = (row.starts_at ?? "").toString().slice(0, 10);
-    if (!dateStr || dateStr.length < 10) continue;
-    const newStart = `${dateStr} ${startTime}:00`;
-    const newEnd = `${dateStr} ${endTime}:00`;
+  if (validRows.length > 0) {
+    const whenClauses = validRows.map(() => "WHEN ? THEN ?").join(" ");
+    const startParams: unknown[] = [];
+    const endParams: unknown[] = [];
+    for (const r of validRows) {
+      const dateStr = r.starts_at.toString().slice(0, 10);
+      startParams.push(r.id, `${dateStr} ${startTime}:00`);
+      endParams.push(r.id, `${dateStr} ${endTime}:00`);
+    }
+    const validIdsPh = ph(validRows);
     await pool.query(
-      "UPDATE events SET starts_at = ?, ends_at = ?, updated_at = NOW() WHERE id = ?",
-      [newStart, newEnd, id]
+      `UPDATE events SET
+         starts_at = CASE id ${whenClauses} END,
+         ends_at   = CASE id ${whenClauses} END,
+         updated_at = NOW()
+       WHERE id IN (${validIdsPh})`,
+      [...startParams, ...endParams, ...validRows.map((r) => r.id)]
     );
-    updated++;
+    updated = validRows.length;
   }
   await writeAuditLog({
     actorType: "admin",

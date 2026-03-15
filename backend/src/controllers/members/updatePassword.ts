@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../db";
 import { unauthorized, badRequest, ok } from "../../lib/respond";
+import { isValidPassword } from "../../lib/validate";
 
 export default async function membersUpdatePassword(
   req: Request,
@@ -20,7 +21,7 @@ export default async function membersUpdatePassword(
     badRequest(res, "CURRENT_AND_NEW_PASSWORD_REQUIRED");
     return;
   }
-  if (newPassword.length < 6) {
+  if (!isValidPassword(newPassword)) {
     badRequest(res, "NEW_PASSWORD_TOO_SHORT");
     return;
   }

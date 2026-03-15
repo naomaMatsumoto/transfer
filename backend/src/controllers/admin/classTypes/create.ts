@@ -4,6 +4,7 @@ import { ERR } from "../../../constants";
 import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest, created } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
+import { isMysqlError } from "../../../types/db";
 
 function generateClassTypeCode(name: string): string {
   const slug = name
@@ -51,8 +52,7 @@ export default async function createClassType(
     });
     created(res, { id: insertId, code: codeToUse, name: trimmedName });
   } catch (err: unknown) {
-    const e = err as { code?: string };
-    if (e.code === "ER_DUP_ENTRY") {
+    if (isMysqlError(err) && err.code === "ER_DUP_ENTRY") {
       badRequest(res, ERR.CLASS_TYPE_CODE_DUPLICATE);
       return;
     }

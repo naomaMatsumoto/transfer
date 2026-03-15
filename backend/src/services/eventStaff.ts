@@ -29,16 +29,11 @@ export async function syncEventStaff(
   if (validIds.length === 0) return;
 
   const storePh = ph(storeIds);
-  for (const staffId of validIds) {
-    const [rows] = await conn.query(
-      `SELECT id FROM staff WHERE id = ? AND store_id IN (${storePh})`,
-      [staffId, ...storeIds],
-    );
-    if ((rows as unknown[]).length > 0) {
-      await conn.query(
-        "INSERT INTO event_staff (event_id, staff_id) VALUES (?, ?)",
-        [eventId, staffId],
-      );
-    }
-  }
+  const staffPh = ph(validIds);
+  await conn.query(
+    `INSERT INTO event_staff (event_id, staff_id)
+     SELECT ?, id FROM staff
+     WHERE id IN (${staffPh}) AND store_id IN (${storePh})`,
+    [eventId, ...validIds, ...storeIds],
+  );
 }

@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { writeAuditLog } from "../../lib/auditLog";
 import { unauthorized, badRequest, notFound, created } from "../../lib/respond";
+import { isMysqlError } from "../../types/db";
 
 export default async function joinWaitlist(
   req: Request,
@@ -43,7 +44,7 @@ export default async function joinWaitlist(
       [memberId, eventId]
     );
   } catch (e: unknown) {
-    if (e instanceof Error && "code" in e && (e as { code: string }).code === "ER_DUP_ENTRY") {
+    if (isMysqlError(e) && e.code === "ER_DUP_ENTRY") {
       badRequest(res, "ALREADY_ON_WAITLIST");
       return;
     }

@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { getStoreIdsForRequest } from "../../../lib/corporationStores";
+import { getStoreIds } from "../../../lib/corporationStores";
 import { forbidden, badRequest } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
@@ -9,7 +9,7 @@ export default async function reportCsvExport(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const storeIds = await getStoreIdsForRequest(req);
+  const storeIds = await getStoreIds(req);
   if (storeIds.length === 0) {
     forbidden(res);
     return;
