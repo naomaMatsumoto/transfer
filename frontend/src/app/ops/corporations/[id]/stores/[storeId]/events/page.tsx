@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getApiBase, apiFetch } from "@/app/lib/api";
 import { EventsTab } from "@/app/admin/reservations/_tabs/EventsTab";
 import { useFlash } from "@/app/lib/useFlash";
+import { FlashToast } from "@/app/lib/FlashToast";
 import { useOpsData } from "../../../../../hooks";
 import { CorporationDetail } from "../../../../../types";
 import s from "../../../../../ops.module.scss";
@@ -423,8 +424,7 @@ export default function OpsStoreEventsPage() {
 
       <h1 className="h4 mb-3">{store?.name ?? `店舗 #${storeId}`}</h1>
 
-      {msg && <div className={`alert alert-success mb-3 ${msgExiting ? "fade" : ""}`} role="alert">{msg}</div>}
-      {err && <div className={`alert alert-danger mb-3 ${errExiting ? "fade" : ""}`} role="alert">{err}</div>}
+      <FlashToast msg={msg} err={err} msgExiting={msgExiting} errExiting={errExiting} />
 
       <ul className="nav nav-tabs mb-4">
         {TAB_LABELS.map(({ key, label }) => (

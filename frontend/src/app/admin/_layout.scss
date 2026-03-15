@@ -42,9 +42,11 @@ $header-height: 52px;
 
 .adminSidebarNav {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
-  padding: v.$space-3 v.$space-3;
+  overflow-y: auto;
+  padding: v.$space-3;
 }
 
 .adminSidebarLink {
@@ -127,6 +129,49 @@ $header-height: 52px;
   background: v.$color-primary-light;
   height: 1px;
   margin: v.$space-3 0;
+}
+
+.adminSidebarFooter {
+  border-top: 1px solid v.$color-primary-light;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: v.$space-3;
+}
+
+.adminSidebarFooterLink {
+  border-radius: v.$radius-md;
+  color: v.$color-gray-500;
+  display: block;
+  font-size: v.$font-sm;
+  font-weight: 500;
+  padding: v.$space-2 v.$space-3;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background-color: v.$color-primary-light;
+    color: v.$color-primary-dark;
+  }
+}
+
+.adminSidebarLogout {
+  background: none;
+  border: none;
+  border-radius: v.$radius-md;
+  color: v.$color-gray-500;
+  cursor: pointer;
+  font-size: v.$font-sm;
+  font-weight: 500;
+  padding: v.$space-2 v.$space-3;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  width: 100%;
+
+  &:hover {
+    background-color: v.$color-danger-light;
+    color: v.$color-danger;
+  }
 }
 
 .adminMain {

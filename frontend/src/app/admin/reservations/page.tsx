@@ -10,6 +10,8 @@ import { EventsTab } from "./_tabs/EventsTab";
 import { CreditsTab } from "./_tabs/CreditsTab";
 import { StaffTab } from "./_tabs/StaffTab";
 import { ClassTypesTab } from "./_tabs/ClassTypesTab";
+import { FlashToast } from "@/app/lib/FlashToast";
+import styles from "../admin.module.scss";
 
 function AdminPageContent() {
   const searchParams = useSearchParams();
@@ -49,13 +51,8 @@ function AdminPageContent() {
 
   return (
     <>
-      <h1 className="h3 mb-4">{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
-      {msg && (
-        <div className={`alert alert-success mb-3 ${msgExiting ? "fade" : ""}`} role="alert">{msg}</div>
-      )}
-      {err && (
-        <div className={`alert alert-danger mb-3 ${errExiting ? "fade" : ""}`} role="alert">{err}</div>
-      )}
+      <FlashToast msg={msg} err={err} msgExiting={msgExiting} errExiting={errExiting} />
+      <h1 className={styles.settingsPageTitle}>{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
 
       {tab === "classTypes" && <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />}
       {tab === "events" && <EventsTab classTypes={classTypes} users={users} staff={staff} flash={flash} flashErr={flashErr} />}

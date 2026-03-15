@@ -27,6 +27,8 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
   const [openReserveUserDropdown, setOpenReserveUserDropdown] = useState<number | null>(null);
   const [reserveUserFilter, setReserveUserFilter] = useState("");
   const [createEventModalOpen, setCreateEventModalOpen] = useState(false);
+  const [createModalErr, setCreateModalErr] = useState("");
+  const [editModalErr, setEditModalErr] = useState("");
 
   // 選択（まとめ操作用）
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -113,15 +115,16 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
 
   const saveEditEvent = async () => {
     if (!editEvent) return;
+    setEditModalErr("");
     const currentCount = editEvReservations.filter((r) => !editEvToCancel.has(r.id)).length;
     const toAdd = editEvToAdd.filter((r) => r.userId !== "");
     if (toAdd.length + currentCount > editEvCapacity) {
-      flashErr(`予約数が定員（${editEvCapacity}人）を超えます`);
+      setEditModalErr(`予約数が定員（${editEvCapacity}人）を超えます`);
       return;
     }
     const addUserIds = toAdd.map((r) => r.userId);
     if (new Set(addUserIds).size !== addUserIds.length) {
-      flashErr("同じユーザーは複数回登録できません");
+      setEditModalErr("同じユーザーは複数回登録できません");
       return;
     }
     const existingUserIds = new Set(
@@ -131,20 +134,20 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
       const uid = row.userId;
       if (uid === "") continue;
       if (existingUserIds.has(uid)) {
-        flashErr("既に予約済みのユーザーは追加できません");
+        setEditModalErr("既に予約済みのユーザーは追加できません");
         return;
       }
     }
     const makeupWithoutCredit = toAdd.find((r) => r.type === "makeup" && (r.creditId === "" || !r.creditId));
     if (makeupWithoutCredit) {
-      flashErr("振替で予約する場合は、振替権利を選択してください");
+      setEditModalErr("振替で予約する場合は、振替権利を選択してください");
       return;
     }
     try {
       for (const id of editEvToCancel) {
         const r = await adminPatch(`/reservations/${id}/cancel`);
         if (!r.ok) {
-          flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+          setEditModalErr(getApiErrorMessage((r.data as { error?: string })?.error));
           return;
         }
       }
@@ -158,7 +161,7 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
           overrideCapacity: false,
         });
         if (!r.ok) {
-          flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+          setEditModalErr(getApiErrorMessage((r.data as { error?: string })?.error));
           return;
         }
       }
@@ -234,7 +237,7 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
       setEditEvent(null);
       loadEvents();
     } catch {
-      flashErr("更新に失敗しました");
+      setEditModalErr("更新に失敗しました");
     }
   };
 
@@ -570,14 +573,14 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
   useEffect(() => { loadEvents(); }, [loadEvents]);
 
   const handleCreateEvent = async () => {
-    if (!newClassType || !newStartsAt || !newEndsAt) { flashErr("入力を埋めてください"); return; }
+    setCreateModalErr("");
+    if (!newClassType || !newStartsAt || !newEndsAt) { setCreateModalErr("入力を埋めてください"); return; }
     const toReserve = newEventAlsoReserve ? newEventReserveList.filter((r) => r.userId !== "") : [];
-    if (newEventAlsoReserve && toReserve.length === 0) { flashErr("予約する場合はユーザーを選択してください"); return; }
-    if (toReserve.length > newCapacity) { flashErr(`予約数は定員（${newCapacity}人）以内にしてください`); return; }
+    if (toReserve.length > newCapacity) { setCreateModalErr(`予約数は定員（${newCapacity}人）以内にしてください`); return; }
     const reserveUserIds = toReserve.map((r) => r.userId);
-    if (new Set(reserveUserIds).size !== reserveUserIds.length) { flashErr("同じユーザーは複数回登録できません"); return; }
+    if (new Set(reserveUserIds).size !== reserveUserIds.length) { setCreateModalErr("同じユーザーは複数回登録できません"); return; }
     const makeupWithoutCredit = toReserve.find((r) => r.type === "makeup" && (r.creditId === "" || !r.creditId));
-    if (makeupWithoutCredit) { flashErr("振替で予約する場合は、振替権利を選択してください"); return; }
+    if (makeupWithoutCredit) { setCreateModalErr("振替で予約する場合は、振替権利を選択してください"); return; }
     const r = await adminPost<{ id: number }>("/events", {
       classTypeId: newClassType,
       startsAt: newStartsAt,
@@ -586,7 +589,7 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
       staffIds: newEventStaffIds.length > 0 ? newEventStaffIds : undefined,
     });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      setCreateModalErr(getApiErrorMessage((r.data as { error?: string })?.error));
       return;
     }
     const data = r.data as { id: number };
@@ -602,7 +605,7 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
           overrideCapacity: false,
         });
         if (!rr.ok) {
-          flashErr(getApiErrorMessage((rr.data as { error?: string })?.error));
+          setCreateModalErr(getApiErrorMessage((rr.data as { error?: string })?.error));
           loadEvents();
           return;
         }
@@ -621,15 +624,15 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
   };
 
   const handleBulkCreate = async () => {
-    if (!bulkClassType) { flashErr("クラス種別を選択してください"); return; }
-    if (bulkWeekdays.length === 0) { flashErr("曜日を1つ以上選択してください"); return; }
+    setCreateModalErr("");
+    if (!bulkClassType) { setCreateModalErr("クラス種別を選択してください"); return; }
+    if (bulkWeekdays.length === 0) { setCreateModalErr("曜日を1つ以上選択してください"); return; }
     const toReserve = bulkAlsoReserve ? bulkReserveList.filter((r) => r.userId !== "") : [];
-    if (bulkAlsoReserve && toReserve.length === 0) { flashErr("予約する場合はユーザーを選択してください"); return; }
-    if (toReserve.length > bulkCapacity) { flashErr(`予約数は定員（${bulkCapacity}人）以内にしてください`); return; }
+    if (toReserve.length > bulkCapacity) { setCreateModalErr(`予約数は定員（${bulkCapacity}人）以内にしてください`); return; }
     const reserveUserIds = toReserve.map((r) => r.userId);
-    if (new Set(reserveUserIds).size !== reserveUserIds.length) { flashErr("同じユーザーは複数回登録できません"); return; }
+    if (new Set(reserveUserIds).size !== reserveUserIds.length) { setCreateModalErr("同じユーザーは複数回登録できません"); return; }
     const makeupWithoutCredit = toReserve.find((r) => r.type === "makeup" && (r.creditId === "" || !r.creditId));
-    if (makeupWithoutCredit) { flashErr("振替で予約する場合は、振替権利を選択してください"); return; }
+    if (makeupWithoutCredit) { setCreateModalErr("振替で予約する場合は、振替権利を選択してください"); return; }
     const excludeDates = bulkExclude
       .split(/[,\s]+/)
       .map((s) => s.trim())
@@ -646,7 +649,7 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
       staffIds: bulkCreateStaffIds.length > 0 ? bulkCreateStaffIds : undefined,
     });
     if (!r.ok) {
-      flashErr(getApiErrorMessage((r.data as { error?: string })?.error));
+      setCreateModalErr(getApiErrorMessage((r.data as { error?: string })?.error));
       return;
     }
     const data = r.data as { count: number; events: { id: number; date: string }[] };
@@ -833,7 +836,7 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
       {editEvent && (
         <div
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9998, animation: "fadeIn 0.2s ease" }}
-          onClick={() => setEditEvent(null)}
+          onClick={() => { setEditEvent(null); setEditModalErr(""); }}
         >
           <div
             style={{ backgroundColor: "#fff", borderRadius: "12px", padding: "24px", minWidth: "420px", maxWidth: "520px", boxShadow: "0 8px 30px rgba(0,0,0,0.2)", animation: "slideUp 0.25s ease" }}
@@ -1057,10 +1060,15 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
               >
                 削除
               </button>
+              {editModalErr && (
+                <div className="alert alert-danger py-2 px-3 mb-0 small" role="alert">
+                  {editModalErr}
+                </div>
+              )}
               <div style={{ display: "flex", gap: "8px" }}>
                 <button
                   type="button"
-                  onClick={() => setEditEvent(null)}
+                  onClick={() => { setEditEvent(null); setEditModalErr(""); }}
                   style={{ fontSize: "13px", padding: "6px 16px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#fff", cursor: "pointer" }}
                 >
                   キャンセル
@@ -1093,488 +1101,391 @@ export function EventsTab({ classTypes, users, staff, flash, flashErr }: { class
       {createEventModalOpen && (
         <div
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9998, animation: "fadeIn 0.2s ease" }}
-          onClick={() => setCreateEventModalOpen(false)}
+          onClick={() => { setCreateEventModalOpen(false); setCreateModalErr(""); }}
         >
           <div
             style={{ backgroundColor: "#fff", borderRadius: "12px", padding: "24px", minWidth: "420px", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 30px rgba(0,0,0,0.2)", animation: "slideUp 0.25s ease" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>イベント作成</h3>
-              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setCreateEventModalOpen(false)}>閉じる</button>
+            {/* Modal header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h3 className="fs-6 fw-bold mb-0">イベント作成</h3>
+              <button type="button" className="btn-close" onClick={() => { setCreateEventModalOpen(false); setCreateModalErr(""); }} aria-label="閉じる" />
             </div>
-            <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+
+            {/* Mode toggle */}
+            <div className="btn-group btn-group-sm w-100 mb-4">
               <button
                 type="button"
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  border: eventCreateMode === "single" ? "2px solid #3b82f6" : "1px solid #d1d5db",
-                  backgroundColor: eventCreateMode === "single" ? "#eff6ff" : "#fff",
-                  color: eventCreateMode === "single" ? "#1d4ed8" : "#374151",
-                  fontWeight: eventCreateMode === "single" ? 600 : 400,
-                  cursor: "pointer",
-                }}
-                onClick={() => setEventCreateMode("single")}
+                className={`btn ${eventCreateMode === "single" ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => { setEventCreateMode("single"); setCreateModalErr(""); }}
               >
                 1件作成
               </button>
               <button
                 type="button"
-                style={{
-                  fontSize: "13px",
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  border: eventCreateMode === "bulk" ? "2px solid #3b82f6" : "1px solid #d1d5db",
-                  backgroundColor: eventCreateMode === "bulk" ? "#eff6ff" : "#fff",
-                  color: eventCreateMode === "bulk" ? "#1d4ed8" : "#374151",
-                  fontWeight: eventCreateMode === "bulk" ? 600 : 400,
-                  cursor: "pointer",
-                }}
-                onClick={() => setEventCreateMode("bulk")}
+                className={`btn ${eventCreateMode === "bulk" ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => { setEventCreateMode("bulk"); setCreateModalErr(""); }}
               >
                 一括作成（曜日×期間）
               </button>
             </div>
 
-            <div key={eventCreateMode} className="">
-        {eventCreateMode === "single" ? (
-          <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px auto", gap: "8px", alignItems: "end" }}>
-            <div>
-              <span className="form-label">クラス種別</span>
-              <select className="form-select" value={newClassType} onChange={(e) => setNewClassType(Number(e.target.value) || "")}>
-                <option value="">選択</option>
-                {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <span className="form-label">開始日時</span>
-              <input type="datetime-local" className="form-control" value={newStartsAt} onChange={(e) => setNewStartsAt(e.target.value)} />
-            </div>
-            <div>
-              <span className="form-label">終了日時</span>
-              <input type="datetime-local" className="form-control" value={newEndsAt} onChange={(e) => setNewEndsAt(e.target.value)} />
-            </div>
-            <div>
-              <span className="form-label">定員</span>
-              <input type="number" className="form-control" value={newCapacity} onChange={(e) => { const v = Number(e.target.value); setNewCapacity(v); setNewEventReserveList((prev) => (prev.length > v ? prev.slice(0, v) : prev)); }} min={1} />
-            </div>
-            <button type="button" className="btn btn-primary" onClick={handleCreateEvent}>作成</button>
-          </div>
-          <div className="mt-2">
-            <span className="form-label d-block mb-1" style={{ fontSize: "15px" }}>担当スタッフ（何名でも登録可能）</span>
-            {staff.length === 0 ? (
-              <span className="text-body-secondary" style={{ fontSize: "14px" }}>スタッフがいません。スタッフ管理タブで登録してください。</span>
-            ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-                {staff.map((s) => (
-                  <label key={s.id} className="d-flex align-items-center gap-2" style={{ fontSize: "16px", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      style={{ width: "18px", height: "18px", marginTop: 0 }}
-                      checked={newEventStaffIds.includes(s.id)}
-                      onChange={(e) => setNewEventStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id))}
-                    />
-                    {s.name}
-                  </label>
-                ))}
+            {createModalErr && (
+              <div className="alert alert-danger py-2 px-3 mb-3 small" role="alert">
+                {createModalErr}
               </div>
             )}
-          </div>
-          <div className="mt-3 pt-3 border-top">
-            <label className="d-flex align-items-center gap-2 mb-2" style={{ fontSize: "13px" }}>
-              <input type="checkbox" checked={newEventAlsoReserve} onChange={(e) => setNewEventAlsoReserve(e.target.checked)} />
-              作成と同時に予約する
-            </label>
-            {newEventAlsoReserve && (
-              <div className="mt-2">
-                <span className="form-label d-block mb-1">予約するユーザー（定員 {newCapacity} 人まで）</span>
-                {newEventReserveList.map((row, idx) => {
-                  const otherSelectedIds = new Set(
-                    newEventReserveList.map((r, i) => (i === idx ? null : r.userId)).filter((id): id is number => id !== "")
-                  );
-                  const isOpen = openReserveUserDropdown === idx;
-                  const selectedUser = row.userId !== "" ? users.find((u) => u.id === row.userId) : null;
-                  const displayText = isOpen ? reserveUserFilter : (selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : "");
-                  const filteredUsers = users.filter(
-                    (u) =>
-                      !reserveUserFilter.trim() ||
-                      u.name.toLowerCase().includes(reserveUserFilter.toLowerCase()) ||
-                      (u.phone ?? "").includes(reserveUserFilter)
-                  );
-                  return (
-                  <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 120px 100px auto", gap: "8px", alignItems: "end", marginBottom: "8px" }}>
-                    <div style={{ position: "relative" }}>
-                      <span className="form-label">ユーザー</span>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          border: "1px solid #dee2e6",
-                          borderRadius: "6px",
-                          backgroundColor: "#fff",
-                          minHeight: "38px",
-                        }}
-                      >
-                        <input
-                          type="text"
-                          className="form-control border-0"
-                          style={{ flex: 1, minWidth: 0 }}
-                          value={displayText}
-                          placeholder="ユーザーを選択"
-                          onChange={(e) => {
-                            setReserveUserFilter(e.target.value);
-                            if (!isOpen) setOpenReserveUserDropdown(idx);
-                          }}
-                          onFocus={() => {
-                            setOpenReserveUserDropdown(idx);
-                            setReserveUserFilter(selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : "");
-                          }}
-                          onBlur={() => setTimeout(() => setOpenReserveUserDropdown(null), 150)}
-                        />
-                        <span style={{ padding: "0 8px", color: "#6c757d", pointerEvents: "none" }}>▼</span>
-                      </div>
-                      {isOpen && (
-                        <ul
-                          className="list-unstyled mb-0"
-                          style={{
-                            position: "absolute",
-                            left: 0,
-                            right: 0,
-                            top: "100%",
-                            marginTop: "2px",
-                            maxHeight: "200px",
-                            overflowY: "auto",
-                            border: "1px solid #dee2e6",
-                            borderRadius: "6px",
-                            backgroundColor: "#fff",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                            zIndex: 10,
-                            padding: "4px 0",
-                          }}
-                        >
-                          {selectedUser && (
-                            <li
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setNewEventReserveList((prev) =>
-                                  prev.map((r, i) => (i === idx ? { ...r, userId: "" } : r))
-                                );
-                                setOpenReserveUserDropdown(null);
-                                setReserveUserFilter("");
-                              }}
-                              style={{
-                                padding: "8px 12px",
-                                cursor: "pointer",
-                                color: "#6c757d",
-                                fontSize: "13px",
-                                borderBottom: "1px solid #eee",
-                              }}
-                            >
-                              選択を解除
-                            </li>
-                          )}
-                          {filteredUsers.length === 0 ? (
-                            <li style={{ padding: "8px 12px", color: "#6c757d", fontSize: "14px" }}>該当なし</li>
-                          ) : (
-                            filteredUsers.map((u) => {
-                              const disabled = otherSelectedIds.has(u.id);
-                              return (
-                                <li
-                                  key={u.id}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    if (disabled) return;
-                                    setNewEventReserveList((prev) =>
-                                      prev.map((r, i) => (i === idx ? { ...r, userId: u.id } : r))
-                                    );
-                                    setOpenReserveUserDropdown(null);
-                                    setReserveUserFilter("");
-                                  }}
-                                  style={{
-                                    padding: "8px 12px",
-                                    cursor: disabled ? "not-allowed" : "pointer",
-                                    opacity: disabled ? 0.5 : 1,
-                                    color: disabled ? "#adb5bd" : "#212529",
-                                    backgroundColor: disabled ? "#f8f9fa" : "transparent",
-                                    fontSize: "14px",
-                                  }}
-                                >
-                                  {u.name}{u.phone ? ` (${u.phone})` : ""}{disabled ? " — 他で選択済み" : ""}
-                                </li>
-                              );
-                            })
-                          )}
-                        </ul>
-                      )}
+
+            <div key={eventCreateMode}>
+              {eventCreateMode === "single" ? (
+                <>
+                  {/* クラス種別 */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">クラス種別</label>
+                    <select className="form-select form-select-sm" value={newClassType} onChange={(e) => setNewClassType(Number(e.target.value) || "")}>
+                      <option value="">選択してください</option>
+                      {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* 日時 */}
+                  <div className="row g-3 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small fw-medium">開始日時</label>
+                      <input type="datetime-local" className="form-control form-control-sm" value={newStartsAt} onChange={(e) => setNewStartsAt(e.target.value)} />
                     </div>
-                    <div>
-                      <span className="form-label">種別</span>
-                      <select
-                        className="form-select"
-                        value={row.type}
-                        onChange={(e) =>
-                          setNewEventReserveList((prev) =>
-                            prev.map((r, i) => (i === idx ? { ...r, type: e.target.value as "normal" | "makeup" } : r))
-                          )
-                        }
-                      >
-                        <option value="normal">通常</option>
-                        <option value="makeup">振替</option>
-                      </select>
-                    </div>
-                    {row.type === "makeup" ? (
-                      <div>
-                        <span className="form-label">振替権利ID</span>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={row.creditId === "" ? "" : row.creditId}
-                          onChange={(e) =>
-                            setNewEventReserveList((prev) =>
-                              prev.map((r, i) => (i === idx ? { ...r, creditId: Number(e.target.value) || "" } : r))
-                            )
-                          }
-                        />
-                      </div>
-                    ) : (
-                      <div />
-                    )}
-                    <div>
-                      {newEventReserveList.length > 1 ? (
-                        <button
-                          type="button"
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => setNewEventReserveList((prev) => prev.filter((_, i) => i !== idx))}
-                        >
-                          削除
-                        </button>
-                      ) : null}
+                    <div className="col-6">
+                      <label className="form-label small fw-medium">終了日時</label>
+                      <input type="datetime-local" className="form-control form-control-sm" value={newEndsAt} onChange={(e) => setNewEndsAt(e.target.value)} />
                     </div>
                   </div>
-                  );
-                })}
-                {newEventReserveList.length < newCapacity && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={() =>
-                      setNewEventReserveList((prev) => [...prev, { userId: "", type: "normal", creditId: "" }])
-                    }
-                  >
-                    ＋もう1人追加
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          </>
-        ) : (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 70px", gap: "8px", alignItems: "end", marginBottom: "8px" }}>
-              <div>
-                <span className="form-label">クラス種別</span>
-                <select className="form-select" value={bulkClassType} onChange={(e) => setBulkClassType(Number(e.target.value) || "")}>
-                  <option value="">選択</option>
-                  {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <span className="form-label">開始時刻</span>
-                <input type="time" className="form-control" value={bulkStartTime} onChange={(e) => setBulkStartTime(e.target.value)} />
-              </div>
-              <div>
-                <span className="form-label">終了時刻</span>
-                <input type="time" className="form-control" value={bulkEndTime} onChange={(e) => setBulkEndTime(e.target.value)} />
-              </div>
-              <div>
-                <span className="form-label">定員</span>
-                <input type="number" className="form-control" value={bulkCapacity} onChange={(e) => { const v = Number(e.target.value); setBulkCapacity(v); setBulkReserveList((prev) => (prev.length > v ? prev.slice(0, v) : prev)); }} min={1} />
-              </div>
-            </div>
-            <div style={{ marginBottom: "8px" }}>
-              <span className="form-label">曜日（開催する曜日をチェック）</span>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-                {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
-                  <label
-                    key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "3px",
-                      fontSize: "13px",
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      border: bulkWeekdays.includes(i) ? "2px solid #3b82f6" : "1px solid #d1d5db",
-                      backgroundColor: bulkWeekdays.includes(i) ? "#eff6ff" : "#fff",
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
-                  >
-                    <input type="checkbox" checked={bulkWeekdays.includes(i)} onChange={() => toggleWeekday(i)} style={{ display: "none" }} />
-                    {w}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="mb-2">
-              <span className="form-label d-block mb-1" style={{ fontSize: "15px" }}>担当スタッフ（何名でも可・作成する全イベントに同じスタッフを割り当て）</span>
-              {staff.length === 0 ? (
-                <span className="text-body-secondary" style={{ fontSize: "14px" }}>スタッフがいません。スタッフ管理タブで登録してください。</span>
-              ) : (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-                  {staff.map((s) => (
-                    <label key={s.id} className="d-flex align-items-center gap-2" style={{ fontSize: "16px", cursor: "pointer" }}>
+
+                  {/* 定員 */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">定員（人）</label>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      style={{ maxWidth: "100px" }}
+                      value={newCapacity}
+                      onChange={(e) => { const v = Number(e.target.value); setNewCapacity(v); setNewEventReserveList((prev) => (prev.length > v ? prev.slice(0, v) : prev)); }}
+                      min={1}
+                    />
+                  </div>
+
+                  {/* スタッフ */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">担当スタッフ</label>
+                    {staff.length === 0 ? (
+                      <p className="small text-body-secondary mb-0">スタッフがいません。スタッフ管理タブで登録してください。</p>
+                    ) : (
+                      <div className="d-flex flex-wrap gap-3">
+                        {staff.map((s) => (
+                          <label key={s.id} className="d-flex align-items-center gap-2 mb-0 small" style={{ cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              className="form-check-input mt-0"
+                              checked={newEventStaffIds.includes(s.id)}
+                              onChange={(e) => setNewEventStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id))}
+                            />
+                            {s.name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 作成と同時に予約 */}
+                  <div className="border-top pt-3 mb-3">
+                    <label className="d-flex align-items-center gap-2 mb-0 small" style={{ cursor: "pointer" }}>
                       <input
                         type="checkbox"
-                        className="form-check-input"
-                        style={{ width: "18px", height: "18px", marginTop: 0 }}
-                        checked={bulkCreateStaffIds.includes(s.id)}
-                        onChange={(e) => setBulkCreateStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id))}
+                        className="form-check-input mt-0"
+                        checked={newEventAlsoReserve}
+                        onChange={(e) => setNewEventAlsoReserve(e.target.checked)}
                       />
-                      {s.name}
+                      <span className="fw-medium">作成と同時に予約する</span>
                     </label>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
-              <div>
-                <span className="form-label">開始日</span>
-                <input type="date" className="form-control" value={bulkDateFrom} onChange={(e) => setBulkDateFrom(e.target.value)} />
-              </div>
-              <div>
-                <span className="form-label">終了日</span>
-                <input type="date" className="form-control" value={bulkDateTo} onChange={(e) => setBulkDateTo(e.target.value)} />
-              </div>
-              <div>
-                <span className="form-label">除外日（カンマ区切り）</span>
-                <input type="text" className="form-control" value={bulkExclude} onChange={(e) => setBulkExclude(e.target.value)} placeholder="2026-03-21, 2026-05-05" />
-              </div>
-              <button type="button" className="btn btn-success" onClick={handleBulkCreate}>まとめて作成</button>
-            </div>
-            <div className="mt-3 pt-3 border-top">
-              <label className="d-flex align-items-center gap-2 mb-2" style={{ fontSize: "13px" }}>
-                <input type="checkbox" checked={bulkAlsoReserve} onChange={(e) => setBulkAlsoReserve(e.target.checked)} />
-                作成と同時に予約する
-              </label>
-              {bulkAlsoReserve && (
-                <div className="mt-2">
-                  <span className="form-label d-block mb-1">予約するユーザー（定員 {bulkCapacity} 人まで）</span>
-                  {bulkReserveList.map((row, idx) => {
-                    const otherSelectedIds = new Set(
-                      bulkReserveList.map((r, i) => (i === idx ? null : r.userId)).filter((id): id is number => id !== "")
-                    );
-                    const isOpen = bulkReserveDropdownOpen === idx;
-                    const selectedUser = row.userId !== "" ? users.find((u) => u.id === row.userId) : null;
-                    const displayText = isOpen ? bulkReserveFilter : (selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : "");
-                    const filteredUsers = users.filter(
-                      (u) =>
-                        !bulkReserveFilter.trim() ||
-                        u.name.toLowerCase().includes(bulkReserveFilter.toLowerCase()) ||
-                        (u.phone ?? "").includes(bulkReserveFilter)
-                    );
-                    return (
-                      <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 120px 100px auto", gap: "8px", alignItems: "end", marginBottom: "8px" }}>
-                        <div style={{ position: "relative" }}>
-                          <span className="form-label">ユーザー</span>
-                          <div style={{ display: "flex", alignItems: "center", border: "1px solid #dee2e6", borderRadius: "6px", backgroundColor: "#fff", minHeight: "38px" }}>
-                            <input
-                              type="text"
-                              className="form-control border-0"
-                              style={{ flex: 1, minWidth: 0 }}
-                              value={displayText}
-                              placeholder="ユーザーを選択"
-                              onChange={(e) => { setBulkReserveFilter(e.target.value); if (!isOpen) setBulkReserveDropdownOpen(idx); }}
-                              onFocus={() => { setBulkReserveDropdownOpen(idx); setBulkReserveFilter(selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : ""); }}
-                              onBlur={() => setTimeout(() => setBulkReserveDropdownOpen(null), 150)}
-                            />
-                            <span style={{ padding: "0 8px", color: "#6c757d", pointerEvents: "none" }}>▼</span>
-                          </div>
-                          {isOpen && (
-                            <ul className="list-unstyled mb-0" style={{ position: "absolute", left: 0, right: 0, top: "100%", marginTop: "2px", maxHeight: "200px", overflowY: "auto", border: "1px solid #dee2e6", borderRadius: "6px", backgroundColor: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10, padding: "4px 0" }}>
-                              {selectedUser && (
-                                <li
-                                  onMouseDown={(e) => { e.preventDefault(); setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, userId: "" } : r))); setBulkReserveDropdownOpen(null); setBulkReserveFilter(""); }}
-                                  style={{ padding: "8px 12px", cursor: "pointer", color: "#6c757d", fontSize: "13px", borderBottom: "1px solid #eee" }}
-                                >
-                                  選択を解除
-                                </li>
+                    {newEventAlsoReserve && (
+                      <div className="mt-3">
+                        <p className="small text-body-secondary mb-2">予約するユーザー（定員 {newCapacity} 人まで）</p>
+                        {newEventReserveList.map((row, idx) => {
+                          const otherSelectedIds = new Set(
+                            newEventReserveList.map((r, i) => (i === idx ? null : r.userId)).filter((id): id is number => id !== "")
+                          );
+                          const isOpen = openReserveUserDropdown === idx;
+                          const selectedUser = row.userId !== "" ? users.find((u) => u.id === row.userId) : null;
+                          const displayText = isOpen ? reserveUserFilter : (selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : "");
+                          const filteredUsers = users.filter(
+                            (u) =>
+                              !reserveUserFilter.trim() ||
+                              u.name.toLowerCase().includes(reserveUserFilter.toLowerCase()) ||
+                              (u.phone ?? "").includes(reserveUserFilter)
+                          );
+                          return (
+                            <div key={idx} className="d-flex gap-2 align-items-end mb-2 flex-wrap">
+                              <div style={{ position: "relative", flex: "1 1 160px", minWidth: 0 }}>
+                                <label className="form-label small mb-1">ユーザー</label>
+                                <div className="d-flex align-items-center border rounded" style={{ backgroundColor: "#fff", minHeight: "31px" }}>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm border-0 shadow-none"
+                                    style={{ flex: 1, minWidth: 0 }}
+                                    value={displayText}
+                                    placeholder="名前・電話で検索"
+                                    onChange={(e) => { setReserveUserFilter(e.target.value); if (!isOpen) setOpenReserveUserDropdown(idx); }}
+                                    onFocus={() => { setOpenReserveUserDropdown(idx); setReserveUserFilter(selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : ""); }}
+                                    onBlur={() => setTimeout(() => setOpenReserveUserDropdown(null), 150)}
+                                  />
+                                  <span className="px-2 text-body-secondary small" style={{ pointerEvents: "none" }}>▼</span>
+                                </div>
+                                {isOpen && (
+                                  <ul className="list-unstyled mb-0 position-absolute w-100 border rounded shadow-sm" style={{ top: "100%", marginTop: "2px", maxHeight: "200px", overflowY: "auto", backgroundColor: "#fff", zIndex: 10, padding: "4px 0" }}>
+                                    {selectedUser && (
+                                      <li onMouseDown={(e) => { e.preventDefault(); setNewEventReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, userId: "" } : r))); setOpenReserveUserDropdown(null); setReserveUserFilter(""); }} className="px-3 py-2 small text-body-secondary" style={{ cursor: "pointer", borderBottom: "1px solid #eee" }}>
+                                        選択を解除
+                                      </li>
+                                    )}
+                                    {filteredUsers.length === 0 ? (
+                                      <li className="px-3 py-2 small text-body-secondary">該当なし</li>
+                                    ) : (
+                                      filteredUsers.map((u) => {
+                                        const disabled = otherSelectedIds.has(u.id);
+                                        return (
+                                          <li key={u.id} onMouseDown={(e) => { e.preventDefault(); if (disabled) return; setNewEventReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, userId: u.id } : r))); setOpenReserveUserDropdown(null); setReserveUserFilter(""); }} className="px-3 py-2 small" style={{ cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1, backgroundColor: "transparent" }}>
+                                            {u.name}{u.phone ? ` (${u.phone})` : ""}{disabled ? " — 選択済み" : ""}
+                                          </li>
+                                        );
+                                      })
+                                    )}
+                                  </ul>
+                                )}
+                              </div>
+                              <div style={{ flex: "0 0 100px" }}>
+                                <label className="form-label small mb-1">種別</label>
+                                <select className="form-select form-select-sm" value={row.type} onChange={(e) => setNewEventReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, type: e.target.value as "normal" | "makeup" } : r)))}>
+                                  <option value="normal">通常</option>
+                                  <option value="makeup">振替</option>
+                                </select>
+                              </div>
+                              {row.type === "makeup" && (
+                                <div style={{ flex: "0 0 90px" }}>
+                                  <label className="form-label small mb-1">権利ID</label>
+                                  <input type="number" className="form-control form-control-sm" value={row.creditId === "" ? "" : row.creditId} onChange={(e) => setNewEventReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, creditId: Number(e.target.value) || "" } : r)))} />
+                                </div>
                               )}
-                              {filteredUsers.length === 0 ? (
-                                <li style={{ padding: "8px 12px", color: "#6c757d", fontSize: "14px" }}>該当なし</li>
-                              ) : (
-                                filteredUsers.map((u) => {
-                                  const disabled = otherSelectedIds.has(u.id);
-                                  return (
-                                    <li
-                                      key={u.id}
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        if (disabled) return;
-                                        setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, userId: u.id } : r)));
-                                        setBulkReserveDropdownOpen(null);
-                                        setBulkReserveFilter("");
-                                      }}
-                                      style={{ padding: "8px 12px", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1, color: disabled ? "#adb5bd" : "#212529", backgroundColor: disabled ? "#f8f9fa" : "transparent", fontSize: "14px" }}
-                                    >
-                                      {u.name}{u.phone ? ` (${u.phone})` : ""}{disabled ? " — 他で選択済み" : ""}
-                                    </li>
-                                  );
-                                })
+                              {newEventReserveList.length > 1 && (
+                                <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setNewEventReserveList((prev) => prev.filter((_, i) => i !== idx))}>削除</button>
                               )}
-                            </ul>
-                          )}
-                        </div>
-                        <div>
-                          <span className="form-label">種別</span>
-                          <select
-                            className="form-select"
-                            value={row.type}
-                            onChange={(e) => setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, type: e.target.value as "normal" | "makeup" } : r)))}
-                          >
-                            <option value="normal">通常</option>
-                            <option value="makeup">振替</option>
-                          </select>
-                        </div>
-                        {row.type === "makeup" ? (
-                          <div>
-                            <span className="form-label">振替権利ID</span>
-                            <input
-                              type="number"
-                              className="form-control"
-                              value={row.creditId === "" ? "" : row.creditId}
-                              onChange={(e) => setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, creditId: Number(e.target.value) || "" } : r)))}
-                            />
-                          </div>
-                        ) : (
-                          <div />
+                            </div>
+                          );
+                        })}
+                        {newEventReserveList.length < newCapacity && (
+                          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setNewEventReserveList((prev) => [...prev, { userId: "", type: "normal", creditId: "" }])}>
+                            ＋もう1人追加
+                          </button>
                         )}
-                        <div>
-                          {bulkReserveList.length > 1 ? (
-                            <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setBulkReserveList((prev) => prev.filter((_, i) => i !== idx))}>削除</button>
-                          ) : null}
-                        </div>
                       </div>
-                    );
-                  })}
-                  {bulkReserveList.length < bulkCapacity && (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => setBulkReserveList((prev) => [...prev, { userId: "", type: "normal", creditId: "" }])}
-                    >
-                      ＋もう1人追加
+                    )}
+                  </div>
+
+                  {/* Submit */}
+                  <div className="d-flex justify-content-end pt-2 border-top">
+                    <button type="button" className="btn btn-primary btn-sm px-4" onClick={handleCreateEvent}>
+                      作成する
                     </button>
-                  )}
-                </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* クラス種別 */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">クラス種別</label>
+                    <select className="form-select form-select-sm" value={bulkClassType} onChange={(e) => setBulkClassType(Number(e.target.value) || "")}>
+                      <option value="">選択してください</option>
+                      {classTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* 時刻・定員 */}
+                  <div className="row g-3 mb-3">
+                    <div className="col-4">
+                      <label className="form-label small fw-medium">開始時刻</label>
+                      <input type="time" className="form-control form-control-sm" value={bulkStartTime} onChange={(e) => setBulkStartTime(e.target.value)} />
+                    </div>
+                    <div className="col-4">
+                      <label className="form-label small fw-medium">終了時刻</label>
+                      <input type="time" className="form-control form-control-sm" value={bulkEndTime} onChange={(e) => setBulkEndTime(e.target.value)} />
+                    </div>
+                    <div className="col-4">
+                      <label className="form-label small fw-medium">定員（人）</label>
+                      <input type="number" className="form-control form-control-sm" value={bulkCapacity} onChange={(e) => { const v = Number(e.target.value); setBulkCapacity(v); setBulkReserveList((prev) => (prev.length > v ? prev.slice(0, v) : prev)); }} min={1} />
+                    </div>
+                  </div>
+
+                  {/* 曜日 */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">開催曜日</label>
+                    <div className="d-flex gap-1 flex-wrap mt-1">
+                      {["日", "月", "火", "水", "木", "金", "土"].map((w, i) => (
+                        <label
+                          key={i}
+                          className="d-flex align-items-center justify-content-center small"
+                          style={{
+                            padding: "5px 10px",
+                            borderRadius: "6px",
+                            border: bulkWeekdays.includes(i) ? "2px solid #0d6efd" : "1px solid #dee2e6",
+                            backgroundColor: bulkWeekdays.includes(i) ? "#e7f1ff" : "#fff",
+                            color: bulkWeekdays.includes(i) ? "#0a58ca" : "#495057",
+                            fontWeight: bulkWeekdays.includes(i) ? 600 : 400,
+                            cursor: "pointer",
+                            userSelect: "none",
+                            minWidth: "36px",
+                          }}
+                        >
+                          <input type="checkbox" checked={bulkWeekdays.includes(i)} onChange={() => toggleWeekday(i)} style={{ display: "none" }} />
+                          {w}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* スタッフ */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">担当スタッフ<span className="text-body-secondary fw-normal ms-1">（全イベントに同じスタッフを割り当て）</span></label>
+                    {staff.length === 0 ? (
+                      <p className="small text-body-secondary mb-0">スタッフがいません。スタッフ管理タブで登録してください。</p>
+                    ) : (
+                      <div className="d-flex flex-wrap gap-3">
+                        {staff.map((s) => (
+                          <label key={s.id} className="d-flex align-items-center gap-2 mb-0 small" style={{ cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              className="form-check-input mt-0"
+                              checked={bulkCreateStaffIds.includes(s.id)}
+                              onChange={(e) => setBulkCreateStaffIds((prev) => e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id))}
+                            />
+                            {s.name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 期間 */}
+                  <div className="row g-3 mb-3">
+                    <div className="col-4">
+                      <label className="form-label small fw-medium">開始日</label>
+                      <input type="date" className="form-control form-control-sm" value={bulkDateFrom} onChange={(e) => setBulkDateFrom(e.target.value)} />
+                    </div>
+                    <div className="col-4">
+                      <label className="form-label small fw-medium">終了日</label>
+                      <input type="date" className="form-control form-control-sm" value={bulkDateTo} onChange={(e) => setBulkDateTo(e.target.value)} />
+                    </div>
+                    <div className="col-4">
+                      <label className="form-label small fw-medium">除外日</label>
+                      <input type="text" className="form-control form-control-sm" value={bulkExclude} onChange={(e) => setBulkExclude(e.target.value)} placeholder="2026-03-21, 05-05" />
+                    </div>
+                  </div>
+
+                  {/* 作成と同時に予約 */}
+                  <div className="border-top pt-3 mb-3">
+                    <label className="d-flex align-items-center gap-2 mb-0 small" style={{ cursor: "pointer" }}>
+                      <input type="checkbox" className="form-check-input mt-0" checked={bulkAlsoReserve} onChange={(e) => setBulkAlsoReserve(e.target.checked)} />
+                      <span className="fw-medium">作成と同時に予約する</span>
+                    </label>
+                    {bulkAlsoReserve && (
+                      <div className="mt-3">
+                        <p className="small text-body-secondary mb-2">予約するユーザー（定員 {bulkCapacity} 人まで）</p>
+                        {bulkReserveList.map((row, idx) => {
+                          const otherSelectedIds = new Set(
+                            bulkReserveList.map((r, i) => (i === idx ? null : r.userId)).filter((id): id is number => id !== "")
+                          );
+                          const isOpen = bulkReserveDropdownOpen === idx;
+                          const selectedUser = row.userId !== "" ? users.find((u) => u.id === row.userId) : null;
+                          const displayText = isOpen ? bulkReserveFilter : (selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : "");
+                          const filteredUsers = users.filter(
+                            (u) =>
+                              !bulkReserveFilter.trim() ||
+                              u.name.toLowerCase().includes(bulkReserveFilter.toLowerCase()) ||
+                              (u.phone ?? "").includes(bulkReserveFilter)
+                          );
+                          return (
+                            <div key={idx} className="d-flex gap-2 align-items-end mb-2 flex-wrap">
+                              <div style={{ position: "relative", flex: "1 1 160px", minWidth: 0 }}>
+                                <label className="form-label small mb-1">ユーザー</label>
+                                <div className="d-flex align-items-center border rounded" style={{ backgroundColor: "#fff", minHeight: "31px" }}>
+                                  <input
+                                    type="text"
+                                    className="form-control form-control-sm border-0 shadow-none"
+                                    style={{ flex: 1, minWidth: 0 }}
+                                    value={displayText}
+                                    placeholder="名前・電話で検索"
+                                    onChange={(e) => { setBulkReserveFilter(e.target.value); if (!isOpen) setBulkReserveDropdownOpen(idx); }}
+                                    onFocus={() => { setBulkReserveDropdownOpen(idx); setBulkReserveFilter(selectedUser ? `${selectedUser.name}${selectedUser.phone ? ` (${selectedUser.phone})` : ""}` : ""); }}
+                                    onBlur={() => setTimeout(() => setBulkReserveDropdownOpen(null), 150)}
+                                  />
+                                  <span className="px-2 text-body-secondary small" style={{ pointerEvents: "none" }}>▼</span>
+                                </div>
+                                {isOpen && (
+                                  <ul className="list-unstyled mb-0 position-absolute w-100 border rounded shadow-sm" style={{ top: "100%", marginTop: "2px", maxHeight: "200px", overflowY: "auto", backgroundColor: "#fff", zIndex: 10, padding: "4px 0" }}>
+                                    {selectedUser && (
+                                      <li onMouseDown={(e) => { e.preventDefault(); setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, userId: "" } : r))); setBulkReserveDropdownOpen(null); setBulkReserveFilter(""); }} className="px-3 py-2 small text-body-secondary" style={{ cursor: "pointer", borderBottom: "1px solid #eee" }}>
+                                        選択を解除
+                                      </li>
+                                    )}
+                                    {filteredUsers.length === 0 ? (
+                                      <li className="px-3 py-2 small text-body-secondary">該当なし</li>
+                                    ) : (
+                                      filteredUsers.map((u) => {
+                                        const disabled = otherSelectedIds.has(u.id);
+                                        return (
+                                          <li key={u.id} onMouseDown={(e) => { e.preventDefault(); if (disabled) return; setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, userId: u.id } : r))); setBulkReserveDropdownOpen(null); setBulkReserveFilter(""); }} className="px-3 py-2 small" style={{ cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1 }}>
+                                            {u.name}{u.phone ? ` (${u.phone})` : ""}{disabled ? " — 選択済み" : ""}
+                                          </li>
+                                        );
+                                      })
+                                    )}
+                                  </ul>
+                                )}
+                              </div>
+                              <div style={{ flex: "0 0 100px" }}>
+                                <label className="form-label small mb-1">種別</label>
+                                <select className="form-select form-select-sm" value={row.type} onChange={(e) => setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, type: e.target.value as "normal" | "makeup" } : r)))}>
+                                  <option value="normal">通常</option>
+                                  <option value="makeup">振替</option>
+                                </select>
+                              </div>
+                              {row.type === "makeup" && (
+                                <div style={{ flex: "0 0 90px" }}>
+                                  <label className="form-label small mb-1">権利ID</label>
+                                  <input type="number" className="form-control form-control-sm" value={row.creditId === "" ? "" : row.creditId} onChange={(e) => setBulkReserveList((prev) => prev.map((r, i) => (i === idx ? { ...r, creditId: Number(e.target.value) || "" } : r)))} />
+                                </div>
+                              )}
+                              {bulkReserveList.length > 1 && (
+                                <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setBulkReserveList((prev) => prev.filter((_, i) => i !== idx))}>削除</button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {bulkReserveList.length < bulkCapacity && (
+                          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setBulkReserveList((prev) => [...prev, { userId: "", type: "normal", creditId: "" }])}>
+                            ＋もう1人追加
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Submit */}
+                  <div className="d-flex justify-content-end pt-2 border-top">
+                    <button type="button" className="btn btn-primary btn-sm px-4" onClick={handleBulkCreate}>
+                      まとめて作成
+                    </button>
+                  </div>
+                </>
               )}
-            </div>
-          </>
-        )}
             </div>
           </div>
         </div>

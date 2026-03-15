@@ -66,92 +66,100 @@ function AdminLayoutInner({
         <div className={styles.adminSidebarHeader}>
           <span className={styles.adminSidebarTitle}>管理画面</span>
         </div>
-        <nav className={`nav flex-column ${styles.adminSidebarNav}`}>
+
+        <nav className={styles.adminSidebarNav}>
+          {/* 会員管理 */}
           <Link
             href={ROUTES.ADMIN_MEMBERS}
-            className={`nav-link rounded ${isMembers ? "active bg-primary text-white" : "text-secondary"}`}
+            className={isMembers ? styles.adminSidebarLinkActive : styles.adminSidebarLink}
           >
             会員管理
           </Link>
+
+          {/* 予約システム（サブメニュー展開） */}
           {isReservations ? (
             <>
-              <div className="small fw-semibold text-primary px-2 py-1 mt-2">予約システム</div>
+              <span className={styles.adminSidebarParent}>予約システム</span>
               {RESERVATION_TABS.map(({ key, label }) => (
                 <Link
                   key={key}
                   href={key === "classTypes" ? ROUTES.ADMIN_RESERVATIONS : `${ROUTES.ADMIN_RESERVATIONS}?tab=${key}`}
-                  className={`nav-link rounded ps-3 ${activeTab === key ? "active bg-primary text-white" : "text-secondary"}`}
+                  className={activeTab === key ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
                 >
                   {label}
                 </Link>
               ))}
             </>
           ) : (
-            <Link
-              href={ROUTES.ADMIN_RESERVATIONS}
-              className="nav-link rounded text-secondary"
-            >
+            <Link href={ROUTES.ADMIN_RESERVATIONS} className={styles.adminSidebarLink}>
               予約システム
             </Link>
           )}
-          <hr className="my-2" />
+
+          <div className={styles.adminSidebarDivider} />
+
+          {/* 設定（サブメニュー展開） */}
           {isSettings ? (
             <>
-              <div className="small fw-semibold text-primary px-2 py-1 mt-2">設定</div>
+              <span className={styles.adminSidebarParent}>設定</span>
               <Link
                 href={ROUTES.ADMIN_SETTINGS}
-                className={`nav-link rounded ps-3 ${pathname === ROUTES.ADMIN_SETTINGS ? "active bg-primary text-white" : "text-secondary"}`}
+                className={pathname === ROUTES.ADMIN_SETTINGS ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
               >
-                設定
+                設定メニュー
               </Link>
               <Link
                 href={ROUTES.ADMIN_SETTINGS_PASSWORD}
-                className={`nav-link rounded ps-3 ${pathname === ROUTES.ADMIN_SETTINGS_PASSWORD ? "active bg-primary text-white" : "text-secondary"}`}
+                className={pathname === ROUTES.ADMIN_SETTINGS_PASSWORD ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
               >
                 パスワードの変更
               </Link>
               <Link
                 href={ROUTES.ADMIN_SETTINGS_CORPORATION}
-                className={`nav-link rounded ps-3 ${pathname === ROUTES.ADMIN_SETTINGS_CORPORATION ? "active bg-primary text-white" : "text-secondary"}`}
+                className={pathname === ROUTES.ADMIN_SETTINGS_CORPORATION ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
               >
                 法人名の変更
               </Link>
             </>
           ) : (
-            <Link href={ROUTES.ADMIN_SETTINGS} className="nav-link rounded text-secondary">
+            <Link href={ROUTES.ADMIN_SETTINGS} className={styles.adminSidebarLink}>
               設定
             </Link>
           )}
+
           <Link
             href={ROUTES.ADMIN_STORE_SETTINGS}
-            className={`nav-link rounded ${isStoreSettings ? "active bg-primary text-white" : "text-secondary"}`}
+            className={isStoreSettings ? styles.adminSidebarLinkActive : styles.adminSidebarLink}
           >
             店舗設定
           </Link>
+
           <Link
             href={ROUTES.ADMIN_REPORTS}
-            className={`nav-link rounded ${isReports ? "active bg-primary text-white" : "text-secondary"}`}
+            className={isReports ? styles.adminSidebarLinkActive : styles.adminSidebarLink}
           >
             レポート
           </Link>
+
           <Link
             href={ROUTES.ADMIN_AUDIT_LOGS}
-            className={`nav-link rounded ${isAuditLogs ? "active bg-primary text-white" : "text-secondary"}`}
+            className={isAuditLogs ? styles.adminSidebarLinkActive : styles.adminSidebarLink}
           >
             操作ログ
           </Link>
-          <Link href={ROUTES.HOME} className="nav-link rounded text-secondary">
-            カレンダーに戻る
+        </nav>
+
+        {/* フッター：カレンダーへ戻る・ログアウト */}
+        <div className={styles.adminSidebarFooter}>
+          <Link href={ROUTES.HOME} className={styles.adminSidebarFooterLink}>
+            ← カレンダーに戻る
           </Link>
-          <button
-            type="button"
-            className="nav-link rounded text-secondary text-start border-0 bg-transparent"
-            onClick={handleLogout}
-          >
+          <button type="button" className={styles.adminSidebarLogout} onClick={handleLogout}>
             ログアウト
           </button>
-        </nav>
+        </div>
       </aside>
+
       <main className={styles.adminMain}>
         <div className={styles.adminMainInner}>
           {children}

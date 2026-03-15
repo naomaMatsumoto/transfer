@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
 import { adminGet, adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { useFlash } from "@/app/lib/useFlash";
+import { FlashToast } from "@/app/lib/FlashToast";
 import {
   type Member,
   stageOptions,
@@ -13,6 +14,7 @@ import {
   AddMemberModal,
   EditMemberModal,
 } from "./_components/MemberModals";
+import styles from "../admin.module.scss";
 const MEMBERS_PER_PAGE = 50;
 
 export default function AdminMembersPage() {
@@ -227,18 +229,8 @@ export default function AdminMembersPage() {
 
   return (
     <>
-      <h1 className="h3 mb-4">会員管理</h1>
-
-      {msg && (
-        <div className={`alert alert-success alert-dismissible fade show mb-3 ${msgExiting ? "fade" : ""}`} role="alert">
-          {msg}
-        </div>
-      )}
-      {err && (
-        <div className={`alert alert-danger alert-dismissible fade show mb-3 ${errExiting ? "fade" : ""}`} role="alert">
-          {err}
-        </div>
-      )}
+      <FlashToast msg={msg} err={err} msgExiting={msgExiting} errExiting={errExiting} />
+      <h1 className={styles.settingsPageTitle}>会員管理</h1>
 
       <AddMemberModal
         open={showAddModal}
