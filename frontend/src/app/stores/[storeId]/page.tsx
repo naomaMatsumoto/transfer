@@ -81,18 +81,10 @@ export default function StoreCalendarPage() {
 
   useEffect(() => {
     if (!storeId || !Number.isInteger(storeIdNum) || storeIdNum <= 0) return;
-    const loadStores = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/stores`);
-        if (!res.ok) return;
-        const list = (await res.json()) as StoreRow[];
-        const store = list.find((x) => x.id === storeIdNum);
-        setStoreName(store?.name ?? null);
-      } catch {
-        setStoreName(null);
-      }
-    };
-    void loadStores();
+    fetch(`${API_BASE}/stores/${storeIdNum}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: StoreRow | null) => setStoreName(data?.name ?? null))
+      .catch(() => setStoreName(null));
   }, [storeId, storeIdNum]);
 
   const toDateStr = (d: Date) => {
@@ -177,15 +169,19 @@ export default function StoreCalendarPage() {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(getApiErrorMessage(data?.error));
       }
-      const fromStr = toDateStr(gridStart);
-      const toStr = toDateStr(gridEnd);
-      const eventsPromise = fetch(`${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${effectiveUserId}&storeId=${storeIdNum}`);
-      const creditsPromise = isLoggedIn
-        ? fetchWithCredentials(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`)
-        : Promise.resolve({ ok: false } as Response);
-      const [eventsRes, creditsRes] = await Promise.all([eventsPromise, creditsPromise]);
-      setEvents(await (eventsRes as Response).json());
-      if (creditsRes.ok) setCredits(await (creditsRes as Response).json());
+      // 楽観的更新：APIの再取得なしにローカル状態を直接更新
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === ev.id
+            ? { ...e, reserved_count: e.reserved_count + 1, is_reserved_by_user: 1 }
+            : e
+        )
+      );
+      if (type === "makeup" && makeupCreditId != null) {
+        setCredits((prev) =>
+          prev.map((c) => (c.id === makeupCreditId ? { ...c, status: "consumed" as const } : c))
+        );
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "予約処理中にエラーが発生しました");
     }
@@ -307,14 +303,15 @@ export default function StoreCalendarPage() {
             </div>
           ))}
 
-          {dateList.map((date) => {
+          {(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return dateList.map((date) => {
             const list = eventsByDate.get(date) ?? [];
             const d = new Date(date);
             const dayOfWeek = d.getDay();
             const weekday = "日月火水木金土"[dayOfWeek];
             const isCurrentMonth = d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear();
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
             const isToday =
               d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
             const isPast = d < today;
@@ -422,7 +419,8 @@ export default function StoreCalendarPage() {
                 )}
               </div>
             );
-          })}
+            });
+          })()}
         </div>
       </section>
     </div>

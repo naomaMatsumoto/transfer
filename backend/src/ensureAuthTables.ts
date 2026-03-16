@@ -3,6 +3,17 @@ import bcrypt from "bcrypt";
 import { pool } from "./db";
 import logger from "./logger";
 
+async function ensureIndex(table: string, indexName: string, columns: string): Promise<void> {
+  const [rows] = await pool.query(
+    "SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1",
+    [table, indexName]
+  );
+  if ((rows as unknown[]).length === 0) {
+    await pool.query(`ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (${columns})`);
+    logger.info(`Created index ${indexName} on ${table}`);
+  }
+}
+
 export async function ensureAuthTables(): Promise<void> {
   try {
     await pool.query(`
@@ -246,6 +257,19 @@ export async function ensureAuthTables(): Promise<void> {
         CONSTRAINT fk_event_staff_staff FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
       )
     `);
+    // 既存DBへのインデックス追加（新規インストールは init.sql で対応済み）
+    await ensureIndex("stores", "idx_stores_corporation_id", "corporation_id");
+    await ensureIndex("users", "idx_users_store_id", "store_id");
+    await ensureIndex("events", "idx_events_starts_at", "starts_at");
+    await ensureIndex("events", "idx_events_class_type_id", "class_type_id");
+    await ensureIndex("events", "idx_events_status", "status");
+    await ensureIndex("makeup_credits", "idx_makeup_credits_user_id", "user_id");
+    await ensureIndex("makeup_credits", "idx_makeup_credits_status", "status");
+    await ensureIndex("makeup_credits", "idx_makeup_credits_source_event_id", "source_event_id");
+    await ensureIndex("reservations", "idx_reservations_event_status", "event_id, status");
+    await ensureIndex("reservations", "idx_reservations_user_id", "user_id");
+    await ensureIndex("event_staff", "idx_event_staff_staff_id", "staff_id");
+
     logger.info("Auth tables ready");
   } catch (e) {
     logger.error("Failed to ensure auth tables: " + (e instanceof Error ? e.message : String(e)));

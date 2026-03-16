@@ -36,36 +36,38 @@ export default async function listCorporations(
 
   const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
+  // メインリスト：相関サブクエリ → LEFT JOIN GROUP BY に変更
   const [rows] = await pool.query(
     `SELECT c.id, c.code, c.organization_type, c.name, c.status, c.created_at, c.deleted_at,
-       (SELECT COUNT(*) FROM stores s WHERE s.corporation_id = c.id) AS store_count,
-       (SELECT COUNT(*) FROM accounts a WHERE a.corporation_id = c.id) AS account_count,
-       (SELECT COUNT(*) FROM users u
-          JOIN stores s2 ON u.store_id = s2.id
-          WHERE s2.corporation_id = c.id) AS member_count
+       COUNT(DISTINCT s.id) AS store_count,
+       COUNT(DISTINCT a.id) AS account_count,
+       COUNT(DISTINCT u.id) AS member_count
      FROM corporations c
+     LEFT JOIN stores s   ON s.corporation_id = c.id
+     LEFT JOIN accounts a ON a.corporation_id = c.id
+     LEFT JOIN users u    ON u.store_id = s.id
      ${where}
+     GROUP BY c.id
      ORDER BY c.deleted_at IS NOT NULL, c.id ASC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset],
   );
 
-  const [countRows] = await pool.query(
-    `SELECT COUNT(*) AS total FROM corporations c ${where}`,
-    params,
-  );
+  // total と summary を並列で取得
+  const [[countRows], [summaryRows]] = await Promise.all([
+    pool.query(`SELECT COUNT(*) AS total FROM corporations c ${where}`, params),
+    pool.query(`
+      SELECT
+        COUNT(CASE WHEN deleted_at IS NULL THEN 1 END) AS total_active,
+        COUNT(CASE WHEN deleted_at IS NULL AND status = 'pending' THEN 1 END) AS pending,
+        COUNT(CASE WHEN deleted_at IS NULL AND status = 'email_sent' THEN 1 END) AS email_sent,
+        COUNT(CASE WHEN deleted_at IS NULL AND status = 'active' THEN 1 END) AS active,
+        (SELECT COUNT(*) FROM stores)   AS total_stores,
+        (SELECT COUNT(*) FROM accounts) AS total_accounts
+      FROM corporations
+    `),
+  ]);
   const total = (countRows as { total: number }[])[0].total;
-
-  const [summaryRows] = await pool.query(`
-    SELECT
-      COUNT(CASE WHEN deleted_at IS NULL THEN 1 END) AS total_active,
-      COUNT(CASE WHEN deleted_at IS NULL AND status = 'pending' THEN 1 END) AS pending,
-      COUNT(CASE WHEN deleted_at IS NULL AND status = 'email_sent' THEN 1 END) AS email_sent,
-      COUNT(CASE WHEN deleted_at IS NULL AND status = 'active' THEN 1 END) AS active,
-      (SELECT COUNT(*) FROM stores) AS total_stores,
-      (SELECT COUNT(*) FROM accounts) AS total_accounts
-    FROM corporations
-  `);
   const summary = (summaryRows as Record<string, unknown>[])[0];
 
   ok(res, { rows, total, summary });

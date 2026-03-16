@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
-import { checkCancelDeadline } from "../../lib/deadlineCheck";
+import { checkCancelDeadlineWithData, type StoreDeadline } from "../../lib/deadlineCheck";
 import { writeAuditLog } from "../../lib/auditLog";
 import { unauthorized, badRequest, notFound, ok } from "../../lib/respond";
 
@@ -23,12 +23,16 @@ export default async function cancelReservationByMember(
 
   const [rows] = await pool.query(
     `SELECT r.id, r.user_id, r.status, r.reservation_type, r.makeup_credit_id,
-            r.event_id, e.starts_at
-     FROM reservations r JOIN events e ON e.id = r.event_id
+            r.event_id, e.starts_at,
+            s.booking_deadline_days, s.cancel_deadline_hours
+     FROM reservations r
+     JOIN events e ON e.id = r.event_id
+     LEFT JOIN class_types ct ON ct.id = e.class_type_id
+     LEFT JOIN stores s ON s.id = ct.store_id
      WHERE r.id = ? AND r.user_id = ?`,
     [reservationId, memberId]
   );
-  const reservation = (rows as { id: number; user_id: number; status: string; reservation_type: string; makeup_credit_id: number | null; event_id: number; starts_at: Date }[])[0];
+  const reservation = (rows as { id: number; user_id: number; status: string; reservation_type: string; makeup_credit_id: number | null; event_id: number; starts_at: Date; booking_deadline_days: number | null; cancel_deadline_hours: number | null }[])[0];
   if (!reservation) {
     notFound(res, "RESERVATION_NOT_FOUND");
     return;
@@ -38,7 +42,7 @@ export default async function cancelReservationByMember(
     return;
   }
 
-  const cancelMsg = await checkCancelDeadline(reservation.event_id, new Date(reservation.starts_at));
+  const cancelMsg = checkCancelDeadlineWithData(reservation as StoreDeadline, new Date(reservation.starts_at));
   if (cancelMsg) {
     badRequest(res, "CANCEL_DEADLINE_PASSED", { message: cancelMsg });
     return;

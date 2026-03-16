@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
-import { checkBookingDeadline } from "../../lib/deadlineCheck";
+import { checkBookingDeadlineWithData, type StoreDeadline } from "../../lib/deadlineCheck";
 import { writeAuditLog } from "../../lib/auditLog";
 import type { InsertResult, RowDataPacket } from "../../types/db";
 import { badRequest, forbidden, notFound, created } from "../../lib/respond";
@@ -34,9 +34,13 @@ export default async function createReservation(
     await conn.beginTransaction();
     const [eventRows] = await conn.query(
       `SELECT e.id, e.capacity, e.status, e.starts_at, e.ends_at,
-        COALESCE(SUM(CASE WHEN r.status IN ('booked','attended') THEN 1 ELSE 0 END), 0) AS reserved_count
+        COALESCE(SUM(CASE WHEN r.status IN ('booked','attended') THEN 1 ELSE 0 END), 0) AS reserved_count,
+        s.booking_deadline_days, s.cancel_deadline_hours
        FROM events e
-       LEFT JOIN reservations r ON r.event_id = e.id WHERE e.id = ? GROUP BY e.id FOR UPDATE`,
+       LEFT JOIN reservations r ON r.event_id = e.id
+       LEFT JOIN class_types ct ON ct.id = e.class_type_id
+       LEFT JOIN stores s ON s.id = ct.store_id
+       WHERE e.id = ? GROUP BY e.id FOR UPDATE`,
       [eventId],
     );
     const event = (eventRows as RowDataPacket[])[0];
@@ -50,7 +54,7 @@ export default async function createReservation(
       badRequest(res, ERR.EVENT_NOT_BOOKABLE);
       return;
     }
-    const deadlineMsg = await checkBookingDeadline(eventId, new Date(event.starts_at));
+    const deadlineMsg = checkBookingDeadlineWithData(event as StoreDeadline, new Date(event.starts_at));
     if (deadlineMsg) {
       await conn.rollback();
       badRequest(res, "BOOKING_DEADLINE_PASSED", { message: deadlineMsg });

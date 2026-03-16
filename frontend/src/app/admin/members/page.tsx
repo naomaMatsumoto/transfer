@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getApiErrorMessage } from "@/app/lib/apiErrors";
 import { adminGet, adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { useFlash } from "@/app/lib/useFlash";
 import { FlashToast } from "@/app/lib/FlashToast";
 import { ConfirmModal } from "@/app/lib/ConfirmModal";
 import { useMemberForm, type MemberFormError } from "@/app/lib/useMemberForm";
-import { usePagination } from "@/app/lib/usePagination";
 import {
   type Member,
   stageOptions,
@@ -20,15 +19,29 @@ import styles from "../admin.module.scss";
 
 const MEMBERS_PER_PAGE = 50;
 
+type UsersResponse = { data: Member[]; total: number; page: number; limit: number };
+
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const { msg, err, msgExiting, errExiting, flash, flashErr } = useFlash();
 
-  const loadMembers = useCallback(async () => {
+  const [filterKeyword, setFilterKeyword] = useState("");
+  const [filterStage, setFilterStage] = useState<string>("");
+  // 入力中のキーワード（デバウンス前）
+  const [inputKeyword, setInputKeyword] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadMembers = useCallback(async (p: number, keyword: string, stage: string) => {
     try {
-      const r = await adminGet<Member[]>("/users");
+      const params = new URLSearchParams({ page: String(p), limit: String(MEMBERS_PER_PAGE) });
+      if (keyword) params.set("keyword", keyword);
+      if (stage) params.set("stage", stage);
+      const r = await adminGet<UsersResponse>(`/users?${params.toString()}`);
       if (r.ok && r.data) {
-        setMembers(r.data);
+        setMembers(r.data.data);
+        setTotal(r.data.total);
       } else {
         throw new Error("failed");
       }
@@ -39,8 +52,32 @@ export default function AdminMembersPage() {
   }, [flashErr]);
 
   useEffect(() => {
-    loadMembers();
-  }, [loadMembers]);
+    loadMembers(page, filterKeyword, filterStage);
+  }, [loadMembers, page, filterKeyword, filterStage]);
+
+  // キーワード入力をデバウンス（300ms）
+  const handleKeywordChange = (value: string) => {
+    setInputKeyword(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setPage(1);
+      setFilterKeyword(value);
+    }, 300);
+  };
+
+  const handleStageChange = (value: string) => {
+    setPage(1);
+    setFilterStage(value);
+  };
+
+  const handleClearFilter = () => {
+    setInputKeyword("");
+    setFilterKeyword("");
+    setFilterStage("");
+    setPage(1);
+  };
+
+  const reload = () => loadMembers(page, filterKeyword, filterStage);
 
   // フォーム状態（新規・編集）
   const { form: newForm, setForm: setNewForm, reset: resetNewForm } = useMemberForm();
@@ -51,35 +88,7 @@ export default function AdminMembersPage() {
   const [newFormError, setNewFormError] = useState<MemberFormError | null>(null);
   const [editFormError, setEditFormError] = useState<MemberFormError | null>(null);
 
-  // フィルター・ページネーション
-  const [filterKeyword, setFilterKeyword] = useState("");
-  const [filterStage, setFilterStage] = useState<string>("");
-
-  const filteredMembers = useMemo(() => {
-    let list = members;
-    const kw = filterKeyword.trim().toLowerCase();
-    if (kw) {
-      list = list.filter((m) => {
-        const name = (m.name ?? "").toLowerCase();
-        const furigana = (m.furigana ?? "").toLowerCase();
-        const email = (m.email ?? "").toLowerCase();
-        const address = (m.address ?? "").toLowerCase();
-        const phone = (m.phone ?? "").toLowerCase();
-        const course = (m.course_type ?? "").toLowerCase();
-        return name.includes(kw) || furigana.includes(kw) || email.includes(kw) || address.includes(kw) || phone.includes(kw) || course.includes(kw);
-      });
-    }
-    if (filterStage) {
-      list = list.filter((m) => (m.stage ?? "") === filterStage);
-    }
-    return list;
-  }, [members, filterKeyword, filterStage]);
-
-  const { page, setPage, totalPages, paginatedItems: paginatedMembers, total: totalFiltered } = usePagination(filteredMembers, MEMBERS_PER_PAGE);
-
-  useEffect(() => {
-    setPage(1);
-  }, [filterKeyword, filterStage, setPage]);
+  const totalPages = Math.ceil(total / MEMBERS_PER_PAGE);
 
   // CRUD ハンドラ
   const handleCreate = async () => {
@@ -117,7 +126,7 @@ export default function AdminMembersPage() {
       setShowAddModal(false);
       setNewFormError(null);
       resetNewForm();
-      loadMembers();
+      reload();
     } catch (e) {
       const isNetwork = e instanceof TypeError && e.message === "Failed to fetch";
       setNewFormError({
@@ -180,7 +189,7 @@ export default function AdminMembersPage() {
     flash(`会員 #${editId} を更新しました`);
     setEditId(null);
     setEditFormError(null);
-    loadMembers();
+    reload();
   };
 
   const confirmDelete = async () => {
@@ -193,7 +202,7 @@ export default function AdminMembersPage() {
       return;
     }
     flash(`会員 #${id} を削除しました`);
-    loadMembers();
+    reload();
   };
 
   return (
@@ -251,14 +260,14 @@ export default function AdminMembersPage() {
             className="form-control"
             style={{ maxWidth: "360px" }}
             placeholder="キーワード（名前・フリガナ・メール・住所・電話・コース）"
-            value={filterKeyword}
-            onChange={(e) => setFilterKeyword(e.target.value)}
+            value={inputKeyword}
+            onChange={(e) => handleKeywordChange(e.target.value)}
           />
           <select
             className="form-select"
             style={{ width: "auto", minWidth: "140px" }}
             value={filterStage}
-            onChange={(e) => setFilterStage(e.target.value)}
+            onChange={(e) => handleStageChange(e.target.value)}
           >
             <option value="">すべてのステータス</option>
             {stageOptions.map((o) => (
@@ -267,8 +276,8 @@ export default function AdminMembersPage() {
               </option>
             ))}
           </select>
-          {(filterKeyword.trim() || filterStage) && (
-            <button type="button" className="btn btn-secondary" onClick={() => { setFilterKeyword(""); setFilterStage(""); }}>
+          {(inputKeyword.trim() || filterStage) && (
+            <button type="button" className="btn btn-secondary" onClick={handleClearFilter}>
               クリア
             </button>
           )}
@@ -293,7 +302,7 @@ export default function AdminMembersPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedMembers.map((m) => (
+              {members.map((m) => (
                 <tr key={m.id}>
                   <td>{m.id}</td>
                   <td className="fw-semibold">{m.name}</td>
@@ -318,10 +327,10 @@ export default function AdminMembersPage() {
                   </td>
                 </tr>
               ))}
-              {filteredMembers.length === 0 && (
+              {members.length === 0 && (
                 <tr>
                   <td colSpan={10} className="text-center text-body-secondary py-4">
-                    {members.length === 0 ? "会員がありません" : "条件に一致する会員がありません"}
+                    {total === 0 ? "会員がありません" : "条件に一致する会員がありません"}
                   </td>
                 </tr>
               )}
@@ -330,10 +339,10 @@ export default function AdminMembersPage() {
         </div>
       </div>
 
-      {totalFiltered > 0 && (
+      {total > 0 && (
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 py-2">
           <span className="small text-body-secondary">
-            {(page - 1) * MEMBERS_PER_PAGE + 1}–{Math.min(page * MEMBERS_PER_PAGE, totalFiltered)} / {totalFiltered} 件
+            {(page - 1) * MEMBERS_PER_PAGE + 1}–{Math.min(page * MEMBERS_PER_PAGE, total)} / {total} 件
           </span>
           <div className="d-flex align-items-center gap-1">
             <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>前へ</button>

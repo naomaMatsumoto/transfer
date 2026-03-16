@@ -7,37 +7,65 @@ export default async function getStats(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const [summaryRows] = await pool.query(`
-    SELECT
-      (SELECT COUNT(*) FROM corporations WHERE deleted_at IS NULL) AS total_corporations,
-      (SELECT COUNT(*) FROM corporations WHERE status = 'pending' AND deleted_at IS NULL) AS pending_corporations,
-      (SELECT COUNT(*) FROM corporations WHERE status = 'email_sent' AND deleted_at IS NULL) AS email_sent_corporations,
-      (SELECT COUNT(*) FROM corporations WHERE status = 'active' AND deleted_at IS NULL) AS active_corporations,
-      (SELECT COUNT(*) FROM corporations WHERE status = 'suspended' AND deleted_at IS NULL) AS suspended_corporations,
-      (SELECT COUNT(*) FROM stores) AS total_stores,
-      (SELECT COUNT(*) FROM accounts) AS total_accounts,
-      (SELECT COUNT(*) FROM users) AS total_members,
-      (SELECT COUNT(*) FROM reservations) AS total_reservations,
-      (SELECT COUNT(*) FROM reservations WHERE status = 'booked') AS active_reservations,
-      (SELECT COUNT(*) FROM events) AS total_events
-  `);
-  const summary = (summaryRows as Record<string, unknown>[])[0];
+  // サマリーを並列で取得（11個の相関サブクエリ → 独立した並列クエリに分割）
+  const [
+    [corpRows],
+    [[storesRow]],
+    [[accountsRow]],
+    [[membersRow]],
+    [[reservationsRow]],
+    [[eventsRow]],
+  ] = await Promise.all([
+    pool.query("SELECT status, COUNT(*) AS cnt FROM corporations WHERE deleted_at IS NULL GROUP BY status"),
+    pool.query("SELECT COUNT(*) AS total FROM stores"),
+    pool.query("SELECT COUNT(*) AS total FROM accounts"),
+    pool.query("SELECT COUNT(*) AS total FROM users"),
+    pool.query("SELECT COUNT(*) AS total, SUM(status = 'booked') AS active FROM reservations"),
+    pool.query("SELECT COUNT(*) AS total FROM events"),
+  ]) as unknown as [
+    [{ status: string; cnt: number }[], unknown],
+    [{ total: number }[], unknown],
+    [{ total: number }[], unknown],
+    [{ total: number }[], unknown],
+    [{ total: number; active: number }[], unknown],
+    [{ total: number }[], unknown],
+  ];
 
+  const statusMap = Object.fromEntries(
+    (corpRows as { status: string; cnt: number }[]).map((r) => [r.status, Number(r.cnt)])
+  );
+  const totalCorps = Object.values(statusMap).reduce((s, n) => s + n, 0);
+  const summary = {
+    total_corporations: totalCorps,
+    pending_corporations: statusMap["pending"] ?? 0,
+    email_sent_corporations: statusMap["email_sent"] ?? 0,
+    active_corporations: statusMap["active"] ?? 0,
+    suspended_corporations: statusMap["suspended"] ?? 0,
+    total_stores: Number((storesRow as { total: number }).total),
+    total_accounts: Number((accountsRow as { total: number }).total),
+    total_members: Number((membersRow as { total: number }).total),
+    total_reservations: Number((reservationsRow as { total: number }).total),
+    active_reservations: Number((reservationsRow as { active: number }).active),
+    total_events: Number((eventsRow as { total: number }).total),
+  };
+
+  // 法人別集計：相関サブクエリ → LEFT JOIN GROUP BY に変更
   const [perCorp] = await pool.query(`
     SELECT
       c.id, c.code, c.name, c.status,
-      (SELECT COUNT(*) FROM stores s WHERE s.corporation_id = c.id) AS store_count,
-      (SELECT COUNT(*) FROM accounts a WHERE a.corporation_id = c.id) AS account_count,
-      (SELECT COUNT(*) FROM users u
-        JOIN stores s2 ON u.store_id = s2.id
-        WHERE s2.corporation_id = c.id) AS member_count,
-      (SELECT COUNT(*) FROM reservations r
-        JOIN events e ON r.event_id = e.id
-        JOIN class_types ct ON e.class_type_id = ct.id
-        JOIN stores s3 ON ct.store_id = s3.id
-        WHERE s3.corporation_id = c.id) AS reservation_count
+      COUNT(DISTINCT s.id)  AS store_count,
+      COUNT(DISTINCT a.id)  AS account_count,
+      COUNT(DISTINCT u.id)  AS member_count,
+      COUNT(DISTINCT r.id)  AS reservation_count
     FROM corporations c
+    LEFT JOIN stores s   ON s.corporation_id = c.id
+    LEFT JOIN accounts a ON a.corporation_id = c.id
+    LEFT JOIN users u    ON u.store_id = s.id
+    LEFT JOIN class_types ct ON ct.store_id = s.id
+    LEFT JOIN events e   ON e.class_type_id = ct.id
+    LEFT JOIN reservations r ON r.event_id = e.id
     WHERE c.deleted_at IS NULL
+    GROUP BY c.id, c.code, c.name, c.status
     ORDER BY c.name ASC
   `);
 

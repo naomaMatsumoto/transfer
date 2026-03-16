@@ -3,7 +3,6 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { syncEventStaff } from "../../../services/eventStaff";
 import { writeAuditLog } from "../../../lib/auditLog";
 
 export default async function createBulkEvents(
@@ -48,8 +47,9 @@ export default async function createBulkEvents(
     return;
   }
 
+  // 対象日付を先にすべて収集（DBアクセスなし）
   const excludeSet = new Set(excludeDates ?? []);
-  const createdEvents: { id: number; date: string }[] = [];
+  const eventRows: [string, string, string][] = []; // [dateStr, startsAt, endsAt]
 
   const cursor = new Date(dateFrom + "T00:00:00");
   const end = new Date(dateTo + "T00:00:00");
@@ -62,31 +62,73 @@ export default async function createBulkEvents(
     const dateStr = `${y}-${m}-${d}`;
 
     if (weekdays.includes(day) && !excludeSet.has(dateStr)) {
-      const startsAt = `${dateStr} ${startTime}:00`;
-      const endsAt = `${dateStr} ${endTime}:00`;
-
-      const [result] = await pool.query(
-        `INSERT INTO events (class_type_id, starts_at, ends_at, capacity, status)
-         VALUES (?, ?, ?, ?, 'scheduled')`,
-        [classTypeId, startsAt, endsAt, capacity ?? 6]
-      );
-      const eventId = (result as { insertId: number }).insertId;
-      createdEvents.push({ id: eventId, date: dateStr });
-
-      await syncEventStaff(pool, eventId, staffIds ?? [], storeIds);
+      eventRows.push([dateStr, `${dateStr} ${startTime}:00`, `${dateStr} ${endTime}:00`]);
     }
 
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  await writeAuditLog({
-    actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
-    action: "event.create_bulk",
-    targetType: "event",
-    targetId: null,
-    detail: { classTypeId, count: createdEvents.length },
-  });
+  if (eventRows.length === 0) {
+    created(res, { count: 0, events: [] });
+    return;
+  }
 
-  created(res, { count: createdEvents.length, events: createdEvents });
+  const cap = capacity ?? 6;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // events を一括 INSERT
+    const eventPlaceholders = eventRows.map(() => "(?, ?, ?, ?, 'scheduled')").join(", ");
+    const eventParams = eventRows.flatMap(([, s, e]) => [classTypeId, s, e, cap]);
+    const [result] = await conn.query(
+      `INSERT INTO events (class_type_id, starts_at, ends_at, capacity, status) VALUES ${eventPlaceholders}`,
+      eventParams
+    );
+    const firstId = (result as { insertId: number }).insertId;
+    const createdEvents = eventRows.map(([dateStr], i) => ({ id: firstId + i, date: dateStr }));
+
+    // event_staff を一括 INSERT（staffIds が指定されている場合）
+    const rawStaffIds = Array.isArray(staffIds)
+      ? [...new Set(staffIds.filter((id) => Number.isInteger(id) && (id as number) > 0) as number[])]
+      : [];
+
+    if (rawStaffIds.length > 0) {
+      const storePh = ph(storeIds);
+      const staffPh = ph(rawStaffIds);
+      const [validStaff] = await conn.query(
+        `SELECT id FROM staff WHERE id IN (${staffPh}) AND store_id IN (${storePh})`,
+        [...rawStaffIds, ...storeIds]
+      );
+      const confirmedIds = (validStaff as { id: number }[]).map((r) => r.id);
+
+      if (confirmedIds.length > 0) {
+        const pairs = createdEvents.flatMap((ev) => confirmedIds.map((staffId) => [ev.id, staffId]));
+        const staffPlaceholders = pairs.map(() => "(?, ?)").join(", ");
+        await conn.query(
+          `INSERT INTO event_staff (event_id, staff_id) VALUES ${staffPlaceholders}`,
+          pairs.flat()
+        );
+      }
+    }
+
+    await conn.commit();
+
+    await writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId ?? null,
+      action: "event.create_bulk",
+      targetType: "event",
+      targetId: null,
+      detail: { classTypeId, count: createdEvents.length },
+    });
+
+    created(res, { count: createdEvents.length, events: createdEvents });
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
 }

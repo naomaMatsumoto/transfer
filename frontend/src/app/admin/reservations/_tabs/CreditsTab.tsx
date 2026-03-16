@@ -5,8 +5,14 @@ import { extractApiError } from "@/app/lib/apiErrors";
 import { adminGet, adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import type { ClassType, User, AdminCredit } from "../types";
 
+const CREDITS_PER_PAGE = 50;
+
+type CreditsResponse = { data: AdminCredit[]; total: number; page: number; limit: number };
+
 export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes: ClassType[]; users: User[]; flash: (m: string) => void; flashErr: (m: string) => void }) {
   const [credits, setCredits] = useState<AdminCredit[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [filterUserId, setFilterUserId] = useState<number | "">("");
   const [filterStatus, setFilterStatus] = useState<string>("");
 
@@ -16,19 +22,32 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
   const [grantExpires, setGrantExpires] = useState("");
   const [grantNote, setGrantNote] = useState("");
 
-  const loadCredits = useCallback(async () => {
-    const params = new URLSearchParams();
+  const loadCredits = useCallback(async (p: number) => {
+    const params = new URLSearchParams({ page: String(p), limit: String(CREDITS_PER_PAGE) });
     if (filterUserId) params.set("userId", String(filterUserId));
     if (filterStatus) params.set("status", filterStatus);
     try {
-      const r = await adminGet<AdminCredit[]>(`/makeup-credits?${params.toString()}`);
-      setCredits(r.ok && Array.isArray(r.data) ? r.data : []);
+      const r = await adminGet<CreditsResponse>(`/makeup-credits?${params.toString()}`);
+      if (r.ok && r.data) {
+        setCredits(r.data.data);
+        setTotal(r.data.total);
+      } else {
+        setCredits([]);
+        setTotal(0);
+      }
     } catch { flashErr("振替権利読み込み失敗"); }
   }, [filterUserId, filterStatus, flashErr]);
 
   useEffect(() => {
-    loadCredits();
-  }, [loadCredits]);
+    loadCredits(page);
+  }, [loadCredits, page]);
+
+  const handleFilterSearch = () => {
+    setPage(1);
+    loadCredits(1);
+  };
+
+  const reload = () => loadCredits(page);
 
   const handleGrant = async () => {
     if (!grantUserId) { flashErr("ユーザーを選択してください"); return; }
@@ -45,7 +64,7 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
     }
     flash("振替権利を付与しました");
     setGrantUserId(""); setGrantClassType(""); setGrantExpires(""); setGrantNote("");
-    loadCredits();
+    reload();
   };
 
   const handleRevoke = async (id: number) => {
@@ -56,7 +75,7 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
       return;
     }
     flash(`振替権利 #${id} を取消しました`);
-    loadCredits();
+    reload();
   };
 
   const handleRestore = async (id: number) => {
@@ -66,7 +85,7 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
       return;
     }
     flash(`振替権利 #${id} を復活しました`);
-    loadCredits();
+    reload();
   };
 
   const handleUpdateExpiry = async (id: number, newExpiry: string) => {
@@ -76,8 +95,10 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
       return;
     }
     flash(`振替権利 #${id} の期限を変更しました`);
-    loadCredits();
+    reload();
   };
+
+  const totalPages = Math.ceil(total / CREDITS_PER_PAGE);
 
   return (
     <div>
@@ -123,7 +144,7 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
           <option value="consumed">consumed</option>
           <option value="revoked">revoked</option>
         </select>
-        <button type="button" className="btn btn-primary" onClick={loadCredits}>検索</button>
+        <button type="button" className="btn btn-primary" onClick={handleFilterSearch}>検索</button>
       </div>
 
       {/* 一覧 */}
@@ -184,6 +205,21 @@ export function CreditsTab({ classTypes, users, flash, flashErr }: { classTypes:
           </tbody>
         </table>
       </div>
+
+      {total > 0 && (
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 py-2">
+          <span className="small text-body-secondary">
+            {(page - 1) * CREDITS_PER_PAGE + 1}–{Math.min(page * CREDITS_PER_PAGE, total)} / {total} 件
+          </span>
+          <div className="d-flex align-items-center gap-1">
+            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>前へ</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} type="button" className={`btn btn-sm ${p === page ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>次へ</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -44,8 +44,8 @@ function AdminPageContent() {
   useEffect(() => {
     loadClassTypes();
     loadStaff();
-    adminGet("/users")
-      .then((r) => setUsers(r.ok && Array.isArray(r.data) ? r.data as User[] : []))
+    adminGet<{ data: User[] }>("/users?limit=9999")
+      .then((r) => setUsers(r.ok && r.data ? r.data.data : []))
       .catch(() => setUsers([]));
   }, [loadClassTypes, loadStaff]);
 

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS stores (
   name VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_stores_corporation_id (corporation_id),
   CONSTRAINT fk_stores_corporation FOREIGN KEY (corporation_id) REFERENCES corporations(id) ON DELETE CASCADE
 );
 
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
   status ENUM('active', 'paused', 'withdrawn') DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_users_store_id (store_id),
   CONSTRAINT fk_users_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
 );
 
@@ -73,6 +75,9 @@ CREATE TABLE IF NOT EXISTS events (
   status ENUM('scheduled', 'canceled_by_admin', 'holiday') DEFAULT 'scheduled',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_events_starts_at (starts_at),
+  INDEX idx_events_class_type_id (class_type_id),
+  INDEX idx_events_status (status),
   CONSTRAINT fk_events_class_type FOREIGN KEY (class_type_id) REFERENCES class_types(id)
 );
 
@@ -89,6 +94,9 @@ CREATE TABLE IF NOT EXISTS makeup_credits (
   created_by VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_makeup_credits_user_id (user_id),
+  INDEX idx_makeup_credits_status (status),
+  INDEX idx_makeup_credits_source_event_id (source_event_id),
   CONSTRAINT fk_makeup_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_makeup_class_type FOREIGN KEY (class_type_id) REFERENCES class_types(id),
   CONSTRAINT fk_makeup_source_event FOREIGN KEY (source_event_id) REFERENCES events(id)
@@ -103,6 +111,8 @@ CREATE TABLE IF NOT EXISTS reservations (
   status ENUM('booked', 'canceled_by_user', 'canceled_by_admin', 'attended', 'no_show') NOT NULL DEFAULT 'booked',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   canceled_at DATETIME NULL,
+  INDEX idx_reservations_event_status (event_id, status),
+  INDEX idx_reservations_user_id (user_id),
   CONSTRAINT fk_reservation_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_reservation_event FOREIGN KEY (event_id) REFERENCES events(id),
   CONSTRAINT fk_reservation_makeup_credit FOREIGN KEY (makeup_credit_id) REFERENCES makeup_credits(id)
@@ -121,6 +131,7 @@ CREATE TABLE IF NOT EXISTS event_staff (
   event_id BIGINT UNSIGNED NOT NULL,
   staff_id BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (event_id, staff_id),
+  INDEX idx_event_staff_staff_id (staff_id),
   CONSTRAINT fk_event_staff_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
   CONSTRAINT fk_event_staff_staff FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
 );
