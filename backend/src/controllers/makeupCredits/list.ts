@@ -3,11 +3,7 @@ import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, ok } from "../../lib/respond";
 
-export default async function listMakeupCredits(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function listMakeupCredits(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const { userId } = req.query;
   const userIdNum = Number(userId);
   if (!userIdNum) {

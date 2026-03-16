@@ -21,7 +21,7 @@ export async function writeAuditLog(params: {
         params.targetType ?? null,
         params.targetId ?? null,
         params.detail ? JSON.stringify(params.detail) : null,
-      ]
+      ],
     );
   } catch (e) {
     logger.error("audit log write failed: " + (e instanceof Error ? e.message : String(e)));

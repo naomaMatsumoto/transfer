@@ -38,9 +38,7 @@ export default function OpsLoginPage() {
             <div className={s.loginHeader}>
               <div className={s.loginLogo}>O</div>
               <h1 className="h5 mb-1">Ops Console</h1>
-              <p className="small text-body-secondary mb-0">
-                プラットフォーム運営管理
-              </p>
+              <p className="small text-body-secondary mb-0">プラットフォーム運営管理</p>
             </div>
             <form onSubmit={handleSubmit}>
               {error && (
@@ -75,9 +73,7 @@ export default function OpsLoginPage() {
                 {loading ? "ログイン中…" : "ログイン"}
               </button>
             </form>
-            <p className="small text-body-secondary mt-3 mb-0 text-center">
-              初回: ops@example.com / ops-password
-            </p>
+            <p className="small text-body-secondary mt-3 mb-0 text-center">初回: ops@example.com / ops-password</p>
           </div>
         </div>
       </div>

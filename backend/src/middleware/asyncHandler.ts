@@ -1,10 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 
-type AsyncHandler = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => Promise<unknown> | void;
+type AsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<unknown> | void;
 
 /**
  * 非同期ルートハンドラをラップし、Promise の reject を next(err) に渡す。

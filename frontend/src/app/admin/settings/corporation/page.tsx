@@ -93,7 +93,11 @@ export default function AdminSettingsCorporationPage() {
             </button>
           </form>
           {error && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageError}`}>{error}</p>}
-          {success && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageSuccess}`}>法人名を変更しました。</p>}
+          {success && (
+            <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageSuccess}`}>
+              法人名を変更しました。
+            </p>
+          )}
         </div>
       </div>
     </div>

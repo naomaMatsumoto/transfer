@@ -5,11 +5,7 @@ import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function bulkCapacityEvents(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function bulkCapacityEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const body = req.body as { ids?: number[]; capacity?: number };
   const { ids, capacity } = body;
@@ -21,7 +17,7 @@ export default async function bulkCapacityEvents(
   const placeholders = ph(ids);
   const [result] = await pool.query(
     `UPDATE events e JOIN class_types ct ON ct.id = e.class_type_id SET e.capacity = ?, e.updated_at = NOW() WHERE e.id IN (${placeholders}) AND ct.store_id IN (${storePh})`,
-    [capacity, ...ids, ...storeIds]
+    [capacity, ...ids, ...storeIds],
   );
   await writeAuditLog({
     actorType: "admin",

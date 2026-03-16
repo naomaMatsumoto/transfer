@@ -4,11 +4,7 @@ import { writeAuditLog } from "../../lib/auditLog";
 import { unauthorized, badRequest, notFound, created } from "../../lib/respond";
 import { isMysqlError } from "../../types/db";
 
-export default async function joinWaitlist(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function joinWaitlist(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const memberId = req.session?.memberId;
   if (memberId == null || typeof memberId !== "number") {
     unauthorized(res);
@@ -26,7 +22,7 @@ export default async function joinWaitlist(
        COALESCE(SUM(CASE WHEN r.status IN ('booked','attended') THEN 1 ELSE 0 END), 0) AS reserved_count
      FROM events e LEFT JOIN reservations r ON r.event_id = e.id
      WHERE e.id = ? GROUP BY e.id`,
-    [eventId]
+    [eventId],
   );
   const event = (evRows as { id: number; capacity: number; status: string; reserved_count: number }[])[0];
   if (!event) {
@@ -39,10 +35,7 @@ export default async function joinWaitlist(
   }
 
   try {
-    await pool.query(
-      "INSERT INTO waitlist (user_id, event_id) VALUES (?, ?)",
-      [memberId, eventId]
-    );
+    await pool.query("INSERT INTO waitlist (user_id, event_id) VALUES (?, ?)", [memberId, eventId]);
   } catch (e: unknown) {
     if (isMysqlError(e) && e.code === "ER_DUP_ENTRY") {
       badRequest(res, "ALREADY_ON_WAITLIST");
@@ -51,6 +44,12 @@ export default async function joinWaitlist(
     throw e;
   }
 
-  void writeAuditLog({ actorType: "member", actorId: memberId, action: "waitlist.join", targetType: "event", targetId: eventId });
+  void writeAuditLog({
+    actorType: "member",
+    actorId: memberId,
+    action: "waitlist.join",
+    targetType: "event",
+    targetId: eventId,
+  });
   created(res, { ok: true });
 }

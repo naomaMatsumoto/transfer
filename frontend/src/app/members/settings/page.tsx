@@ -53,7 +53,8 @@ export default function MemberSettingsPage() {
       if (!res.ok) {
         if (data.error === "CURRENT_PASSWORD_INVALID") setError("現在のパスワードが正しくありません");
         else if (data.error === "NEW_PASSWORD_TOO_SHORT") setError("新しいパスワードは6文字以上で入力してください");
-        else if (data.error === "CURRENT_AND_NEW_PASSWORD_REQUIRED") setError("現在のパスワードと新しいパスワードを入力してください");
+        else if (data.error === "CURRENT_AND_NEW_PASSWORD_REQUIRED")
+          setError("現在のパスワードと新しいパスワードを入力してください");
         else setError("パスワードの変更に失敗しました");
         return;
       }
@@ -81,7 +82,9 @@ export default function MemberSettingsPage() {
       <div className="card shadow-sm" style={{ width: "100%", maxWidth: "400px" }}>
         <div className="card-body p-4">
           <p className="mb-3">
-            <Link href={ROUTES.HOME} className="small text-body-secondary">← カレンダーに戻る</Link>
+            <Link href={ROUTES.HOME} className="small text-body-secondary">
+              ← カレンダーに戻る
+            </Link>
           </p>
           <h1 className="h4 mb-4">パスワードの変更</h1>
           <form onSubmit={handleSubmit}>

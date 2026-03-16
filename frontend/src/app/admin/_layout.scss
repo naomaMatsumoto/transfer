@@ -57,7 +57,9 @@ $header-height: 52px;
   font-weight: 500;
   padding: v.$space-2 v.$space-3;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background-color: v.$color-primary-light;
@@ -99,7 +101,9 @@ $header-height: 52px;
   font-weight: 500;
   padding: v.$space-2 v.$space-3 v.$space-2 v.$space-4;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background-color: v.$color-primary-light;
@@ -147,7 +151,9 @@ $header-height: 52px;
   font-weight: 500;
   padding: v.$space-2 v.$space-3;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background-color: v.$color-primary-light;
@@ -165,7 +171,9 @@ $header-height: 52px;
   font-weight: 500;
   padding: v.$space-2 v.$space-3;
   text-align: left;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   width: 100%;
 
   &:hover {
@@ -216,7 +224,9 @@ $header-height: 52px;
   font-size: v.$font-base;
   margin-bottom: v.$space-4;
 
-  a { color: v.$color-primary; }
+  a {
+    color: v.$color-primary;
+  }
 }
 
 .adminNav {
@@ -226,6 +236,16 @@ $header-height: 52px;
   gap: v.$space-2 v.$space-4;
   margin-bottom: v.$space-4;
 }
-.adminNavLink { color: v.$color-primary; text-decoration: none; }
-.adminNavLinkActive { color: v.$color-gray-700; font-weight: 700; text-decoration: none; }
-.adminNavSep { color: v.$color-gray-300; user-select: none; }
+.adminNavLink {
+  color: v.$color-primary;
+  text-decoration: none;
+}
+.adminNavLinkActive {
+  color: v.$color-gray-700;
+  font-weight: 700;
+  text-decoration: none;
+}
+.adminNavSep {
+  color: v.$color-gray-300;
+  user-select: none;
+}

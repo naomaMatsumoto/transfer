@@ -5,11 +5,7 @@ import { pool } from "../../../db";
 import { getInsertId, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, conflict, created } from "../../../lib/respond";
 
-export default async function createCorporation(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createCorporation(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as {
     name?: string;
     organizationType?: string;
@@ -40,10 +36,11 @@ export default async function createCorporation(
   try {
     await conn.beginTransaction();
 
-    const [result] = await conn.query(
-      "INSERT INTO corporations (code, organization_type, name) VALUES (?, ?, ?)",
-      [code, orgType, name]
-    );
+    const [result] = await conn.query("INSERT INTO corporations (code, organization_type, name) VALUES (?, ?, ?)", [
+      code,
+      orgType,
+      name,
+    ]);
     const corpId = getInsertId(result);
 
     if (withAccount) {
@@ -56,7 +53,7 @@ export default async function createCorporation(
       const hashed = await bcrypt.hash(password, 10);
       await conn.query(
         "INSERT INTO accounts (corporation_id, email, password_hash, display_name, role) VALUES (?, ?, ?, ?, 'admin')",
-        [corpId, email, hashed, displayName]
+        [corpId, email, hashed, displayName],
       );
     }
 

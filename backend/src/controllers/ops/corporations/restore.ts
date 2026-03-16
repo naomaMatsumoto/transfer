@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, ok } from "../../../lib/respond";
 
-export default async function restoreCorp(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function restoreCorp(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
 
   if (!corp.deleted_at) {

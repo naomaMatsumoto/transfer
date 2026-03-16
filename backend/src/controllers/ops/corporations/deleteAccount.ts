@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { parseIntParam, findOwned, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 
-export default async function deleteAccount(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function deleteAccount(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const accountId = parseIntParam(req, "accountId");
   if (!accountId) {
@@ -21,10 +17,7 @@ export default async function deleteAccount(
     return;
   }
 
-  const [countRows] = await pool.query(
-    "SELECT COUNT(*) AS n FROM accounts WHERE corporation_id = ?",
-    [corp.id]
-  );
+  const [countRows] = await pool.query("SELECT COUNT(*) AS n FROM accounts WHERE corporation_id = ?", [corp.id]);
   const count = (countRows as { n: number }[])[0]?.n ?? 0;
   if (count <= 1) {
     badRequest(res, "AT_LEAST_ONE_ACCOUNT_REQUIRED");

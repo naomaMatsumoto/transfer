@@ -4,11 +4,7 @@ import { ERR } from "../../constants";
 import type { InsertResult, RowDataPacket } from "../../types/db";
 import { badRequest, notFound, created } from "../../lib/respond";
 
-export default async function createAbsence(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createAbsence(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const { userId, eventId, reason } = req.body as {
     userId?: number;
     eventId?: number;
@@ -21,10 +17,7 @@ export default async function createAbsence(
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [events] = await conn.query(
-      "SELECT id, class_type_id FROM events WHERE id = ? FOR UPDATE",
-      [eventId],
-    );
+    const [events] = await conn.query("SELECT id, class_type_id FROM events WHERE id = ? FOR UPDATE", [eventId]);
     const eventRow = (events as RowDataPacket[])[0];
     if (!eventRow) {
       await conn.rollback();

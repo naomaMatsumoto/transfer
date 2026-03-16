@@ -10,10 +10,7 @@ type AsyncState<T> = {
   reload: () => void;
 };
 
-export function useOpsData<T>(
-  path: string | null,
-  errorMsg = "データの取得に失敗しました",
-): AsyncState<T> {
+export function useOpsData<T>(path: string | null, errorMsg = "データの取得に失敗しました"): AsyncState<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +28,9 @@ export function useOpsData<T>(
     setLoading(false);
   }, [path, errorMsg]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return { data, loading, error, reload: load };
 }
@@ -57,30 +56,35 @@ export function useSubmit(): SubmitState {
 
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
-  const run = useCallback(async <T = unknown>(
-    fn: () => Promise<ApiResult<T>>,
-    opts?: {
-      onSuccess?: (data: T | undefined) => void;
-      errorMsg?: string;
-      onError?: (data: unknown, status?: number) => string | void;
+  const run = useCallback(
+    async <T = unknown>(
+      fn: () => Promise<ApiResult<T>>,
+      opts?: {
+        onSuccess?: (data: T | undefined) => void;
+        errorMsg?: string;
+        onError?: (data: unknown, status?: number) => string | void;
+      },
+    ): Promise<boolean> => {
+      setSubmitting(true);
+      setError(null);
+      const r = await fn();
+      if (!mounted.current) return r.ok;
+      setSubmitting(false);
+      if (r.ok) {
+        opts?.onSuccess?.(r.data as T | undefined);
+        return true;
+      }
+      const customMsg = opts?.onError?.(r.data, r.status);
+      setError(customMsg ?? opts?.errorMsg ?? "処理に失敗しました");
+      return false;
     },
-  ): Promise<boolean> => {
-    setSubmitting(true);
-    setError(null);
-    const r = await fn();
-    if (!mounted.current) return r.ok;
-    setSubmitting(false);
-    if (r.ok) {
-      opts?.onSuccess?.(r.data as T | undefined);
-      return true;
-    }
-    const customMsg = opts?.onError?.(r.data, r.status);
-    setError(customMsg ?? opts?.errorMsg ?? "処理に失敗しました");
-    return false;
-  }, []);
+    [],
+  );
 
   return { submitting, error, run, clearError: () => setError(null) };
 }

@@ -6,19 +6,15 @@ import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function deleteClassType(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function deleteClassType(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const id = Number(req.params.id);
   const placeholders = ph(storeIds);
   try {
-    const [result] = await pool.query(
-      `DELETE FROM class_types WHERE id = ? AND store_id IN (${placeholders})`,
-      [id, ...storeIds]
-    );
+    const [result] = await pool.query(`DELETE FROM class_types WHERE id = ? AND store_id IN (${placeholders})`, [
+      id,
+      ...storeIds,
+    ]);
     if ((result as UpdateResult).affectedRows === 0) {
       notFound(res, ERR.CLASS_TYPE_NOT_FOUND);
       return;

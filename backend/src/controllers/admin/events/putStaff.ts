@@ -6,11 +6,7 @@ import { ph } from "../../../lib/validate";
 import { syncEventStaff } from "../../../services/eventStaff";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function putEventStaff(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function putEventStaff(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const eventId = Number(req.params.id);
   const body = req.body as { staffIds?: number[] };
@@ -19,7 +15,7 @@ export default async function putEventStaff(
 
   const [eventRow] = await pool.query(
     `SELECT e.id FROM events e JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePh})`,
-    [eventId, ...storeIds]
+    [eventId, ...storeIds],
   );
   const events = eventRow as { id: number }[];
   if (events.length === 0) {
@@ -44,7 +40,7 @@ export default async function putEventStaff(
      JOIN staff s ON s.id = es.staff_id
      WHERE es.event_id = ?
      ORDER BY s.name ASC`,
-    [eventId]
+    [eventId],
   );
   ok(res, rows);
 }

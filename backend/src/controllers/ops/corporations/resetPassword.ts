@@ -4,11 +4,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { parseIntParam, findOwned, opsAudit } from "../../../lib/opsHelpers";
 
-export default async function resetPassword(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function resetPassword(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const accountId = parseIntParam(req, "accountId");
   if (!accountId) {

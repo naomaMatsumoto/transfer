@@ -5,25 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ROUTES } from "@/app/routes";
 import { putJson, postJson, patchJson, deleteFetch } from "../../api";
-import {
-  CorporationDetail,
-  OrganizationType,
-  CorpStatus,
-  ORG_TYPE_LABEL,
-  STATUS_CFG,
-} from "../../types";
+import { CorporationDetail, OrganizationType, CorpStatus, ORG_TYPE_LABEL, STATUS_CFG } from "../../types";
 import { useOpsData, useSubmit } from "../../hooks";
 import { formatDate } from "../../utils";
-import {
-  PageHeader,
-  StatusBadge,
-  DataTable,
-  Modal,
-  ConfirmModal,
-  Loading,
-  ErrorAlert,
-  Empty,
-} from "../../components";
+import { PageHeader, StatusBadge, DataTable, Modal, ConfirmModal, Loading, ErrorAlert, Empty } from "../../components";
 import s from "../../ops.module.scss";
 
 // ----------------------------------------------------------------
@@ -91,10 +76,12 @@ export default function OpsCorporationDetailPage() {
   const id = params?.id as string | undefined;
   const corpPath = `/corporations/${id}`;
 
-  const { data: corp, loading, error, reload } = useOpsData<CorporationDetail>(
-    id ? corpPath : null,
-    "取得に失敗しました",
-  );
+  const {
+    data: corp,
+    loading,
+    error,
+    reload,
+  } = useOpsData<CorporationDetail>(id ? corpPath : null, "取得に失敗しました");
 
   const [editName, setEditName] = useState("");
   const [editOrgType, setEditOrgType] = useState<OrganizationType>("corporation");
@@ -155,17 +142,14 @@ export default function OpsCorporationDetailPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveMsg(null);
-    await saveSubmit.run(
-      () => putJson(corpPath, { name: editName.trim(), organizationType: editOrgType }),
-      {
-        errorMsg: "保存に失敗しました",
-        onSuccess: () => {
-          setSaveMsg("保存しました");
-          setTimeout(() => setSaveMsg(null), 2000);
-          reload();
-        },
+    await saveSubmit.run(() => putJson(corpPath, { name: editName.trim(), organizationType: editOrgType }), {
+      errorMsg: "保存に失敗しました",
+      onSuccess: () => {
+        setSaveMsg("保存しました");
+        setTimeout(() => setSaveMsg(null), 2000);
+        reload();
       },
-    );
+    });
   };
 
   const setStatusDirect = async (newStatus: "pending" | "email_sent" | "active" | "suspended") => {
@@ -178,29 +162,31 @@ export default function OpsCorporationDetailPage() {
     e.preventDefault();
     const name = newStoreName.trim();
     if (!name) return;
-    await storeSubmit.run(
-      () => postJson(`${corpPath}/stores`, { name }),
-      {
-        errorMsg: "店舗の追加に失敗しました",
-        onSuccess: () => { setNewStoreName(""); reload(); },
+    await storeSubmit.run(() => postJson(`${corpPath}/stores`, { name }), {
+      errorMsg: "店舗の追加に失敗しました",
+      onSuccess: () => {
+        setNewStoreName("");
+        reload();
       },
-    );
+    });
   };
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     await accSubmit.run(
-      () => postJson(`${corpPath}/accounts`, {
-        email: accForm.email.trim(),
-        displayName: accForm.displayName.trim() || null,
-        password: accForm.password,
-        role: accForm.role,
-      }),
+      () =>
+        postJson(`${corpPath}/accounts`, {
+          email: accForm.email.trim(),
+          displayName: accForm.displayName.trim() || null,
+          password: accForm.password,
+          role: accForm.role,
+        }),
       {
         errorMsg: "アカウントの追加に失敗しました",
         onError: (data) => {
           const code = (data as { error?: string })?.error;
-          if (code === "EMAIL_ALREADY_EXISTS") return "このメールアドレスは既に登録されています。別のメールアドレスを入力してください。";
+          if (code === "EMAIL_ALREADY_EXISTS")
+            return "このメールアドレスは既に登録されています。別のメールアドレスを入力してください。";
           if (code === "EMAIL_PASSWORD_REQUIRED") return "メールアドレスとパスワードを入力してください。";
           return undefined;
         },
@@ -230,7 +216,10 @@ export default function OpsCorporationDetailPage() {
     const name = editStoreName.trim();
     if (!name) return;
     const r = await putJson(`${corpPath}/stores/${storeId}`, { name });
-    if (r.ok) { setEditingStoreId(null); reload(); }
+    if (r.ok) {
+      setEditingStoreId(null);
+      reload();
+    }
   };
 
   const handleSaveCalendar = async (storeId: number) => {
@@ -240,8 +229,8 @@ export default function OpsCorporationDetailPage() {
       const days = storeCalDays[storeId]?.trim();
       const hours = storeCalHours[storeId]?.trim();
       const r = await putJson(`${corpPath}/stores/${storeId}`, {
-        booking_deadline_days: days === "" ? null : (parseInt(days, 10) || null),
-        cancel_deadline_hours: hours === "" ? null : (parseInt(hours, 10) || null),
+        booking_deadline_days: days === "" ? null : parseInt(days, 10) || null,
+        cancel_deadline_hours: hours === "" ? null : parseInt(hours, 10) || null,
       });
       if (r.ok) {
         setCalSavedStoreId(storeId);
@@ -323,7 +312,7 @@ export default function OpsCorporationDetailPage() {
   }
 
   const isDeleted = !!corp.deleted_at;
-  const displayStatus = isDeleted ? "deleted" as const : corp.status;
+  const displayStatus = isDeleted ? ("deleted" as const) : corp.status;
   const confirmCfg = confirmTarget ? CONFIRM_CFG[confirmTarget.kind] : null;
 
   const handleRestore = async () => {
@@ -360,7 +349,12 @@ export default function OpsCorporationDetailPage() {
       <p className={s.detailMeta}>
         {corp.organization_type && <>{ORG_TYPE_LABEL[corp.organization_type]} / </>}
         登録: {formatDate(corp.created_at)}
-        {corp.code && <> / Code: <code>{corp.code}</code></>}
+        {corp.code && (
+          <>
+            {" "}
+            / Code: <code>{corp.code}</code>
+          </>
+        )}
       </p>
 
       {/* Management cards: basic info + status side by side */}
@@ -430,9 +424,7 @@ export default function OpsCorporationDetailPage() {
                   );
                 })}
               </div>
-              <p className="small text-body-secondary mt-2 mb-0">
-                ボタンをクリックしてステータスを変更します。
-              </p>
+              <p className="small text-body-secondary mt-2 mb-0">ボタンをクリックしてステータスを変更します。</p>
             </div>
           </div>
         </div>
@@ -487,8 +479,12 @@ export default function OpsCorporationDetailPage() {
                             onKeyDown={(e) => e.key === "Escape" && setEditingStoreId(null)}
                             autoFocus
                           />
-                          <button className="btn btn-dark btn-sm text-nowrap" onClick={() => handleSaveStore(store.id)}>保存</button>
-                          <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingStoreId(null)}>×</button>
+                          <button className="btn btn-dark btn-sm text-nowrap" onClick={() => handleSaveStore(store.id)}>
+                            保存
+                          </button>
+                          <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingStoreId(null)}>
+                            ×
+                          </button>
                         </div>
                       ) : (
                         <div className="d-flex align-items-baseline gap-2 flex-wrap">
@@ -508,7 +504,10 @@ export default function OpsCorporationDetailPage() {
                       {editingStoreId !== store.id && (
                         <button
                           className="btn btn-outline-secondary btn-sm"
-                          onClick={() => { setEditingStoreId(store.id); setEditStoreName(store.name); }}
+                          onClick={() => {
+                            setEditingStoreId(store.id);
+                            setEditStoreName(store.name);
+                          }}
                         >
                           名前編集
                         </button>
@@ -584,7 +583,10 @@ export default function OpsCorporationDetailPage() {
           <h2 className="h6 mb-0">アカウント一覧</h2>
           <button
             className="btn btn-dark btn-sm"
-            onClick={() => { setShowAccModal(true); setAccountError(null); }}
+            onClick={() => {
+              setShowAccModal(true);
+              setAccountError(null);
+            }}
           >
             + アカウント追加
           </button>
@@ -593,7 +595,12 @@ export default function OpsCorporationDetailPage() {
         {accountError && (
           <div className="alert alert-warning d-flex align-items-center justify-content-between py-2 mb-3" role="alert">
             <span className="small">{accountError}</span>
-            <button type="button" className="btn-close btn-sm ms-2" onClick={() => setAccountError(null)} aria-label="閉じる" />
+            <button
+              type="button"
+              className="btn-close btn-sm ms-2"
+              onClick={() => setAccountError(null)}
+              aria-label="閉じる"
+            />
           </div>
         )}
 
@@ -601,10 +608,14 @@ export default function OpsCorporationDetailPage() {
         {resetResult && (
           <div className="alert alert-success d-flex align-items-center justify-content-between py-2 mb-3">
             <span className="small">
-              パスワードをリセットしました。新しいパスワード:{" "}
-              <code className="fw-bold">{resetResult.password}</code>
+              パスワードをリセットしました。新しいパスワード: <code className="fw-bold">{resetResult.password}</code>
             </span>
-            <button type="button" className="btn-close btn-sm ms-2" onClick={() => setResetResult(null)} aria-label="閉じる" />
+            <button
+              type="button"
+              className="btn-close btn-sm ms-2"
+              onClick={() => setResetResult(null)}
+              aria-label="閉じる"
+            />
           </div>
         )}
 
@@ -621,9 +632,15 @@ export default function OpsCorporationDetailPage() {
             rowKey={(a) => a.id}
             columns={[
               { key: "email", header: "メールアドレス", render: (a) => <span className="small">{a.email}</span> },
-              { key: "display", header: "表示名", render: (a) => <span className="small text-body-secondary">{a.display_name ?? "-"}</span> },
               {
-                key: "role", header: "ロール", render: (a) => (
+                key: "display",
+                header: "表示名",
+                render: (a) => <span className="small text-body-secondary">{a.display_name ?? "-"}</span>,
+              },
+              {
+                key: "role",
+                header: "ロール",
+                render: (a) => (
                   <select
                     className="form-select form-select-sm"
                     style={{ width: "auto", minWidth: "90px" }}
@@ -637,7 +654,9 @@ export default function OpsCorporationDetailPage() {
                 ),
               },
               {
-                key: "actions", header: "", render: (a) => {
+                key: "actions",
+                header: "",
+                render: (a) => {
                   const isOnlyAccount = corp.accounts.length === 1;
                   return (
                     <div className="d-flex gap-1">
@@ -690,19 +709,40 @@ export default function OpsCorporationDetailPage() {
           <form onSubmit={handleAddAccount}>
             <div className="mb-3">
               <label className="form-label small">メールアドレス</label>
-              <input type="email" className="form-control form-control-sm" value={accForm.email} onChange={(e) => accDispatch({ type: "set", field: "email", value: e.target.value })} required />
+              <input
+                type="email"
+                className="form-control form-control-sm"
+                value={accForm.email}
+                onChange={(e) => accDispatch({ type: "set", field: "email", value: e.target.value })}
+                required
+              />
             </div>
             <div className="mb-3">
               <label className="form-label small">表示名</label>
-              <input type="text" className="form-control form-control-sm" value={accForm.displayName} onChange={(e) => accDispatch({ type: "set", field: "displayName", value: e.target.value })} />
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                value={accForm.displayName}
+                onChange={(e) => accDispatch({ type: "set", field: "displayName", value: e.target.value })}
+              />
             </div>
             <div className="mb-3">
               <label className="form-label small">パスワード</label>
-              <input type="text" className="form-control form-control-sm" value={accForm.password} onChange={(e) => accDispatch({ type: "set", field: "password", value: e.target.value })} required />
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                value={accForm.password}
+                onChange={(e) => accDispatch({ type: "set", field: "password", value: e.target.value })}
+                required
+              />
             </div>
             <div className="mb-3">
               <label className="form-label small">ロール</label>
-              <select className="form-select form-select-sm" value={accForm.role} onChange={(e) => accDispatch({ type: "set", field: "role", value: e.target.value })}>
+              <select
+                className="form-select form-select-sm"
+                value={accForm.role}
+                onChange={(e) => accDispatch({ type: "set", field: "role", value: e.target.value })}
+              >
                 <option value="admin">管理者</option>
                 <option value="staff">スタッフ</option>
               </select>

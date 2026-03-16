@@ -4,11 +4,7 @@ import { pool } from "../../db";
 import { unauthorized, badRequest, ok } from "../../lib/respond";
 import { isValidPassword } from "../../lib/validate";
 
-export default async function membersUpdatePassword(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function membersUpdatePassword(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const memberId = req.session?.memberId;
   if (memberId == null || typeof memberId !== "number") {
     unauthorized(res);
@@ -26,10 +22,9 @@ export default async function membersUpdatePassword(
     return;
   }
 
-  const [rows] = await pool.query(
-    "SELECT id, password_hash FROM users WHERE id = ? AND status = 'active' LIMIT 1",
-    [memberId]
-  );
+  const [rows] = await pool.query("SELECT id, password_hash FROM users WHERE id = ? AND status = 'active' LIMIT 1", [
+    memberId,
+  ]);
   const user = (rows as { id: number; password_hash: string | null }[])[0];
   if (!user || !user.password_hash) {
     unauthorized(res);

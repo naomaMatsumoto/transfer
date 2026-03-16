@@ -69,8 +69,8 @@ export function AddMemberModal({
   onSave: () => void;
   onCancel: () => void;
 }) {
-  if (!open) return null;
   const field = useFieldProps(form, setForm, formError, setFormError);
+  if (!open) return null;
   return (
     <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
       <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
@@ -82,7 +82,12 @@ export function AddMemberModal({
             <div className="d-flex flex-column gap-3 mb-0">
               <div className="mb-2">
                 <label className="form-label">名前</label>
-                <input type="text" className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`} placeholder="山田 太郎" {...field("name")} />
+                <input
+                  type="text"
+                  className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`}
+                  placeholder="山田 太郎"
+                  {...field("name")}
+                />
                 {formError?.field === "name" && <div className="invalid-feedback d-block">{formError.message}</div>}
               </div>
               <div className="mb-2">
@@ -91,12 +96,23 @@ export function AddMemberModal({
               </div>
               <div className="mb-2">
                 <label className="form-label">メール（任意）</label>
-                <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} placeholder="user@example.com" {...field("email")} />
+                <input
+                  type="email"
+                  className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`}
+                  placeholder="user@example.com"
+                  {...field("email")}
+                />
                 {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
               </div>
               <div className="mb-2">
                 <label className="form-label">ログイン用パスワード（任意）</label>
-                <input type="password" className="form-control" placeholder="カレンダー・振替予約で使用" autoComplete="new-password" {...field("password")} />
+                <input
+                  type="password"
+                  className="form-control"
+                  placeholder="カレンダー・振替予約で使用"
+                  autoComplete="new-password"
+                  {...field("password")}
+                />
                 <p className="small text-body-secondary mt-1 mb-0">設定すると会員がカレンダーで振替予約できます</p>
               </div>
               <div className="mb-2">
@@ -115,15 +131,21 @@ export function AddMemberModal({
                 <label className="form-label">ステータス</label>
                 <select className="form-select" {...field("stage")}>
                   {stageOptions.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>キャンセル</button>
-            <button type="button" className="btn btn-success" onClick={onSave}>登録</button>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              キャンセル
+            </button>
+            <button type="button" className="btn btn-success" onClick={onSave}>
+              登録
+            </button>
           </div>
         </div>
       </div>
@@ -150,8 +172,8 @@ export function EditMemberModal({
   onSave: () => void;
   onCancel: () => void;
 }) {
-  if (!open || !editId) return null;
   const field = useFieldProps(form, setForm, formError, setFormError);
+  if (!open || !editId) return null;
   return (
     <div className="modal fade show d-block bg-black bg-opacity-50" style={{ zIndex: 1050 }} onClick={onCancel}>
       <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
@@ -163,7 +185,12 @@ export function EditMemberModal({
             <div className="d-flex flex-column gap-0 mb-0">
               <div className="mb-2">
                 <label className="form-label">名前</label>
-                <input type="text" className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`} placeholder="山田 太郎" {...field("name")} />
+                <input
+                  type="text"
+                  className={`form-control ${formError?.field === "name" ? "is-invalid" : ""}`}
+                  placeholder="山田 太郎"
+                  {...field("name")}
+                />
                 {formError?.field === "name" && <div className="invalid-feedback d-block">{formError.message}</div>}
               </div>
               <div className="mb-2">
@@ -172,12 +199,23 @@ export function EditMemberModal({
               </div>
               <div className="mb-2">
                 <label className="form-label">メール（任意）</label>
-                <input type="email" className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`} placeholder="user@example.com" {...field("email")} />
+                <input
+                  type="email"
+                  className={`form-control ${formError?.field === "email" ? "is-invalid" : ""}`}
+                  placeholder="user@example.com"
+                  {...field("email")}
+                />
                 {formError?.field === "email" && <div className="invalid-feedback d-block">{formError.message}</div>}
               </div>
               <div className="mb-2">
                 <label className="form-label">ログイン用パスワード（変更時のみ）</label>
-                <input type="password" className="form-control" placeholder="空欄のままなら変更しません" autoComplete="new-password" {...field("password")} />
+                <input
+                  type="password"
+                  className="form-control"
+                  placeholder="空欄のままなら変更しません"
+                  autoComplete="new-password"
+                  {...field("password")}
+                />
               </div>
               <div className="mb-2">
                 <label className="form-label">住所（任意）</label>
@@ -195,15 +233,21 @@ export function EditMemberModal({
                 <label className="form-label">ステータス</label>
                 <select className="form-select" {...field("stage")}>
                   {stageOptions.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>キャンセル</button>
-            <button type="button" className="btn btn-success" onClick={onSave}>保存</button>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              キャンセル
+            </button>
+            <button type="button" className="btn btn-success" onClick={onSave}>
+              保存
+            </button>
           </div>
         </div>
       </div>

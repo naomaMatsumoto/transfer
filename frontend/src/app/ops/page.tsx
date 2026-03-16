@@ -6,7 +6,19 @@ import { opsFetch, postJson, patchJson } from "./api";
 import { CorporationRow, OrganizationType, CorpStatus, ORG_TYPE_LABEL } from "./types";
 import { useSubmit } from "./hooks";
 import { formatDate } from "./utils";
-import { PageHeader, StatCard, StatusBadge, DataTable, Modal, ConfirmModal, Loading, Empty, ErrorAlert, FilterBar, Pagination } from "./components";
+import {
+  PageHeader,
+  StatCard,
+  StatusBadge,
+  DataTable,
+  Modal,
+  ConfirmModal,
+  Loading,
+  Empty,
+  ErrorAlert,
+  FilterBar,
+  Pagination,
+} from "./components";
 import s from "./ops.module.scss";
 
 const CORPS_PER_PAGE = 20;
@@ -29,7 +41,12 @@ type CorporationListResponse = {
 };
 
 const DEFAULT_SUMMARY: CorpSummary = {
-  total_active: 0, pending: 0, email_sent: 0, active: 0, total_stores: 0, total_accounts: 0,
+  total_active: 0,
+  pending: 0,
+  email_sent: 0,
+  active: 0,
+  total_stores: 0,
+  total_accounts: 0,
 };
 
 function effectiveStatus(c: CorporationRow): CorpStatus {
@@ -103,7 +120,9 @@ export default function OpsDashboardPage() {
       }
     };
     void run();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [page, debouncedSearch, statusFilter, reloadKey]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -121,26 +140,23 @@ export default function OpsDashboardPage() {
       payload.password = password;
     }
 
-    await createSubmit.run(
-      () => postJson("/corporations", payload),
-      {
-        errorMsg: "作成に失敗しました",
-        onError: (data) => {
-          const code = (data as { error?: string })?.error;
-          if (code === "EMAIL_ALREADY_EXISTS") return "このメールアドレスは既に登録されています";
-          if (code === "PASSWORD_TOO_SHORT") return "パスワードは6文字以上で入力してください";
-          return undefined;
-        },
-        onSuccess: (_data) => {
-          setNewName("");
-          setNewEmail("");
-          setNewDisplayName("");
-          setNewPassword("");
-          setShowModal(false);
-          forceReload();
-        },
+    await createSubmit.run(() => postJson("/corporations", payload), {
+      errorMsg: "作成に失敗しました",
+      onError: (data) => {
+        const code = (data as { error?: string })?.error;
+        if (code === "EMAIL_ALREADY_EXISTS") return "このメールアドレスは既に登録されています";
+        if (code === "PASSWORD_TOO_SHORT") return "パスワードは6文字以上で入力してください";
+        return undefined;
       },
-    );
+      onSuccess: (_data) => {
+        setNewName("");
+        setNewEmail("");
+        setNewDisplayName("");
+        setNewPassword("");
+        setShowModal(false);
+        forceReload();
+      },
+    });
   };
 
   const handleRestore = async () => {
@@ -159,7 +175,11 @@ export default function OpsDashboardPage() {
     <div>
       <PageHeader
         title="事業者管理"
-        action={<button className="btn btn-dark btn-sm" onClick={() => setShowModal(true)}>+ 新規事業者を追加</button>}
+        action={
+          <button className="btn btn-dark btn-sm" onClick={() => setShowModal(true)}>
+            + 新規事業者を追加
+          </button>
+        }
       />
 
       <div className={s.statsGrid}>
@@ -194,26 +214,61 @@ export default function OpsDashboardPage() {
         </select>
       </FilterBar>
 
-      {loading ? <Loading /> : corporations.length === 0 ? (
-        <Empty text={debouncedSearch || statusFilter !== "all" ? "条件に一致する事業者がありません。" : "事業者がまだ登録されていません。"} />
+      {loading ? (
+        <Loading />
+      ) : corporations.length === 0 ? (
+        <Empty
+          text={
+            debouncedSearch || statusFilter !== "all"
+              ? "条件に一致する事業者がありません。"
+              : "事業者がまだ登録されていません。"
+          }
+        />
       ) : (
         <DataTable
           rows={corporations}
           rowKey={(c) => c.id}
           columns={[
-            { key: "name", header: "名前", render: (c) => (
-              <span className={`fw-medium ${c.deleted_at ? "text-body-secondary text-decoration-line-through" : ""}`}>{c.name}</span>
-            )},
-            { key: "type", header: "種類", render: (c) => <span className="small text-body-secondary">{ORG_TYPE_LABEL[c.organization_type ?? "corporation"]}</span> },
+            {
+              key: "name",
+              header: "名前",
+              render: (c) => (
+                <span className={`fw-medium ${c.deleted_at ? "text-body-secondary text-decoration-line-through" : ""}`}>
+                  {c.name}
+                </span>
+              ),
+            },
+            {
+              key: "type",
+              header: "種類",
+              render: (c) => (
+                <span className="small text-body-secondary">
+                  {ORG_TYPE_LABEL[c.organization_type ?? "corporation"]}
+                </span>
+              ),
+            },
             { key: "status", header: "ステータス", render: (c) => <StatusBadge status={effectiveStatus(c)} /> },
             { key: "stores", header: "店舗", className: "text-end", render: (c) => c.store_count },
             { key: "accounts", header: "アカウント", className: "text-end", render: (c) => c.account_count },
-            { key: "date", header: "登録日", render: (c) => <span className="small text-body-secondary">{formatDate(c.created_at)}</span> },
-            { key: "action", header: "", render: (c) => c.deleted_at ? (
-              <button className="btn btn-sm btn-outline-success" onClick={() => setRestoreTarget(c)}>復旧</button>
-            ) : (
-              <Link href={`/ops/corporations/${c.code ?? c.id}`} className="btn btn-sm btn-outline-dark">詳細</Link>
-            )},
+            {
+              key: "date",
+              header: "登録日",
+              render: (c) => <span className="small text-body-secondary">{formatDate(c.created_at)}</span>,
+            },
+            {
+              key: "action",
+              header: "",
+              render: (c) =>
+                c.deleted_at ? (
+                  <button className="btn btn-sm btn-outline-success" onClick={() => setRestoreTarget(c)}>
+                    復旧
+                  </button>
+                ) : (
+                  <Link href={`/ops/corporations/${c.code ?? c.id}`} className="btn btn-sm btn-outline-dark">
+                    詳細
+                  </Link>
+                ),
+            },
           ]}
         />
       )}

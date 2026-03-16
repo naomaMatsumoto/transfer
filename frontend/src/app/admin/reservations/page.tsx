@@ -30,13 +30,13 @@ function AdminPageContent() {
 
   const loadClassTypes = useCallback(() => {
     adminGet("/class-types")
-      .then((r) => setClassTypes(r.ok && Array.isArray(r.data) ? r.data as ClassType[] : []))
+      .then((r) => setClassTypes(r.ok && Array.isArray(r.data) ? (r.data as ClassType[]) : []))
       .catch(() => setClassTypes([]));
   }, []);
 
   const loadStaff = useCallback(() => {
     adminGet("/staff")
-      .then((r) => setStaff(r.ok && Array.isArray(r.data) ? r.data as Staff[] : []))
+      .then((r) => setStaff(r.ok && Array.isArray(r.data) ? (r.data as Staff[]) : []))
       .catch(() => setStaff([]));
   }, []);
 
@@ -52,10 +52,16 @@ function AdminPageContent() {
   return (
     <>
       <FlashToast msg={msg} err={err} msgExiting={msgExiting} errExiting={errExiting} />
-      <h1 className={styles.settingsPageTitle}>{RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}</h1>
+      <h1 className={styles.settingsPageTitle}>
+        {RESERVATION_TABS.find((t) => t.key === tab)?.label ?? "予約システム"}
+      </h1>
 
-      {tab === "classTypes" && <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />}
-      {tab === "events" && <EventsTab classTypes={classTypes} users={users} staff={staff} flash={flash} flashErr={flashErr} />}
+      {tab === "classTypes" && (
+        <ClassTypesTab classTypes={classTypes} reload={loadClassTypes} flash={flash} flashErr={flashErr} />
+      )}
+      {tab === "events" && (
+        <EventsTab classTypes={classTypes} users={users} staff={staff} flash={flash} flashErr={flashErr} />
+      )}
       {tab === "staff" && <StaffTab staffList={staff} reload={loadStaff} flash={flash} flashErr={flashErr} />}
       {tab === "credits" && <CreditsTab classTypes={classTypes} users={users} flash={flash} flashErr={flashErr} />}
     </>

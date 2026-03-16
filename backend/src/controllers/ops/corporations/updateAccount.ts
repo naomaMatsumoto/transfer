@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 
-export default async function updateAccount(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateAccount(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const accountId = Number(req.params.accountId);
   const { role: rawRole } = req.body as { role?: string };
@@ -17,10 +13,7 @@ export default async function updateAccount(
     return;
   }
 
-  const [rows] = await pool.query(
-    "SELECT id FROM accounts WHERE id = ? AND corporation_id = ?",
-    [accountId, corp.id],
-  );
+  const [rows] = await pool.query("SELECT id FROM accounts WHERE id = ? AND corporation_id = ?", [accountId, corp.id]);
   if ((rows as unknown[]).length === 0) {
     notFound(res, "ACCOUNT_NOT_FOUND");
     return;

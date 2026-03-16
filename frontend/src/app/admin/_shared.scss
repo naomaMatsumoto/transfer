@@ -22,7 +22,9 @@
   font-size: v.$font-base;
   font-weight: 500;
   padding: v.$space-3 v.$space-4;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 
   &:hover {
     background-color: v.$color-gray-50;
@@ -94,12 +96,29 @@
   padding: v.$space-2 14px;
 }
 
-.btnPrimary    { background-color: v.$color-primary; composes: btn; }
-.btnSuccess    { background-color: v.$color-success; composes: btn; }
-.btnDanger     { background-color: v.$color-danger; composes: btn; }
-.btnDangerDark { background-color: v.$color-danger-dark; composes: btn; }
-.btnGray       { background-color: v.$color-gray-500; composes: btn; }
-.btnSm         { font-size: 11px; }
+.btnPrimary {
+  background-color: v.$color-primary;
+  composes: btn;
+}
+.btnSuccess {
+  background-color: v.$color-success;
+  composes: btn;
+}
+.btnDanger {
+  background-color: v.$color-danger;
+  composes: btn;
+}
+.btnDangerDark {
+  background-color: v.$color-danger-dark;
+  composes: btn;
+}
+.btnGray {
+  background-color: v.$color-gray-500;
+  composes: btn;
+}
+.btnSm {
+  font-size: 11px;
+}
 
 // ================================================================
 // Table（クラス種別・イベント等で共通のモジュール）
@@ -357,12 +376,24 @@
   gap: v.$space-2;
 }
 
-.formRow5        { grid-template-columns: 1fr 1fr 1fr 80px auto; }
-.formRow4        { grid-template-columns: 1fr 100px 100px 70px; }
-.formRow4auto    { grid-template-columns: 1fr 1fr 1fr auto; }
-.formRow5credit  { grid-template-columns: 1fr 1fr 1fr 1fr auto; }
-.formRow5proxy   { grid-template-columns: 1fr 100px 100px 100px auto; }
-.formRowClassType { grid-template-columns: 150px 1fr 1fr auto; }
+.formRow5 {
+  grid-template-columns: 1fr 1fr 1fr 80px auto;
+}
+.formRow4 {
+  grid-template-columns: 1fr 100px 100px 70px;
+}
+.formRow4auto {
+  grid-template-columns: 1fr 1fr 1fr auto;
+}
+.formRow5credit {
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+}
+.formRow5proxy {
+  grid-template-columns: 1fr 100px 100px 100px auto;
+}
+.formRowClassType {
+  grid-template-columns: 150px 1fr 1fr auto;
+}
 
 .weekdayCheckGroup {
   display: flex;
@@ -383,7 +414,9 @@
   padding: v.$space-1 v.$space-2;
   user-select: none;
 
-  input { display: none; }
+  input {
+    display: none;
+  }
 }
 
 .weekdayCheckActive {
@@ -417,10 +450,24 @@
 // ================================================================
 // Color / font utilities
 // ================================================================
-.colorSun     { color: v.$color-sunday; }
-.colorSat     { color: v.$color-saturday; }
-.colorGray    { color: v.$color-gray-500; }
-.colorSuccess { color: v.$color-success; }
-.colorDanger  { color: v.$color-danger; }
-.colorPrimary { color: v.$color-primary; }
-.fontBold     { font-weight: 600; }
+.colorSun {
+  color: v.$color-sunday;
+}
+.colorSat {
+  color: v.$color-saturday;
+}
+.colorGray {
+  color: v.$color-gray-500;
+}
+.colorSuccess {
+  color: v.$color-success;
+}
+.colorDanger {
+  color: v.$color-danger;
+}
+.colorPrimary {
+  color: v.$color-primary;
+}
+.fontBold {
+  font-weight: 600;
+}

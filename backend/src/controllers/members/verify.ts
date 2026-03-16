@@ -3,11 +3,7 @@ import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, ok } from "../../lib/respond";
 
-export default async function verifyMember(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function verifyMember(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const token = (req.query.token as string)?.trim();
   if (!token) {
     badRequest(res, ERR.VERIFICATION_TOKEN_INVALID);
@@ -16,7 +12,7 @@ export default async function verifyMember(
 
   const [rows] = await pool.query(
     "SELECT vt.user_id, vt.expires_at FROM verification_tokens vt WHERE vt.token = ? LIMIT 1",
-    [token]
+    [token],
   );
   const row = (rows as { user_id: number; expires_at: Date }[])[0];
   if (!row) {
@@ -32,10 +28,7 @@ export default async function verifyMember(
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    await conn.query(
-      "UPDATE users SET email_verified_at = NOW() WHERE id = ?",
-      [row.user_id]
-    );
+    await conn.query("UPDATE users SET email_verified_at = NOW() WHERE id = ?", [row.user_id]);
     await conn.query("DELETE FROM verification_tokens WHERE token = ?", [token]);
     await conn.commit();
   } catch (e) {

@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { badRequest } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
-export default async function reportCsvExport(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function reportCsvExport(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const storePh = ph(storeIds);
   const from = req.query.from as string | undefined;
@@ -35,7 +31,7 @@ export default async function reportCsvExport(
      WHERE ct.store_id IN (${storePh})
        AND e.starts_at >= ? AND e.starts_at < ?
      ORDER BY e.starts_at`,
-    [...storeIds, from, to]
+    [...storeIds, from, to],
   );
 
   const data = rows as Record<string, unknown>[];
@@ -53,7 +49,7 @@ export default async function reportCsvExport(
         r.status,
         r.created_at,
         r.canceled_at ?? "",
-      ].join(",")
+      ].join(","),
     ),
   ];
 

@@ -111,10 +111,7 @@ export function extractApiError(data: unknown): string {
 /**
  * バックエンドが返す error コード（とオプションの count/details）から表示用日本語を返す
  */
-export function getApiErrorMessage(
-  code: string | undefined,
-  extra?: ApiErrorExtra
-): string {
+export function getApiErrorMessage(code: string | undefined, extra?: ApiErrorExtra): string {
   if (!code) return "処理に失敗しました";
   const base = API_ERROR_MESSAGES[code];
   if (!base) return "処理に失敗しました";

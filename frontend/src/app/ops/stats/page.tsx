@@ -18,7 +18,11 @@ export default function OpsStatsPage() {
       <PageHeader title="統計ダッシュボード" />
 
       <div className={s.statsGrid}>
-        <StatCard label="事業者数" value={sm.total_corporations} sub={`稼働 ${sm.active_corporations} / 停止 ${sm.suspended_corporations}`} />
+        <StatCard
+          label="事業者数"
+          value={sm.total_corporations}
+          sub={`稼働 ${sm.active_corporations} / 停止 ${sm.suspended_corporations}`}
+        />
         <StatCard label="総店舗数" value={sm.total_stores} />
         <StatCard label="総アカウント数" value={sm.total_accounts} />
         <StatCard label="総会員数" value={sm.total_members} />

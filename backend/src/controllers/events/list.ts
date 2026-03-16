@@ -3,11 +3,7 @@ import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, ok } from "../../lib/respond";
 
-export default async function listEvents(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function listEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const { from, to, userId, storeId } = req.query;
   if (!from || !to) {
     badRequest(res, ERR.EVENTS_FROM_TO_REQUIRED);

@@ -4,11 +4,7 @@ import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, unauthorized, forbidden, ok } from "../../lib/respond";
 
-export default async function membersLogin(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function membersLogin(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as { email?: string; password?: string };
   const email = body.email != null ? String(body.email).trim().toLowerCase() : "";
   const password = body.password != null ? String(body.password) : "";
@@ -17,10 +13,7 @@ export default async function membersLogin(
     return;
   }
 
-  const [rows] = await pool.query(
-    "SELECT id, password_hash, status FROM users WHERE email = ? LIMIT 1",
-    [email]
-  );
+  const [rows] = await pool.query("SELECT id, password_hash, status FROM users WHERE email = ? LIMIT 1", [email]);
   const user = (rows as { id: number; password_hash: string | null; status: string }[])[0];
   if (!user) {
     unauthorized(res, "INVALID_EMAIL_OR_PASSWORD");

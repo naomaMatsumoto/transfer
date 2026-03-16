@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { badRequest, ok } from "../../../lib/respond";
 
-export default async function updateStoreSettings(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateStoreSettings(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
 
   const { booking_deadline_days, cancel_deadline_hours } = req.body as {
@@ -32,6 +28,13 @@ export default async function updateStoreSettings(
 
   params.push(storeIds[0] as unknown as number);
   await pool.query(`UPDATE stores SET ${updates.join(", ")} WHERE id = ?`, params);
-  void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "store_settings.update", targetType: "store", targetId: storeIds[0], detail: { booking_deadline_days, cancel_deadline_hours } });
+  void writeAuditLog({
+    actorType: "admin",
+    actorId: req.session?.account?.accountId,
+    action: "store_settings.update",
+    targetType: "store",
+    targetId: storeIds[0],
+    detail: { booking_deadline_days, cancel_deadline_hours },
+  });
   ok(res, { ok: true });
 }

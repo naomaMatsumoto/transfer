@@ -21,7 +21,9 @@
   font-weight: 500;
   padding: v.$space-4;
   text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover {
     background: v.$color-gray-50;

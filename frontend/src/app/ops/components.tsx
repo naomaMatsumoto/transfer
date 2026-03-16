@@ -57,7 +57,9 @@ export function ConfirmModal({
           <button type="button" className="btn-close" onClick={onCancel} />
         </div>
         <div className="card-body">
-          <p className="mb-4" style={{ whiteSpace: "pre-line" }}>{message}</p>
+          <p className="mb-4" style={{ whiteSpace: "pre-line" }}>
+            {message}
+          </p>
           <div className="d-flex gap-2 justify-content-end">
             <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onCancel} disabled={loading}>
               キャンセル
@@ -145,7 +147,9 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
           <thead className="table-light">
             <tr>
               {columns.map((col) => (
-                <th key={col.key} className={col.className}>{col.header}</th>
+                <th key={col.key} className={col.className}>
+                  {col.header}
+                </th>
               ))}
             </tr>
           </thead>
@@ -153,7 +157,9 @@ export function DataTable<T>({ columns, rows, rowKey }: DataTableProps<T>) {
             {rows.map((row) => (
               <tr key={rowKey(row)}>
                 {columns.map((col) => (
-                  <td key={col.key} className={col.className}>{col.render(row)}</td>
+                  <td key={col.key} className={col.className}>
+                    {col.render(row)}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -193,14 +199,12 @@ export function Pagination({ page, totalPages, onChange }: PaginationProps) {
   if (totalPages <= 1) return null;
   return (
     <div className="d-flex justify-content-center gap-2 mt-3">
-      <button
-        className="btn btn-outline-dark btn-sm"
-        disabled={page === 0}
-        onClick={() => onChange(page - 1)}
-      >
+      <button className="btn btn-outline-dark btn-sm" disabled={page === 0} onClick={() => onChange(page - 1)}>
         前へ
       </button>
-      <span className="small align-self-center">{page + 1} / {totalPages}</span>
+      <span className="small align-self-center">
+        {page + 1} / {totalPages}
+      </span>
       <button
         className="btn btn-outline-dark btn-sm"
         disabled={page >= totalPages - 1}
@@ -220,7 +224,5 @@ type FilterBarProps = {
 };
 
 export function FilterBar({ children }: FilterBarProps) {
-  return (
-    <div className={s.filterBar}>{children}</div>
-  );
+  return <div className={s.filterBar}>{children}</div>;
 }

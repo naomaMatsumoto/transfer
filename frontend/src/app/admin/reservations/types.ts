@@ -1,5 +1,13 @@
 export type ClassType = { id: number; code: string; name: string; description?: string | null };
-export type User = { id: number; name: string; email?: string | null; phone?: string | null; course_type?: string | null; stage?: string; status?: string };
+export type User = {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  course_type?: string | null;
+  stage?: string;
+  status?: string;
+};
 export type Staff = { id: number; name: string };
 export type AdminEvent = {
   id: number;

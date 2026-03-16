@@ -35,13 +35,18 @@ export default function ForgotPasswordPage() {
       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="card shadow-sm text-center" style={{ maxWidth: "420px" }}>
           <div className="card-body p-4">
-            <div className="text-primary mb-3" style={{ fontSize: "48px" }}>✉</div>
+            <div className="text-primary mb-3" style={{ fontSize: "48px" }}>
+              ✉
+            </div>
             <h2 className="h5 mb-2">送信しました</h2>
             <p className="text-body-secondary mb-4">
-              ご登録のメールアドレスにパスワード再設定用のリンクをお送りしました。<br />
+              ご登録のメールアドレスにパスワード再設定用のリンクをお送りしました。
+              <br />
               メール内のリンクから新しいパスワードを設定してください。
             </p>
-            <Link href={ROUTES.MEMBER_LOGIN} className="btn btn-primary">会員ログインへ</Link>
+            <Link href={ROUTES.MEMBER_LOGIN} className="btn btn-primary">
+              会員ログインへ
+            </Link>
           </div>
         </div>
       </div>
@@ -53,7 +58,9 @@ export default function ForgotPasswordPage() {
       <div className="card shadow-sm" style={{ width: "100%", maxWidth: "380px" }}>
         <div className="card-body p-4">
           <p className="mb-3">
-            <Link href={ROUTES.MEMBER_LOGIN} className="small text-body-secondary">← 会員ログインに戻る</Link>
+            <Link href={ROUTES.MEMBER_LOGIN} className="small text-body-secondary">
+              ← 会員ログインに戻る
+            </Link>
           </p>
           <h1 className="h4 mb-4">パスワードをお忘れの方</h1>
           <p className="small text-body-secondary mb-3">
@@ -61,7 +68,9 @@ export default function ForgotPasswordPage() {
           </p>
           <form onSubmit={handleSubmit}>
             {error && (
-              <div className="alert alert-danger py-2" role="alert">{error}</div>
+              <div className="alert alert-danger py-2" role="alert">
+                {error}
+              </div>
             )}
             <div className="mb-4">
               <label className="form-label">メールアドレス</label>

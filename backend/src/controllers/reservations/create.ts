@@ -6,11 +6,7 @@ import { writeAuditLog } from "../../lib/auditLog";
 import type { InsertResult, RowDataPacket } from "../../types/db";
 import { badRequest, forbidden, notFound, created } from "../../lib/respond";
 
-export default async function createReservation(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createReservation(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const { userId, eventId, reservationType, makeupCreditId } = req.body as {
     userId?: number;
     eventId?: number;
@@ -99,13 +95,19 @@ export default async function createReservation(
     );
     const reservationId = (result as InsertResult).insertId;
     if (reservationType === "makeup" && makeupIdToUse) {
-      await conn.query(
-        "UPDATE makeup_credits SET status = 'consumed', updated_at = NOW() WHERE id = ?",
-        [makeupIdToUse],
-      );
+      await conn.query("UPDATE makeup_credits SET status = 'consumed', updated_at = NOW() WHERE id = ?", [
+        makeupIdToUse,
+      ]);
     }
     await conn.commit();
-    void writeAuditLog({ actorType: "member", actorId: userId, action: "reservation.create", targetType: "reservation", targetId: reservationId, detail: { eventId, reservationType } });
+    void writeAuditLog({
+      actorType: "member",
+      actorId: userId,
+      action: "reservation.create",
+      targetType: "reservation",
+      targetId: reservationId,
+      detail: { eventId, reservationType },
+    });
     created(res, {
       id: reservationId,
       userId,

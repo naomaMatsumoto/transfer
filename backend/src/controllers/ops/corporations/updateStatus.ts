@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, ok } from "../../../lib/respond";
 
-export default async function updateStatus(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateStatus(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const { status } = req.body as { status?: string };
   const allowed = ["pending", "email_sent", "active", "suspended"] as const;

@@ -5,11 +5,7 @@ import { ph } from "../../../lib/validate";
 
 const DEFAULT_LIMIT = 50;
 
-export default async function listMakeupCredits(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function listMakeupCredits(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const storePh = ph(storeIds);
   const { userId, status, page: pageStr, limit: limitStr } = req.query;
@@ -33,17 +29,17 @@ export default async function listMakeupCredits(
   const where = "WHERE " + conditions.join(" AND ");
   const joins = "LEFT JOIN users u ON u.id = mc.user_id LEFT JOIN class_types ct ON ct.id = mc.class_type_id";
 
-  const [[countRow]] = await pool.query(
+  const [[countRow]] = (await pool.query(
     `SELECT COUNT(*) AS total FROM makeup_credits mc ${joins} ${where}`,
-    filterParams
-  ) as unknown as [[{ total: number }], unknown];
+    filterParams,
+  )) as unknown as [[{ total: number }], unknown];
 
   const [rows] = await pool.query(
     `SELECT mc.id, mc.user_id, u.name AS user_name, mc.class_type_id, ct.name AS class_type_name,
             mc.granted_at, mc.expires_at, mc.status, mc.source, mc.source_event_id, mc.note, mc.created_by
      FROM makeup_credits mc ${joins} ${where}
      ORDER BY mc.granted_at DESC LIMIT ? OFFSET ?`,
-    [...filterParams, limit, offset]
+    [...filterParams, limit, offset],
   );
 
   ok(res, { data: rows, total: Number(countRow.total), page, limit });

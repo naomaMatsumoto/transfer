@@ -21,17 +21,17 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     label: "イベント",
     actions: {
-      "event.create":          "イベント 作成",
-      "event.create_bulk":     "イベント 一括作成",
-      "event.delete":          "イベント 削除",
-      "event.bulk_delete":     "イベント 一括削除",
+      "event.create": "イベント 作成",
+      "event.create_bulk": "イベント 一括作成",
+      "event.delete": "イベント 削除",
+      "event.bulk_delete": "イベント 一括削除",
       "event.update_capacity": "イベント 定員変更",
-      "event.bulk_capacity":   "イベント 一括定員変更",
-      "event.update_status":   "イベント ステータス変更",
-      "event.bulk_status":     "イベント 一括ステータス変更",
-      "event.update_time":     "イベント 時間変更",
-      "event.bulk_time":       "イベント 一括時間変更",
-      "event.update_staff":    "イベント スタッフ更新",
+      "event.bulk_capacity": "イベント 一括定員変更",
+      "event.update_status": "イベント ステータス変更",
+      "event.bulk_status": "イベント 一括ステータス変更",
+      "event.update_time": "イベント 時間変更",
+      "event.bulk_time": "イベント 一括時間変更",
+      "event.update_staff": "イベント スタッフ更新",
     },
   },
   {
@@ -61,22 +61,22 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     label: "予約・会員",
     actions: {
-      "reservation.create":         "予約 作成（代理）",
+      "reservation.create": "予約 作成（代理）",
       "reservation.cancel_by_admin": "予約 キャンセル（管理者）",
-      "reservation.cancel":          "予約 キャンセル（会員）",
-      "waitlist.join":               "キャンセル待ち 登録",
-      "waitlist.leave":              "キャンセル待ち 解除",
-      "member.create":               "会員 作成",
-      "member.update":               "会員 更新",
-      "member.delete":               "会員 削除",
+      "reservation.cancel": "予約 キャンセル（会員）",
+      "waitlist.join": "キャンセル待ち 登録",
+      "waitlist.leave": "キャンセル待ち 解除",
+      "member.create": "会員 作成",
+      "member.update": "会員 更新",
+      "member.delete": "会員 削除",
     },
   },
   {
     label: "店舗設定",
     actions: {
-      "store_settings.update":       "店舗設定 更新",
+      "store_settings.update": "店舗設定 更新",
       "settings.update_corporation": "設定 法人名変更",
-      "settings.update_password":    "設定 パスワード変更",
+      "settings.update_password": "設定 パスワード変更",
     },
   },
 ];
@@ -121,7 +121,9 @@ export default function AuditLogsPage() {
     }
   };
 
-  useEffect(() => { load(0); }, []);
+  useEffect(() => {
+    load(0);
+  }, []);
 
   const handleActionFilter = (value: string) => {
     setActionFilter(value);
@@ -143,7 +145,9 @@ export default function AuditLogsPage() {
           {ACTION_GROUPS.map((group) => (
             <optgroup key={group.label} label={group.label}>
               {Object.entries(group.actions).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
+                <option key={key} value={key}>
+                  {label}
+                </option>
               ))}
             </optgroup>
           ))}
@@ -177,10 +181,11 @@ export default function AuditLogsPage() {
                       {log.actor_id ? ` #${log.actor_id}` : ""}
                     </td>
                     <td className="small">{ACTION_LABELS[log.action] ?? log.action}</td>
-                    <td className="small">
-                      {log.target_type ? `${log.target_type} #${log.target_id}` : "-"}
-                    </td>
-                    <td className="small text-muted" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <td className="small">{log.target_type ? `${log.target_type} #${log.target_id}` : "-"}</td>
+                    <td
+                      className="small text-muted"
+                      style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
                       {formatDetail(log.detail)}
                     </td>
                   </tr>

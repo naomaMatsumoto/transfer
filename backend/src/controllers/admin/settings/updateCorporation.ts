@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function updateCorporationName(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateCorporationName(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corporationId = req.session?.account?.corporationId;
   if (corporationId == null) {
     unauthorized(res);
@@ -19,10 +15,10 @@ export default async function updateCorporationName(
     badRequest(res, "NAME_REQUIRED");
     return;
   }
-  const [result] = await pool.query(
-    "UPDATE corporations SET name = ?, updated_at = NOW() WHERE id = ?",
-    [name, corporationId]
-  );
+  const [result] = await pool.query("UPDATE corporations SET name = ?, updated_at = NOW() WHERE id = ?", [
+    name,
+    corporationId,
+  ]);
   if ((result as { affectedRows: number }).affectedRows === 0) {
     notFound(res, "NOT_FOUND");
     return;

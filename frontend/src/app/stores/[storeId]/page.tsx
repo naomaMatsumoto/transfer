@@ -119,7 +119,7 @@ export default function StoreCalendarPage() {
         const fromStr = toDateStr(gridStart);
         const toStr = toDateStr(gridEnd);
         const eventsPromise = fetch(
-          `${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${effectiveUserId}&storeId=${storeIdNum}`
+          `${API_BASE}/events?from=${fromStr}&to=${toStr}&userId=${effectiveUserId}&storeId=${storeIdNum}`,
         );
         const creditsPromise = isLoggedIn
           ? fetchWithCredentials(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`)
@@ -163,7 +163,12 @@ export default function StoreCalendarPage() {
       const res = await fetchWithCredentials(`${API_BASE}/reservations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: effectiveUserId, eventId: ev.id, reservationType: type, makeupCreditId: makeupCreditId ?? null }),
+        body: JSON.stringify({
+          userId: effectiveUserId,
+          eventId: ev.id,
+          reservationType: type,
+          makeupCreditId: makeupCreditId ?? null,
+        }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -171,16 +176,10 @@ export default function StoreCalendarPage() {
       }
       // 楽観的更新：APIの再取得なしにローカル状態を直接更新
       setEvents((prev) =>
-        prev.map((e) =>
-          e.id === ev.id
-            ? { ...e, reserved_count: e.reserved_count + 1, is_reserved_by_user: 1 }
-            : e
-        )
+        prev.map((e) => (e.id === ev.id ? { ...e, reserved_count: e.reserved_count + 1, is_reserved_by_user: 1 } : e)),
       );
       if (type === "makeup" && makeupCreditId != null) {
-        setCredits((prev) =>
-          prev.map((c) => (c.id === makeupCreditId ? { ...c, status: "consumed" as const } : c))
-        );
+        setCredits((prev) => prev.map((c) => (c.id === makeupCreditId ? { ...c, status: "consumed" as const } : c)));
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "予約処理中にエラーが発生しました");
@@ -200,7 +199,9 @@ export default function StoreCalendarPage() {
         throw new Error(getApiErrorMessage(data?.error));
       }
       if (isLoggedIn) {
-        const creditsRes = await fetchWithCredentials(`${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`);
+        const creditsRes = await fetchWithCredentials(
+          `${API_BASE}/makeup-credits?userId=${encodeURIComponent(memberId!)}`,
+        );
         if (creditsRes.ok) setCredits(await creditsRes.json());
       }
     } catch (e: unknown) {
@@ -213,8 +214,7 @@ export default function StoreCalendarPage() {
     return d.toTimeString().slice(0, 5);
   };
 
-  const weekdayClass = (i: number) =>
-    i === 0 ? s.weekdaySun : i === 6 ? s.weekdaySat : s.weekdayDefault;
+  const weekdayClass = (i: number) => (i === 0 ? s.weekdaySun : i === 6 ? s.weekdaySat : s.weekdayDefault);
 
   if (!mounted || !storeId) {
     return (
@@ -247,7 +247,13 @@ export default function StoreCalendarPage() {
       {memberChecked && !isLoggedIn && (
         <p className={s.muted} style={{ marginTop: "-0.5rem" }}>
           振替予約・欠席登録は
-          <Link href={`${ROUTES.MEMBER_LOGIN}?returnTo=${encodeURIComponent(`/stores/${storeIdNum}`)}`} className={s.muted} style={{ textDecoration: "underline" }}>会員ログイン</Link>
+          <Link
+            href={`${ROUTES.MEMBER_LOGIN}?returnTo=${encodeURIComponent(`/stores/${storeIdNum}`)}`}
+            className={s.muted}
+            style={{ textDecoration: "underline" }}
+          >
+            会員ログイン
+          </Link>
           後にご利用いただけます。（店舗で登録したアカウント）
         </p>
       )}
@@ -264,7 +270,8 @@ export default function StoreCalendarPage() {
           <ul className={s.creditsList}>
             {credits.map((c) => (
               <li key={c.id} className={s.creditItem}>
-                ID {c.id} / クラス種別ID: {c.class_type_id ?? "制限なし"} / 付与日: {c.granted_at.slice(0, 10)} / 期限: {c.expires_at ? c.expires_at.slice(0, 10) : "なし"} / 由来: {c.source === "absence" ? "欠席" : "休講"}
+                ID {c.id} / クラス種別ID: {c.class_type_id ?? "制限なし"} / 付与日: {c.granted_at.slice(0, 10)} / 期限:{" "}
+                {c.expires_at ? c.expires_at.slice(0, 10) : "なし"} / 由来: {c.source === "absence" ? "欠席" : "休講"}
               </li>
             ))}
           </ul>
@@ -276,7 +283,11 @@ export default function StoreCalendarPage() {
           カレンダー（月表示） {currentMonth.getFullYear()}年 {currentMonth.getMonth() + 1}月
         </h2>
         <div className={s.monthNav}>
-          <button type="button" className={s.monthBtn} onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}>
+          <button
+            type="button"
+            className={s.monthBtn}
+            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+          >
             ◀ 前月
           </button>
           <button
@@ -289,7 +300,11 @@ export default function StoreCalendarPage() {
           >
             今月
           </button>
-          <button type="button" className={s.monthBtn} onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}>
+          <button
+            type="button"
+            className={s.monthBtn}
+            onClick={() => setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+          >
             次月 ▶
           </button>
         </div>
@@ -307,118 +322,123 @@ export default function StoreCalendarPage() {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             return dateList.map((date) => {
-            const list = eventsByDate.get(date) ?? [];
-            const d = new Date(date);
-            const dayOfWeek = d.getDay();
-            const weekday = "日月火水木金土"[dayOfWeek];
-            const isCurrentMonth = d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear();
-            const isToday =
-              d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
-            const isPast = d < today;
+              const list = eventsByDate.get(date) ?? [];
+              const d = new Date(date);
+              const dayOfWeek = d.getDay();
+              const weekday = "日月火水木金土"[dayOfWeek];
+              const isCurrentMonth =
+                d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear();
+              const isToday =
+                d.getFullYear() === today.getFullYear() &&
+                d.getMonth() === today.getMonth() &&
+                d.getDate() === today.getDate();
+              const isPast = d < today;
 
-            const cellClass = [
-              s.dayCell,
-              isToday ? s.dayCellToday : "",
-              isPast ? s.dayCellPast : "",
-              !isCurrentMonth ? s.dayCellOtherMonth : "",
-            ]
-              .filter(Boolean)
-              .join(" ");
+              const cellClass = [
+                s.dayCell,
+                isToday ? s.dayCellToday : "",
+                isPast ? s.dayCellPast : "",
+                !isCurrentMonth ? s.dayCellOtherMonth : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
 
-            const numClass = [
-              s.dayNumber,
-              dayOfWeek === 0 ? s.dayNumberSun : "",
-              dayOfWeek === 6 ? s.dayNumberSat : "",
-            ]
-              .filter(Boolean)
-              .join(" ");
+              const numClass = [
+                s.dayNumber,
+                dayOfWeek === 0 ? s.dayNumberSun : "",
+                dayOfWeek === 6 ? s.dayNumberSat : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
 
-            return (
-              <div key={date} className={cellClass}>
-                <div>
-                  <div className={numClass}>
-                    {d.getDate()}（{weekday}）
+              return (
+                <div key={date} className={cellClass}>
+                  <div>
+                    <div className={numClass}>
+                      {d.getDate()}（{weekday}）
+                    </div>
+                    <div className={s.daySlotCount}>{list.length > 0 ? `${list.length}件の枠` : "枠なし / 休み"}</div>
                   </div>
-                  <div className={s.daySlotCount}>{list.length > 0 ? `${list.length}件の枠` : "枠なし / 休み"}</div>
-                </div>
-                {list.length === 0 ? (
-                  <p className={s.emptyDay}>この日はイベントが登録されていません。</p>
-                ) : (
-                  <ul className={s.eventList}>
-                    {list.map((ev) => {
-                      const isFull = ev.reserved_count >= ev.capacity;
-                      const isReservedByUser = ev.is_reserved_by_user === 1;
-                      const isHoliday = ev.event_status === "holiday";
-                      const isCanceled = ev.event_status === "canceled_by_admin";
+                  {list.length === 0 ? (
+                    <p className={s.emptyDay}>この日はイベントが登録されていません。</p>
+                  ) : (
+                    <ul className={s.eventList}>
+                      {list.map((ev) => {
+                        const isFull = ev.reserved_count >= ev.capacity;
+                        const isReservedByUser = ev.is_reserved_by_user === 1;
+                        const isHoliday = ev.event_status === "holiday";
+                        const isCanceled = ev.event_status === "canceled_by_admin";
 
-                      const itemClass = [
-                        s.eventItem,
-                        isReservedByUser ? s.eventItemReserved : "",
-                        isHoliday || isCanceled ? s.eventItemInactive : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ");
+                        const itemClass = [
+                          s.eventItem,
+                          isReservedByUser ? s.eventItemReserved : "",
+                          isHoliday || isCanceled ? s.eventItemInactive : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
 
-                      return (
-                        <li key={ev.id} className={itemClass}>
-                          <div className={s.eventRow}>
-                            <span className={s.eventTime}>
-                              {formatTime(ev.starts_at)}〜 {ev.class_type_name ?? `クラスID:${ev.class_type_id}`}
-                            </span>
-                            <span className={`${s.eventCapacity} ${isFull ? s.eventCapacityFull : s.eventCapacityAvailable}`}>
-                              {ev.reserved_count}/{ev.capacity}
-                            </span>
-                          </div>
+                        return (
+                          <li key={ev.id} className={itemClass}>
+                            <div className={s.eventRow}>
+                              <span className={s.eventTime}>
+                                {formatTime(ev.starts_at)}〜 {ev.class_type_name ?? `クラスID:${ev.class_type_id}`}
+                              </span>
+                              <span
+                                className={`${s.eventCapacity} ${isFull ? s.eventCapacityFull : s.eventCapacityAvailable}`}
+                              >
+                                {ev.reserved_count}/{ev.capacity}
+                              </span>
+                            </div>
 
-                          <div className={s.badgeRow}>
-                            {isHoliday && (
-                              <span className={`${s.badge} ${s.badgeHoliday}`}>休講 / 通常休み</span>
-                            )}
-                            {isCanceled && (
-                              <span className={`${s.badge} ${s.badgeCanceled}`}>中止（admin）</span>
-                            )}
-                            {isReservedByUser && (
-                              <span className={`${s.badge} ${s.badgeReserved}`}>あなたの予約</span>
-                            )}
-                          </div>
-
-                          {!isPast && (
-                            <div className={s.actionRow}>
-                              {!isHoliday && !isCanceled && !isReservedByUser && (
-                                <>
-                                  <button
-                                    type="button"
-                                    className={s.btnNormal}
-                                    onClick={() => handleCreateReservation(ev, "normal")}
-                                    disabled={isFull}
-                                  >
-                                    通常予約
-                                  </button>
-                                  {isLoggedIn && credits.length > 0 && !isFull && (
-                                    <button
-                                      type="button"
-                                      className={s.btnMakeup}
-                                      onClick={() => handleCreateReservation(ev, "makeup", credits[0]?.id)}
-                                    >
-                                      振替予約（先頭の権利を使用）
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                              {isLoggedIn && isReservedByUser && !isHoliday && !isCanceled && (
-                                <button type="button" className={s.btnAbsence} onClick={() => handleRegisterAbsence(ev)}>
-                                  欠席登録 → 振替権利付与
-                                </button>
+                            <div className={s.badgeRow}>
+                              {isHoliday && <span className={`${s.badge} ${s.badgeHoliday}`}>休講 / 通常休み</span>}
+                              {isCanceled && <span className={`${s.badge} ${s.badgeCanceled}`}>中止（admin）</span>}
+                              {isReservedByUser && (
+                                <span className={`${s.badge} ${s.badgeReserved}`}>あなたの予約</span>
                               )}
                             </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            );
+
+                            {!isPast && (
+                              <div className={s.actionRow}>
+                                {!isHoliday && !isCanceled && !isReservedByUser && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className={s.btnNormal}
+                                      onClick={() => handleCreateReservation(ev, "normal")}
+                                      disabled={isFull}
+                                    >
+                                      通常予約
+                                    </button>
+                                    {isLoggedIn && credits.length > 0 && !isFull && (
+                                      <button
+                                        type="button"
+                                        className={s.btnMakeup}
+                                        onClick={() => handleCreateReservation(ev, "makeup", credits[0]?.id)}
+                                      >
+                                        振替予約（先頭の権利を使用）
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                                {isLoggedIn && isReservedByUser && !isHoliday && !isCanceled && (
+                                  <button
+                                    type="button"
+                                    className={s.btnAbsence}
+                                    onClick={() => handleRegisterAbsence(ev)}
+                                  >
+                                    欠席登録 → 振替権利付与
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
             });
           })()}
         </div>

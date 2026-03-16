@@ -25,7 +25,10 @@
   font-family: inherit;
   font-size: v.$font-base;
   padding: v.$space-2 v.$space-1 v.$space-2 0;
-  transition: border-color 0.2s ease, border-width 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    border-width 0.2s ease,
+    box-shadow 0.2s ease;
   width: 100%;
 
   &::placeholder {

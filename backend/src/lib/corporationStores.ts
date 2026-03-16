@@ -22,10 +22,7 @@ async function getStoreIdsForRequest(req: Request): Promise<number[]> {
     return cached;
   }
 
-  const [rows] = await pool.query(
-    "SELECT id FROM stores WHERE corporation_id = ? ORDER BY id ASC",
-    [corporationId]
-  );
+  const [rows] = await pool.query("SELECT id FROM stores WHERE corporation_id = ? ORDER BY id ASC", [corporationId]);
   const list = rows as { id: number }[];
   const ids = Array.isArray(list) ? list.map((r) => r.id) : [];
 
@@ -51,11 +48,7 @@ export async function getStoreIds(req: Request): Promise<number[]> {
  * getStoreIds で店舗IDリストを取得し、req.storeIds にセットする。
  * 店舗が0件（ログイン不正・未設定）なら 403 を返して処理を止める。
  */
-export async function requireStoreAccess(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function requireStoreAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
   const ids = await getStoreIds(req);
   if (ids.length === 0) {
     forbidden(res);

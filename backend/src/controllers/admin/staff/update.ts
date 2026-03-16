@@ -5,11 +5,7 @@ import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function updateStaff(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateStaff(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const id = Number(req.params.id);
   const body = req.body as { name?: string };
@@ -24,10 +20,11 @@ export default async function updateStaff(
     return;
   }
   const placeholders = ph(storeIds);
-  const [result] = await pool.query(
-    `UPDATE staff SET name = ? WHERE id = ? AND store_id IN (${placeholders})`,
-    [trimmed, id, ...storeIds]
-  );
+  const [result] = await pool.query(`UPDATE staff SET name = ? WHERE id = ? AND store_id IN (${placeholders})`, [
+    trimmed,
+    id,
+    ...storeIds,
+  ]);
   if ((result as { affectedRows: number }).affectedRows === 0) {
     notFound(res, ERR.STAFF_NOT_FOUND);
     return;

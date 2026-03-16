@@ -36,7 +36,8 @@ export default function ResetPasswordPage() {
       const data = r.data as { error?: string };
       if (!r.ok) {
         if (data.error === "TOKEN_INVALID") setError("リンクが無効です。再度パスワード再設定を申請してください。");
-        else if (data.error === "TOKEN_EXPIRED") setError("リンクの有効期限が切れています。再度パスワード再設定を申請してください。");
+        else if (data.error === "TOKEN_EXPIRED")
+          setError("リンクの有効期限が切れています。再度パスワード再設定を申請してください。");
         else if (data.error === "NEW_PASSWORD_TOO_SHORT") setError("新しいパスワードは6文字以上で入力してください");
         else setError("パスワードの設定に失敗しました");
         return;
@@ -54,10 +55,14 @@ export default function ResetPasswordPage() {
       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="card shadow-sm text-center" style={{ maxWidth: "420px" }}>
           <div className="card-body p-4">
-            <div className="text-success mb-3" style={{ fontSize: "48px" }}>✓</div>
+            <div className="text-success mb-3" style={{ fontSize: "48px" }}>
+              ✓
+            </div>
             <h2 className="h5 mb-2">パスワードを変更しました</h2>
             <p className="text-body-secondary mb-4">新しいパスワードで会員ログインできます。</p>
-            <Link href={ROUTES.MEMBER_LOGIN} className="btn btn-primary">会員ログインへ</Link>
+            <Link href={ROUTES.MEMBER_LOGIN} className="btn btn-primary">
+              会員ログインへ
+            </Link>
           </div>
         </div>
       </div>
@@ -84,7 +89,9 @@ export default function ResetPasswordPage() {
           <h1 className="h4 mb-4">新しいパスワードを設定</h1>
           <form onSubmit={handleSubmit}>
             {error && (
-              <div className="alert alert-danger py-2" role="alert">{error}</div>
+              <div className="alert alert-danger py-2" role="alert">
+                {error}
+              </div>
             )}
             <div className="mb-3">
               <label className="form-label">新しいパスワード</label>

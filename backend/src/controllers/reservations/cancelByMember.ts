@@ -7,7 +7,7 @@ import { unauthorized, badRequest, notFound, ok } from "../../lib/respond";
 export default async function cancelReservationByMember(
   req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ): Promise<void> {
   const memberId = req.session?.memberId;
   if (memberId == null || typeof memberId !== "number") {
@@ -30,9 +30,21 @@ export default async function cancelReservationByMember(
      LEFT JOIN class_types ct ON ct.id = e.class_type_id
      LEFT JOIN stores s ON s.id = ct.store_id
      WHERE r.id = ? AND r.user_id = ?`,
-    [reservationId, memberId]
+    [reservationId, memberId],
   );
-  const reservation = (rows as { id: number; user_id: number; status: string; reservation_type: string; makeup_credit_id: number | null; event_id: number; starts_at: Date; booking_deadline_days: number | null; cancel_deadline_hours: number | null }[])[0];
+  const reservation = (
+    rows as {
+      id: number;
+      user_id: number;
+      status: string;
+      reservation_type: string;
+      makeup_credit_id: number | null;
+      event_id: number;
+      starts_at: Date;
+      booking_deadline_days: number | null;
+      cancel_deadline_hours: number | null;
+    }[]
+  )[0];
   if (!reservation) {
     notFound(res, "RESERVATION_NOT_FOUND");
     return;
@@ -51,18 +63,23 @@ export default async function cancelReservationByMember(
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    await conn.query(
-      "UPDATE reservations SET status = 'canceled_by_user', canceled_at = NOW() WHERE id = ?",
-      [reservationId]
-    );
+    await conn.query("UPDATE reservations SET status = 'canceled_by_user', canceled_at = NOW() WHERE id = ?", [
+      reservationId,
+    ]);
     if (reservation.reservation_type === "makeup" && reservation.makeup_credit_id) {
-      await conn.query(
-        "UPDATE makeup_credits SET status = 'granted', updated_at = NOW() WHERE id = ?",
-        [reservation.makeup_credit_id]
-      );
+      await conn.query("UPDATE makeup_credits SET status = 'granted', updated_at = NOW() WHERE id = ?", [
+        reservation.makeup_credit_id,
+      ]);
     }
     await conn.commit();
-    void writeAuditLog({ actorType: "member", actorId: memberId, action: "reservation.cancel", targetType: "reservation", targetId: reservationId, detail: { eventId: reservation.event_id } });
+    void writeAuditLog({
+      actorType: "member",
+      actorId: memberId,
+      action: "reservation.cancel",
+      targetType: "reservation",
+      targetId: reservationId,
+      detail: { eventId: reservation.event_id },
+    });
     ok(res, { id: reservationId, status: "canceled_by_user" });
   } catch (err) {
     await conn.rollback();

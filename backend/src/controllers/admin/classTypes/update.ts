@@ -6,11 +6,7 @@ import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function updateClassType(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateClassType(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const id = Number(req.params.id);
   const { code, name, description } = req.body as {
@@ -21,7 +17,8 @@ export default async function updateClassType(
   const sets: string[] = [];
   const params: (string | number | null)[] = [];
   if (code !== undefined) {
-    sets.push("code = ?"); params.push(String(code).trim());
+    sets.push("code = ?");
+    params.push(String(code).trim());
   }
   if (name !== undefined) {
     const v = String(name).trim();
@@ -29,10 +26,12 @@ export default async function updateClassType(
       badRequest(res, ERR.CLASS_TYPE_NAME_EMPTY);
       return;
     }
-    sets.push("name = ?"); params.push(v);
+    sets.push("name = ?");
+    params.push(v);
   }
   if (description !== undefined) {
-    sets.push("description = ?"); params.push(description);
+    sets.push("description = ?");
+    params.push(description);
   }
   if (sets.length === 0) {
     badRequest(res, ERR.CLASS_TYPE_UPDATE_EMPTY);

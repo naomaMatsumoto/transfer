@@ -9,11 +9,7 @@ import styles from "./admin.module.scss";
 
 const TAB_KEYS = RESERVATION_TABS.map((t) => t.key);
 
-function AdminLayoutInner({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -104,19 +100,29 @@ function AdminLayoutInner({
               <span className={styles.adminSidebarParent}>設定</span>
               <Link
                 href={ROUTES.ADMIN_SETTINGS}
-                className={pathname === ROUTES.ADMIN_SETTINGS ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
+                className={
+                  pathname === ROUTES.ADMIN_SETTINGS ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink
+                }
               >
                 設定メニュー
               </Link>
               <Link
                 href={ROUTES.ADMIN_SETTINGS_PASSWORD}
-                className={pathname === ROUTES.ADMIN_SETTINGS_PASSWORD ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
+                className={
+                  pathname === ROUTES.ADMIN_SETTINGS_PASSWORD
+                    ? styles.adminSidebarSubLinkActive
+                    : styles.adminSidebarSubLink
+                }
               >
                 パスワードの変更
               </Link>
               <Link
                 href={ROUTES.ADMIN_SETTINGS_CORPORATION}
-                className={pathname === ROUTES.ADMIN_SETTINGS_CORPORATION ? styles.adminSidebarSubLinkActive : styles.adminSidebarSubLink}
+                className={
+                  pathname === ROUTES.ADMIN_SETTINGS_CORPORATION
+                    ? styles.adminSidebarSubLinkActive
+                    : styles.adminSidebarSubLink
+                }
               >
                 法人名の変更
               </Link>
@@ -161,31 +167,27 @@ function AdminLayoutInner({
       </aside>
 
       <main className={styles.adminMain}>
-        <div className={styles.adminMainInner}>
-          {children}
-        </div>
+        <div className={styles.adminMainInner}>{children}</div>
       </main>
     </div>
   );
 }
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={
-      <div className={styles.adminLayout}>
-        <aside className={styles.adminSidebar}>
-          <div className={styles.adminSidebarHeader}>
-            <span className={styles.adminSidebarTitle}>管理画面</span>
-          </div>
-          <nav className={`small text-secondary ${styles.adminSidebarNav}`}>読み込み中…</nav>
-        </aside>
-        <main className={styles.adminMain}>読み込み中…</main>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className={styles.adminLayout}>
+          <aside className={styles.adminSidebar}>
+            <div className={styles.adminSidebarHeader}>
+              <span className={styles.adminSidebarTitle}>管理画面</span>
+            </div>
+            <nav className={`small text-secondary ${styles.adminSidebarNav}`}>読み込み中…</nav>
+          </aside>
+          <main className={styles.adminMain}>読み込み中…</main>
+        </div>
+      }
+    >
       <AdminLayoutInner>{children}</AdminLayoutInner>
     </Suspense>
   );

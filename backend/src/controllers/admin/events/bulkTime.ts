@@ -5,11 +5,7 @@ import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function bulkTimeEvents(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function bulkTimeEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const body = req.body as {
     ids?: number[];
@@ -27,7 +23,7 @@ export default async function bulkTimeEvents(
     `SELECT e.id, e.starts_at FROM events e
      JOIN class_types ct ON ct.id = e.class_type_id
      WHERE e.id IN (${idsPh}) AND ct.store_id IN (${storePh})`,
-    [...ids, ...storeIds]
+    [...ids, ...storeIds],
   );
   const validRows = (fetchRows as { id: number; starts_at: string }[]).filter((r) => {
     const d = (r.starts_at ?? "").toString().slice(0, 10);
@@ -50,7 +46,7 @@ export default async function bulkTimeEvents(
          ends_at   = CASE id ${whenClauses} END,
          updated_at = NOW()
        WHERE id IN (${validIdsPh})`,
-      [...startParams, ...endParams, ...validRows.map((r) => r.id)]
+      [...startParams, ...endParams, ...validRows.map((r) => r.id)],
     );
     updated = validRows.length;
   }

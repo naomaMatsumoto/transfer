@@ -74,9 +74,7 @@ export default function LoginPage() {
               {loading ? "ログイン中…" : "ログイン"}
             </button>
           </form>
-          <p className="small text-body-secondary mt-3 mb-0 text-center">
-            初回: admin@example.com / password
-          </p>
+          <p className="small text-body-secondary mt-3 mb-0 text-center">初回: admin@example.com / password</p>
           <p className="small text-center mt-2 mb-0">
             <a href={ROUTES.CORPORATION_REGISTER}>法人の新規申し込み</a>
           </p>

@@ -7,10 +7,7 @@ export function opsUrl(path: string): string {
   return `${OPS_BASE}${path}`;
 }
 
-export function opsFetch<T = unknown>(
-  path: string,
-  init?: RequestInit,
-): ReturnType<typeof apiRequest<T>> {
+export function opsFetch<T = unknown>(path: string, init?: RequestInit): ReturnType<typeof apiRequest<T>> {
   return apiRequest<T>(opsUrl(path), init);
 }
 

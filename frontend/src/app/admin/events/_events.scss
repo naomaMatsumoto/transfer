@@ -67,9 +67,15 @@
   border: 2px solid v.$color-primary;
 }
 
-.calEventScheduled { background-color: v.$color-success-light; }
-.calEventHoliday   { background-color: v.$color-gray-100; }
-.calEventCanceled  { background-color: v.$color-danger-light; }
+.calEventScheduled {
+  background-color: v.$color-success-light;
+}
+.calEventHoliday {
+  background-color: v.$color-gray-100;
+}
+.calEventCanceled {
+  background-color: v.$color-danger-light;
+}
 
 .calEventRow1 {
   align-items: center;
@@ -151,7 +157,11 @@
   gap: v.$space-2;
   overflow: hidden;
   padding: v.$space-3 v.$space-4 - 2;
-  transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.3s ease,
+    padding 0.3s ease,
+    margin 0.3s ease;
 }
 
 .bulkBarHidden {
@@ -196,6 +206,12 @@
   padding: v.$space-1 v.$space-2;
 }
 
-.weekdayBtnSun     { color: v.$color-sunday; }
-.weekdayBtnSat     { color: v.$color-saturday; }
-.weekdayBtnDefault { color: v.$color-gray-700; }
+.weekdayBtnSun {
+  color: v.$color-sunday;
+}
+.weekdayBtnSat {
+  color: v.$color-saturday;
+}
+.weekdayBtnDefault {
+  color: v.$color-gray-700;
+}

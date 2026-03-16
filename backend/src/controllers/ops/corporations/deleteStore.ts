@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { parseIntParam, findOwned, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 
-export default async function deleteStore(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function deleteStore(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const storeId = parseIntParam(req, "storeId");
   if (!storeId) {

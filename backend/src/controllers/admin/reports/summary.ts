@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
-export default async function reportSummary(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function reportSummary(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const storePh = ph(storeIds);
 
@@ -33,7 +29,7 @@ export default async function reportSummary(
      WHERE ct.store_id IN (${storePh})
        AND e.starts_at >= ? AND e.starts_at < ?
      GROUP BY month ORDER BY month`,
-    [...storeIds, from, to]
+    [...storeIds, from, to],
   );
 
   const [absenceRows] = await pool.query(
@@ -47,7 +43,7 @@ export default async function reportSummary(
        AND r.status = 'no_show'
        AND e.starts_at >= ? AND e.starts_at < ?
      GROUP BY month ORDER BY month`,
-    [...storeIds, from, to]
+    [...storeIds, from, to],
   );
 
   const [memberStats] = await pool.query(
@@ -56,7 +52,7 @@ export default async function reportSummary(
        SUM(CASE WHEN status = 'paused' THEN 1 ELSE 0 END) AS paused_members,
        SUM(CASE WHEN status = 'withdrawn' THEN 1 ELSE 0 END) AS withdrawn_members
      FROM users WHERE store_id IN (${storePh})`,
-    storeIds
+    storeIds,
   );
 
   ok(res, {

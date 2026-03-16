@@ -7,7 +7,6 @@ import MySQLStore from "express-mysql-session";
 import dotenv from "dotenv";
 import logger from "./logger";
 import router from "./router";
-import { pool } from "./db";
 import { ensureAuthTables } from "./ensureAuthTables";
 
 dotenv.config();
@@ -44,7 +43,7 @@ app.use(
       maxAge: SESSION_MAX_AGE_MS,
       sameSite: "lax",
     },
-  })
+  }),
 );
 app.use(express.json());
 
@@ -62,16 +61,14 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not Found", path: _req.method + " " + _req.path });
 });
 
-app.use(
-  (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const e = err as { message?: string; sqlMessage?: string; code?: string; stack?: string };
-    const msg = e?.sqlMessage ?? (err instanceof Error ? err.message : String(err));
-    const codePart = e?.code ? ` [${e.code}]` : "";
-    const stack = err instanceof Error ? (err as Error).stack : undefined;
-    logger.error(stack ? `Unhandled error${codePart}: ${msg}\n${stack}` : `Unhandled error${codePart}: ${msg}`);
-    res.status(500).json({ error: "Internal Server Error" });
-  },
-);
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const e = err as { message?: string; sqlMessage?: string; code?: string; stack?: string };
+  const msg = e?.sqlMessage ?? (err instanceof Error ? err.message : String(err));
+  const codePart = e?.code ? ` [${e.code}]` : "";
+  const stack = err instanceof Error ? (err as Error).stack : undefined;
+  logger.error(stack ? `Unhandled error${codePart}: ${msg}\n${stack}` : `Unhandled error${codePart}: ${msg}`);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 (async () => {
   await ensureAuthTables();

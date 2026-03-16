@@ -33,23 +33,30 @@ export default function AdminMembersPage() {
   const [inputKeyword, setInputKeyword] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadMembers = useCallback(async (p: number, keyword: string, stage: string) => {
-    try {
-      const params = new URLSearchParams({ page: String(p), limit: String(MEMBERS_PER_PAGE) });
-      if (keyword) params.set("keyword", keyword);
-      if (stage) params.set("stage", stage);
-      const r = await adminGet<UsersResponse>(`/users?${params.toString()}`);
-      if (r.ok && r.data) {
-        setMembers(r.data.data);
-        setTotal(r.data.total);
-      } else {
-        throw new Error("failed");
+  const loadMembers = useCallback(
+    async (p: number, keyword: string, stage: string) => {
+      try {
+        const params = new URLSearchParams({ page: String(p), limit: String(MEMBERS_PER_PAGE) });
+        if (keyword) params.set("keyword", keyword);
+        if (stage) params.set("stage", stage);
+        const r = await adminGet<UsersResponse>(`/users?${params.toString()}`);
+        if (r.ok && r.data) {
+          setMembers(r.data.data);
+          setTotal(r.data.total);
+        } else {
+          throw new Error("failed");
+        }
+      } catch (e) {
+        const isNetwork = e instanceof TypeError && e.message === "Failed to fetch";
+        flashErr(
+          isNetwork
+            ? "バックエンドに接続できません。backend で npm run dev を実行していますか？"
+            : "会員一覧の読み込みに失敗しました",
+        );
       }
-    } catch (e) {
-      const isNetwork = e instanceof TypeError && e.message === "Failed to fetch";
-      flashErr(isNetwork ? "バックエンドに接続できません。backend で npm run dev を実行していますか？" : "会員一覧の読み込みに失敗しました");
-    }
-  }, [flashErr]);
+    },
+    [flashErr],
+  );
 
   useEffect(() => {
     loadMembers(page, filterKeyword, filterStage);
@@ -244,7 +251,8 @@ export default function AdminMembersPage() {
       >
         {deleteTarget && (
           <>
-            会員「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。振替権利・予約が紐づいている場合は削除できません。この操作は取り消せません。
+            会員「{deleteTarget.name}」（#{deleteTarget.id}
+            ）を削除します。振替権利・予約が紐づいている場合は削除できません。この操作は取り消せません。
           </>
         )}
       </ConfirmModal>
@@ -317,12 +325,22 @@ export default function AdminMembersPage() {
                     </span>
                   </td>
                   <td className="text-body-secondary">
-                    {m.created_at ? new Date(m.created_at).toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" }) : "—"}
+                    {m.created_at
+                      ? new Date(m.created_at).toLocaleDateString("ja-JP", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                        })
+                      : "—"}
                   </td>
                   <td>
                     <div className="btn-group btn-group-sm">
-                      <button type="button" className="btn btn-primary" onClick={() => startEdit(m)}>編集</button>
-                      <button type="button" className="btn btn-danger" onClick={() => setDeleteTarget(m)}>削除</button>
+                      <button type="button" className="btn btn-primary" onClick={() => startEdit(m)}>
+                        編集
+                      </button>
+                      <button type="button" className="btn btn-danger" onClick={() => setDeleteTarget(m)}>
+                        削除
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -345,11 +363,32 @@ export default function AdminMembersPage() {
             {(page - 1) * MEMBERS_PER_PAGE + 1}–{Math.min(page * MEMBERS_PER_PAGE, total)} / {total} 件
           </span>
           <div className="d-flex align-items-center gap-1">
-            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>前へ</button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              前へ
+            </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} type="button" className={`btn btn-sm ${p === page ? "btn-primary" : "btn-outline-secondary"}`} onClick={() => setPage(p)}>{p}</button>
+              <button
+                key={p}
+                type="button"
+                className={`btn btn-sm ${p === page ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => setPage(p)}
+              >
+                {p}
+              </button>
             ))}
-            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>次へ</button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              次へ
+            </button>
           </div>
         </div>
       )}

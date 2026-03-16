@@ -18,10 +18,7 @@ export async function resolveOpsStore(req: Request, res: Response, next: NextFun
     return;
   }
   try {
-    const [rows] = await pool.query(
-      "SELECT id FROM stores WHERE id = ? AND corporation_id = ?",
-      [storeId, corp.id]
-    );
+    const [rows] = await pool.query("SELECT id FROM stores WHERE id = ? AND corporation_id = ?", [storeId, corp.id]);
     const row = (rows as { id: number }[])[0];
     if (!row) {
       res.status(404).json({ error: "STORE_NOT_FOUND" });

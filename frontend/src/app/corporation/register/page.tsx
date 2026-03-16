@@ -57,7 +57,9 @@ export default function CorporationRegisterPage() {
       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="card shadow-sm text-center" style={{ maxWidth: "420px" }}>
           <div className="card-body p-4">
-            <div className="text-success mb-3" style={{ fontSize: "48px" }}>✓</div>
+            <div className="text-success mb-3" style={{ fontSize: "48px" }}>
+              ✓
+            </div>
             <h2 className="h5 mb-2">
               {isSoleProprietor ? "個人事業主の登録が完了しました" : "法人登録が完了しました"}
             </h2>
@@ -83,7 +85,9 @@ export default function CorporationRegisterPage() {
               </div>
             )}
             <div className="mb-3">
-              <label className="form-label">事業者の種類 <span className="text-danger">*</span></label>
+              <label className="form-label">
+                事業者の種類 <span className="text-danger">*</span>
+              </label>
               <div className="d-flex gap-3">
                 <label className="d-flex align-items-center gap-2 cursor-pointer">
                   <input
@@ -121,7 +125,9 @@ export default function CorporationRegisterPage() {
               />
             </div>
             <div className="mb-3">
-              <label className="form-label">店舗名 <span className="text-danger">*</span></label>
+              <label className="form-label">
+                店舗名 <span className="text-danger">*</span>
+              </label>
               <input
                 type="text"
                 className="form-control"
@@ -134,7 +140,9 @@ export default function CorporationRegisterPage() {
             <hr className="my-4" />
             <p className="small fw-semibold text-secondary mb-2">管理者アカウント（ログインに使用）</p>
             <div className="mb-3">
-              <label className="form-label">メールアドレス <span className="text-danger">*</span></label>
+              <label className="form-label">
+                メールアドレス <span className="text-danger">*</span>
+              </label>
               <input
                 type="email"
                 className="form-control"
@@ -145,7 +153,9 @@ export default function CorporationRegisterPage() {
               />
             </div>
             <div className="mb-3">
-              <label className="form-label">パスワード <span className="text-danger">*</span></label>
+              <label className="form-label">
+                パスワード <span className="text-danger">*</span>
+              </label>
               <input
                 type="password"
                 className="form-control"

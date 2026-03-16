@@ -6,7 +6,17 @@ import { adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { ConfirmModal } from "../_components/ConfirmModal";
 import type { ClassType } from "../types";
 
-export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTypes: ClassType[]; reload: () => void; flash: (m: string) => void; flashErr: (m: string) => void }) {
+export function ClassTypesTab({
+  classTypes,
+  reload,
+  flash,
+  flashErr,
+}: {
+  classTypes: ClassType[];
+  reload: () => void;
+  flash: (m: string) => void;
+  flashErr: (m: string) => void;
+}) {
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -21,7 +31,10 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
   const [deleteTarget, setDeleteTarget] = useState<ClassType | null>(null);
 
   const handleCreate = async () => {
-    if (!newName.trim()) { flashErr("名前は必須です"); return; }
+    if (!newName.trim()) {
+      flashErr("名前は必須です");
+      return;
+    }
     const r = await adminPost("/class-types", {
       code: newCode.trim() || undefined,
       name: newName.trim(),
@@ -32,7 +45,9 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
       return;
     }
     flash("クラス種別を作成しました");
-    setNewCode(""); setNewName(""); setNewDesc("");
+    setNewCode("");
+    setNewName("");
+    setNewDesc("");
     reload();
   };
 
@@ -43,11 +58,16 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
     setEditDesc(ct.description ?? "");
   };
 
-  const cancelEdit = () => { setEditId(null); };
+  const cancelEdit = () => {
+    setEditId(null);
+  };
 
   const handleUpdate = async () => {
     if (!editId) return;
-    if (!editName.trim()) { flashErr("名前は必須です"); return; }
+    if (!editName.trim()) {
+      flashErr("名前は必須です");
+      return;
+    }
     const r = await adminPatch(`/class-types/${editId}`, {
       code: editCode.trim() || undefined,
       name: editName.trim(),
@@ -91,7 +111,9 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
         confirmColor="#991b1b"
       >
         {deleteTarget && (
-          <>クラス種別「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。この操作は取り消せません。</>
+          <>
+            クラス種別「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。この操作は取り消せません。
+          </>
         )}
       </ConfirmModal>
 
@@ -101,17 +123,37 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
         <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr auto", gap: "8px", alignItems: "end" }}>
           <div>
             <span className="form-label">コード（任意・未入力なら名前から自動）</span>
-            <input type="text" className="form-control" value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="例: kakekko" />
+            <input
+              type="text"
+              className="form-control"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              placeholder="例: kakekko"
+            />
           </div>
           <div>
             <span className="form-label">名前</span>
-            <input type="text" className="form-control" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="かけっこ" />
+            <input
+              type="text"
+              className="form-control"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="かけっこ"
+            />
           </div>
           <div>
             <span className="form-label">説明（任意）</span>
-            <input type="text" className="form-control" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="かけっこクラスの説明" />
+            <input
+              type="text"
+              className="form-control"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              placeholder="かけっこクラスの説明"
+            />
           </div>
-          <button type="button" className="btn btn-primary" onClick={handleCreate}>追加</button>
+          <button type="button" className="btn btn-primary" onClick={handleCreate}>
+            追加
+          </button>
         </div>
       </div>
 
@@ -134,18 +176,40 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
                 {editId === ct.id ? (
                   <>
                     <td>
-                      <input type="text" className="form-control" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editCode} onChange={(e) => setEditCode(e.target.value)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
+                        value={editCode}
+                        onChange={(e) => setEditCode(e.target.value)}
+                      />
                     </td>
                     <td>
-                      <input type="text" className="form-control" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editName} onChange={(e) => setEditName(e.target.value)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                      />
                     </td>
                     <td>
-                      <input type="text" className="form-control" style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                      />
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <span className="btn-group btn-group-sm">
-                        <button type="button" className="btn btn-success" onClick={handleUpdate}>保存</button>
-                        <button type="button" className="btn btn-secondary" onClick={cancelEdit}>取消</button>
+                        <button type="button" className="btn btn-success" onClick={handleUpdate}>
+                          保存
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={cancelEdit}>
+                          取消
+                        </button>
                       </span>
                     </td>
                   </>
@@ -156,8 +220,12 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
                     <td style={{ fontSize: "12px", color: "#6b7280" }}>{ct.description ?? "—"}</td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <span className="btn-group btn-group-sm">
-                        <button type="button" className="btn btn-primary" onClick={() => startEdit(ct)}>編集</button>
-                        <button type="button" className="btn btn-danger" onClick={() => requestDelete(ct)}>削除</button>
+                        <button type="button" className="btn btn-primary" onClick={() => startEdit(ct)}>
+                          編集
+                        </button>
+                        <button type="button" className="btn btn-danger" onClick={() => requestDelete(ct)}>
+                          削除
+                        </button>
                       </span>
                     </td>
                   </>
@@ -165,7 +233,11 @@ export function ClassTypesTab({ classTypes, reload, flash, flashErr }: { classTy
               </tr>
             ))}
             {classTypes.length === 0 && (
-              <tr><td colSpan={5} className="text-center text-body-secondary py-4">クラス種別がありません</td></tr>
+              <tr>
+                <td colSpan={5} className="text-center text-body-secondary py-4">
+                  クラス種別がありません
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { parseIntParam, getAffectedRows, opsAudit } from "../../../lib/opsHelpers";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 
-export default async function updateStore(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateStore(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const storeId = parseIntParam(req, "storeId");
   if (!storeId) {
@@ -50,7 +46,7 @@ export default async function updateStore(
   params.push(storeId, corp.id);
   const [result] = await pool.query(
     `UPDATE stores SET ${updates.join(", ")} WHERE id = ? AND corporation_id = ?`,
-    params
+    params,
   );
   if (getAffectedRows(result) === 0) {
     notFound(res, "STORE_NOT_FOUND");

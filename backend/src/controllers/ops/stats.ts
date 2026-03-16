@@ -2,37 +2,27 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ok } from "../../lib/respond";
 
-export default async function getStats(
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function getStats(_req: Request, res: Response, _next: NextFunction): Promise<void> {
   // サマリーを並列で取得（11個の相関サブクエリ → 独立した並列クエリに分割）
-  const [
-    [corpRows],
-    [[storesRow]],
-    [[accountsRow]],
-    [[membersRow]],
-    [[reservationsRow]],
-    [[eventsRow]],
-  ] = await Promise.all([
-    pool.query("SELECT status, COUNT(*) AS cnt FROM corporations WHERE deleted_at IS NULL GROUP BY status"),
-    pool.query("SELECT COUNT(*) AS total FROM stores"),
-    pool.query("SELECT COUNT(*) AS total FROM accounts"),
-    pool.query("SELECT COUNT(*) AS total FROM users"),
-    pool.query("SELECT COUNT(*) AS total, SUM(status = 'booked') AS active FROM reservations"),
-    pool.query("SELECT COUNT(*) AS total FROM events"),
-  ]) as unknown as [
-    [{ status: string; cnt: number }[], unknown],
-    [{ total: number }[], unknown],
-    [{ total: number }[], unknown],
-    [{ total: number }[], unknown],
-    [{ total: number; active: number }[], unknown],
-    [{ total: number }[], unknown],
-  ];
+  const [[corpRows], [[storesRow]], [[accountsRow]], [[membersRow]], [[reservationsRow]], [[eventsRow]]] =
+    (await Promise.all([
+      pool.query("SELECT status, COUNT(*) AS cnt FROM corporations WHERE deleted_at IS NULL GROUP BY status"),
+      pool.query("SELECT COUNT(*) AS total FROM stores"),
+      pool.query("SELECT COUNT(*) AS total FROM accounts"),
+      pool.query("SELECT COUNT(*) AS total FROM users"),
+      pool.query("SELECT COUNT(*) AS total, SUM(status = 'booked') AS active FROM reservations"),
+      pool.query("SELECT COUNT(*) AS total FROM events"),
+    ])) as unknown as [
+      [{ status: string; cnt: number }[], unknown],
+      [{ total: number }[], unknown],
+      [{ total: number }[], unknown],
+      [{ total: number }[], unknown],
+      [{ total: number; active: number }[], unknown],
+      [{ total: number }[], unknown],
+    ];
 
   const statusMap = Object.fromEntries(
-    (corpRows as { status: string; cnt: number }[]).map((r) => [r.status, Number(r.cnt)])
+    (corpRows as { status: string; cnt: number }[]).map((r) => [r.status, Number(r.cnt)]),
   );
   const totalCorps = Object.values(statusMap).reduce((s, n) => s + n, 0);
   const summary = {

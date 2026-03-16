@@ -4,11 +4,7 @@ import { ERR } from "../../../constants";
 import { badRequest, created } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function createStaff(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createStaff(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const storeId = storeIds[0];
   const body = req.body as { name?: string };
@@ -22,10 +18,7 @@ export default async function createStaff(
     badRequest(res, ERR.STAFF_NAME_EMPTY);
     return;
   }
-  const [result] = await pool.query(
-    "INSERT INTO staff (store_id, name) VALUES (?, ?)",
-    [storeId, trimmed]
-  );
+  const [result] = await pool.query("INSERT INTO staff (store_id, name) VALUES (?, ?)", [storeId, trimmed]);
   const insertId = (result as { insertId: number }).insertId;
   await writeAuditLog({
     actorType: "admin",

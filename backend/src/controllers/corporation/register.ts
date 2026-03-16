@@ -4,11 +4,7 @@ import { pool } from "../../db";
 import { ERR, isValidEmail } from "../../constants";
 import { badRequest, created } from "../../lib/respond";
 
-export default async function registerCorporation(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function registerCorporation(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as {
     organizationType?: "corporation" | "sole_proprietor";
     corporationName?: string;
@@ -17,14 +13,7 @@ export default async function registerCorporation(
     adminPassword?: string;
     adminDisplayName?: string;
   };
-  const {
-    organizationType,
-    corporationName,
-    storeName,
-    adminEmail,
-    adminPassword,
-    adminDisplayName,
-  } = body;
+  const { organizationType, corporationName, storeName, adminEmail, adminPassword, adminDisplayName } = body;
 
   const orgType = organizationType === "sole_proprietor" ? "sole_proprietor" : "corporation";
 
@@ -54,10 +43,7 @@ export default async function registerCorporation(
     return;
   }
 
-  const [existing] = await pool.query(
-    "SELECT id FROM accounts WHERE email = ? LIMIT 1",
-    [email]
-  );
+  const [existing] = await pool.query("SELECT id FROM accounts WHERE email = ? LIMIT 1", [email]);
   if ((existing as unknown[]).length > 0) {
     badRequest(res, ERR.ADMIN_EMAIL_ALREADY_USED);
     return;
@@ -66,24 +52,26 @@ export default async function registerCorporation(
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [corpResult] = await conn.query(
-      "INSERT INTO corporations (organization_type, name) VALUES (?, ?)",
-      [orgType, corpName]
-    );
+    const [corpResult] = await conn.query("INSERT INTO corporations (organization_type, name) VALUES (?, ?)", [
+      orgType,
+      corpName,
+    ]);
     const corporationId = (corpResult as { insertId: number }).insertId;
-    await conn.query(
-      "INSERT INTO stores (corporation_id, name) VALUES (?, ?)",
-      [corporationId, sName]
-    );
+    await conn.query("INSERT INTO stores (corporation_id, name) VALUES (?, ?)", [corporationId, sName]);
     const hash = await bcrypt.hash(String(password), 10);
-    await conn.query(
-      "INSERT INTO accounts (corporation_id, email, password_hash, display_name) VALUES (?, ?, ?, ?)",
-      [corporationId, email, hash, (adminDisplayName ?? "").trim() || null]
-    );
+    await conn.query("INSERT INTO accounts (corporation_id, email, password_hash, display_name) VALUES (?, ?, ?, ?)", [
+      corporationId,
+      email,
+      hash,
+      (adminDisplayName ?? "").trim() || null,
+    ]);
     await conn.commit();
     created(res, {
       corporationId,
-      message: orgType === "sole_proprietor" ? "個人事業主として登録しました。ログイン画面からログインしてください。" : "法人を登録しました。ログイン画面からログインしてください。",
+      message:
+        orgType === "sole_proprietor"
+          ? "個人事業主として登録しました。ログイン画面からログインしてください。"
+          : "法人を登録しました。ログイン画面からログインしてください。",
     });
   } catch (e) {
     await conn.rollback();

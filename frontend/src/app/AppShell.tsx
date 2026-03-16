@@ -25,11 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
         <nav className={s.nav}>
           {MAIN_NAV.map(({ path, label }) => (
-            <Link
-              key={path}
-              href={path}
-              className={isActive(path) ? s.navLinkActive : s.navLink}
-            >
+            <Link key={path} href={path} className={isActive(path) ? s.navLinkActive : s.navLink}>
               {label}
             </Link>
           ))}

@@ -17,7 +17,10 @@ export default function RegisterVerifyPage() {
   useEffect(() => {
     if (!token?.trim()) return;
     const controller = new AbortController();
-    fetch(`${getApiBase()}/members/verify?token=${encodeURIComponent(token)}`, { credentials: "include", signal: controller.signal })
+    fetch(`${getApiBase()}/members/verify?token=${encodeURIComponent(token)}`, {
+      credentials: "include",
+      signal: controller.signal,
+    })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
@@ -52,10 +55,14 @@ export default function RegisterVerifyPage() {
       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="card shadow-sm text-center" style={{ maxWidth: "420px" }}>
           <div className="card-body p-4">
-            <div className="text-success mb-3" style={{ fontSize: "48px" }}>✓</div>
+            <div className="text-success mb-3" style={{ fontSize: "48px" }}>
+              ✓
+            </div>
             <h2 className="h5 mb-2">会員登録が完了しました</h2>
             <p className="text-body-secondary mb-4">カレンダーから予約・欠席登録ができます。</p>
-            <Link href={ROUTES.HOME} className="btn btn-primary">カレンダーへ</Link>
+            <Link href={ROUTES.HOME} className="btn btn-primary">
+              カレンダーへ
+            </Link>
           </div>
         </div>
       </div>
@@ -66,10 +73,14 @@ export default function RegisterVerifyPage() {
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
       <div className="card shadow-sm text-center" style={{ maxWidth: "420px" }}>
         <div className="card-body p-4">
-          <div className="text-danger mb-3" style={{ fontSize: "48px" }}>!</div>
+          <div className="text-danger mb-3" style={{ fontSize: "48px" }}>
+            !
+          </div>
           <h2 className="h5 mb-2">認証できませんでした</h2>
           <p className="text-body-secondary mb-4">{errorMessage}</p>
-          <Link href={ROUTES.MEMBER_REGISTER} className="btn btn-primary">会員登録へ</Link>
+          <Link href={ROUTES.MEMBER_REGISTER} className="btn btn-primary">
+            会員登録へ
+          </Link>
           <span className="mx-2">または</span>
           <Link href={ROUTES.HOME}>カレンダーに戻る</Link>
         </div>

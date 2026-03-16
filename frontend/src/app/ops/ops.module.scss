@@ -21,7 +21,9 @@ $ops-col-narrow: 140px;
   padding: v.$space-2 v.$space-3;
   text-align: left;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   width: 100%;
 }
 

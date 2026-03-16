@@ -6,7 +6,7 @@ import logger from "./logger";
 async function ensureIndex(table: string, indexName: string, columns: string): Promise<void> {
   const [rows] = await pool.query(
     "SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1",
-    [table, indexName]
+    [table, indexName],
   );
   if ((rows as unknown[]).length === 0) {
     await pool.query(`ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (${columns})`);
@@ -50,16 +50,20 @@ export async function ensureAuthTables(): Promise<void> {
     `);
 
     const [orgTypeCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'organization_type' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'organization_type' LIMIT 1",
     );
     if ((orgTypeCol as unknown[]).length === 0) {
-      await pool.query("ALTER TABLE corporations ADD COLUMN organization_type ENUM('corporation', 'sole_proprietor') NOT NULL DEFAULT 'corporation' AFTER id");
+      await pool.query(
+        "ALTER TABLE corporations ADD COLUMN organization_type ENUM('corporation', 'sole_proprietor') NOT NULL DEFAULT 'corporation' AFTER id",
+      );
       logger.info("Added organization_type to corporations");
     }
 
     const [corpRows] = await pool.query("SELECT id FROM corporations LIMIT 1");
     if ((corpRows as unknown[]).length === 0) {
-      await pool.query("INSERT INTO corporations (id, organization_type, name) VALUES (1, 'corporation', 'デフォルト法人')");
+      await pool.query(
+        "INSERT INTO corporations (id, organization_type, name) VALUES (1, 'corporation', 'デフォルト法人')",
+      );
       await pool.query("INSERT INTO stores (id, corporation_id, name) VALUES (1, 1, 'デフォルト店舗')");
       logger.info("Created default corporation and store");
     }
@@ -69,24 +73,26 @@ export async function ensureAuthTables(): Promise<void> {
       const hash = await bcrypt.hash("password", 10);
       await pool.query(
         "INSERT INTO accounts (corporation_id, email, password_hash, display_name) VALUES (1, ?, ?, '管理者')",
-        ["admin@example.com", hash]
+        ["admin@example.com", hash],
       );
       logger.info("Created default account: admin@example.com (initial password in docs)");
     }
 
     // 既存DB: users に store_id がなければ追加
     const [colRows] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'store_id' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'store_id' LIMIT 1",
     );
     if ((colRows as unknown[]).length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN store_id BIGINT UNSIGNED NULL AFTER id");
-      await pool.query("ALTER TABLE users ADD CONSTRAINT fk_users_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL");
+      await pool.query(
+        "ALTER TABLE users ADD CONSTRAINT fk_users_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL",
+      );
       logger.info("Added store_id to users");
     }
 
     // 既存DB: users に email_verified_at がなければ追加
     const [evCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email_verified_at' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email_verified_at' LIMIT 1",
     );
     if ((evCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL AFTER email");
@@ -95,7 +101,7 @@ export async function ensureAuthTables(): Promise<void> {
 
     // 既存DB: users に password_hash（店舗登録会員のログイン用）
     const [pwCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash' LIMIT 1",
     );
     if ((pwCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER email_verified_at");
@@ -116,29 +122,33 @@ export async function ensureAuthTables(): Promise<void> {
 
     // Phase 2: class_types に store_id を追加（法人・店舗ごとのデータ分離）
     const [ctCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'class_types' AND COLUMN_NAME = 'store_id' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'class_types' AND COLUMN_NAME = 'store_id' LIMIT 1",
     );
     if ((ctCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE class_types ADD COLUMN store_id BIGINT UNSIGNED NULL AFTER id");
-      await pool.query("ALTER TABLE class_types ADD CONSTRAINT fk_class_types_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE");
+      await pool.query(
+        "ALTER TABLE class_types ADD CONSTRAINT fk_class_types_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE",
+      );
       await pool.query("UPDATE class_types SET store_id = 1 WHERE store_id IS NULL");
       logger.info("Added store_id to class_types");
     }
 
     // Phase 2: staff に store_id を追加
     const [staffCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff' AND COLUMN_NAME = 'store_id' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff' AND COLUMN_NAME = 'store_id' LIMIT 1",
     );
     if ((staffCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE staff ADD COLUMN store_id BIGINT UNSIGNED NULL AFTER id");
-      await pool.query("ALTER TABLE staff ADD CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE");
+      await pool.query(
+        "ALTER TABLE staff ADD CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE",
+      );
       await pool.query("UPDATE staff SET store_id = 1 WHERE store_id IS NULL");
       logger.info("Added store_id to staff");
     }
 
     // corporations.code (obfuscated URL identifier)
     const [codeCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'code' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'code' LIMIT 1",
     );
     if ((codeCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE corporations ADD COLUMN code CHAR(12) NULL AFTER id");
@@ -153,26 +163,30 @@ export async function ensureAuthTables(): Promise<void> {
 
     // corporations.status
     const [statusCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1",
     );
     if ((statusCol as unknown[]).length === 0) {
-      await pool.query("ALTER TABLE corporations ADD COLUMN status ENUM('pending','email_sent','active','suspended') NOT NULL DEFAULT 'active' AFTER name");
+      await pool.query(
+        "ALTER TABLE corporations ADD COLUMN status ENUM('pending','email_sent','active','suspended') NOT NULL DEFAULT 'active' AFTER name",
+      );
       logger.info("Added status to corporations");
     } else {
       // Extend ENUM if it only has old values (MySQL: MODIFY to add new enum values)
       const [enumCol] = await pool.query(
-        "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1"
+        "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'status' LIMIT 1",
       );
       const enumType = (enumCol as { COLUMN_TYPE: string }[])[0]?.COLUMN_TYPE ?? "";
       if (enumType.includes("'pending'") === false || enumType.includes("'email_sent'") === false) {
-        await pool.query("ALTER TABLE corporations MODIFY COLUMN status ENUM('pending','email_sent','active','suspended') NOT NULL DEFAULT 'active'");
+        await pool.query(
+          "ALTER TABLE corporations MODIFY COLUMN status ENUM('pending','email_sent','active','suspended') NOT NULL DEFAULT 'active'",
+        );
         logger.info("Extended corporations.status ENUM with pending, email_sent");
       }
     }
 
     // stores.public_id (UUID for public URLs)
     const [pidCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stores' AND COLUMN_NAME = 'public_id' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stores' AND COLUMN_NAME = 'public_id' LIMIT 1",
     );
     if ((pidCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE stores ADD COLUMN public_id CHAR(36) NULL AFTER id");
@@ -186,10 +200,12 @@ export async function ensureAuthTables(): Promise<void> {
 
     // accounts.role
     const [roleCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'accounts' AND COLUMN_NAME = 'role' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'accounts' AND COLUMN_NAME = 'role' LIMIT 1",
     );
     if ((roleCol as unknown[]).length === 0) {
-      await pool.query("ALTER TABLE accounts ADD COLUMN role ENUM('admin','staff') NOT NULL DEFAULT 'admin' AFTER display_name");
+      await pool.query(
+        "ALTER TABLE accounts ADD COLUMN role ENUM('admin','staff') NOT NULL DEFAULT 'admin' AFTER display_name",
+      );
       logger.info("Added role to accounts");
     }
 
@@ -207,10 +223,10 @@ export async function ensureAuthTables(): Promise<void> {
     const [opsRows] = await pool.query("SELECT id FROM platform_admins LIMIT 1");
     if ((opsRows as unknown[]).length === 0) {
       const hash = await bcrypt.hash("ops-password", 10);
-      await pool.query(
-        "INSERT INTO platform_admins (email, password_hash, display_name) VALUES (?, ?, '運営管理者')",
-        ["ops@example.com", hash]
-      );
+      await pool.query("INSERT INTO platform_admins (email, password_hash, display_name) VALUES (?, ?, '運営管理者')", [
+        "ops@example.com",
+        hash,
+      ]);
       logger.info("Created default platform admin: ops@example.com (initial password in docs)");
     }
 
@@ -232,7 +248,7 @@ export async function ensureAuthTables(): Promise<void> {
 
     // corporations.deleted_at (soft delete)
     const [delCol] = await pool.query(
-      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'deleted_at' LIMIT 1"
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'corporations' AND COLUMN_NAME = 'deleted_at' LIMIT 1",
     );
     if ((delCol as unknown[]).length === 0) {
       await pool.query("ALTER TABLE corporations ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");

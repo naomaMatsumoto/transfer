@@ -158,10 +158,22 @@ select.membersInput {
   padding: 6px 14px;
 }
 
-.membersBtnPrimary { @extend .membersBtn; background-color: v.$color-primary; }
-.membersBtnSuccess { @extend .membersBtn; background-color: v.$color-success; }
-.membersBtnDanger  { @extend .membersBtn; background-color: v.$color-danger; }
-.membersBtnGray    { @extend .membersBtn; background-color: v.$color-gray-500; }
+.membersBtnPrimary {
+  @extend .membersBtn;
+  background-color: v.$color-primary;
+}
+.membersBtnSuccess {
+  @extend .membersBtn;
+  background-color: v.$color-success;
+}
+.membersBtnDanger {
+  @extend .membersBtn;
+  background-color: v.$color-danger;
+}
+.membersBtnGray {
+  @extend .membersBtn;
+  background-color: v.$color-gray-500;
+}
 
 .membersBtnGray:disabled {
   cursor: not-allowed;
@@ -171,14 +183,30 @@ select.membersInput {
 // ================================================================
 // Table column widths
 // ================================================================
-.membersThId       { width: 56px; }
-.membersThName     { min-width: 100px; }
-.membersThEmail    { min-width: 140px; }
-.membersThPhone    { width: 110px; }
-.membersThCourse   { width: 90px; }
-.membersThDate     { width: 100px; }
-.membersThActions  { width: 140px; }
-.membersTdActions  { white-space: nowrap; }
+.membersThId {
+  width: 56px;
+}
+.membersThName {
+  min-width: 100px;
+}
+.membersThEmail {
+  min-width: 140px;
+}
+.membersThPhone {
+  width: 110px;
+}
+.membersThCourse {
+  width: 90px;
+}
+.membersThDate {
+  width: 100px;
+}
+.membersThActions {
+  width: 140px;
+}
+.membersTdActions {
+  white-space: nowrap;
+}
 
 .membersTableName {
   font-weight: 600;

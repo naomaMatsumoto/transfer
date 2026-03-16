@@ -3,11 +3,7 @@ import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { badRequest, unauthorized, serverError, ok } from "../../../lib/respond";
 
-export default async function opsLogin(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function opsLogin(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as { email?: string; password?: string };
   const { email, password } = body;
   if (!email || typeof email !== "string" || !password || typeof password !== "string") {
@@ -16,7 +12,7 @@ export default async function opsLogin(
   }
   const [rows] = await pool.query(
     "SELECT id, email, password_hash, display_name FROM platform_admins WHERE email = ? LIMIT 1",
-    [email.trim().toLowerCase()]
+    [email.trim().toLowerCase()],
   );
   const admin = (rows as { id: number; email: string; password_hash: string; display_name: string | null }[])[0];
   if (!admin) {

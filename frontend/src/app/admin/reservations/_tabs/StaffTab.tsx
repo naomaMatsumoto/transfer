@@ -6,7 +6,17 @@ import { adminPost, adminPatch, adminDelete } from "@/app/lib/api";
 import { ConfirmModal } from "../_components/ConfirmModal";
 import type { Staff } from "../types";
 
-export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: Staff[]; reload: () => void; flash: (m: string) => void; flashErr: (m: string) => void }) {
+export function StaffTab({
+  staffList,
+  reload,
+  flash,
+  flashErr,
+}: {
+  staffList: Staff[];
+  reload: () => void;
+  flash: (m: string) => void;
+  flashErr: (m: string) => void;
+}) {
   const [newName, setNewName] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -14,7 +24,10 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
 
   const handleCreate = async () => {
     const trimmed = newName.trim();
-    if (!trimmed) { flashErr("名前は必須です"); return; }
+    if (!trimmed) {
+      flashErr("名前は必須です");
+      return;
+    }
     const r = await adminPost("/staff", { name: trimmed });
     if (!r.ok) {
       flashErr(extractApiError(r.data));
@@ -30,12 +43,17 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
     setEditName(s.name);
   };
 
-  const cancelEdit = () => { setEditId(null); };
+  const cancelEdit = () => {
+    setEditId(null);
+  };
 
   const handleUpdate = async () => {
     if (!editId) return;
     const trimmed = editName.trim();
-    if (!trimmed) { flashErr("名前は必須です"); return; }
+    if (!trimmed) {
+      flashErr("名前は必須です");
+      return;
+    }
     const r = await adminPatch(`/staff/${editId}`, { name: trimmed });
     if (!r.ok) {
       flashErr(extractApiError(r.data));
@@ -70,7 +88,9 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
         confirmColor="#991b1b"
       >
         {deleteTarget && (
-          <>スタッフ「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。イベントへの割り当ても解除されます。</>
+          <>
+            スタッフ「{deleteTarget.name}」（#{deleteTarget.id}）を削除します。イベントへの割り当ても解除されます。
+          </>
         )}
       </ConfirmModal>
 
@@ -79,9 +99,17 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
         <div style={{ display: "flex", gap: "8px", alignItems: "end" }}>
           <div style={{ flex: 1, maxWidth: "300px" }}>
             <span className="form-label">名前</span>
-            <input type="text" className="form-control" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="例: 山田 太郎" />
+            <input
+              type="text"
+              className="form-control"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="例: 山田 太郎"
+            />
           </div>
-          <button type="button" className="btn btn-primary" onClick={handleCreate}>追加</button>
+          <button type="button" className="btn btn-primary" onClick={handleCreate}>
+            追加
+          </button>
         </div>
       </div>
 
@@ -119,13 +147,29 @@ export function StaffTab({ staffList, reload, flash, flashErr }: { staffList: St
                   <td>
                     {editId === s.id ? (
                       <>
-                        <button type="button" className="btn btn-success btn-sm me-1" onClick={handleUpdate}>保存</button>
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={cancelEdit}>取消</button>
+                        <button type="button" className="btn btn-success btn-sm me-1" onClick={handleUpdate}>
+                          保存
+                        </button>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={cancelEdit}>
+                          取消
+                        </button>
                       </>
                     ) : (
                       <>
-                        <button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => startEdit(s)}>編集</button>
-                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setDeleteTarget(s)}>削除</button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm me-1"
+                          onClick={() => startEdit(s)}
+                        >
+                          編集
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => setDeleteTarget(s)}
+                        >
+                          削除
+                        </button>
                       </>
                     )}
                   </td>

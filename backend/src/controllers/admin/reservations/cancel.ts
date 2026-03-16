@@ -5,11 +5,7 @@ import { writeAuditLog } from "../../../lib/auditLog";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
-export default async function cancelReservation(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function cancelReservation(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const reservationId = Number(req.params.id);
   const storePh = ph(storeIds);
@@ -19,7 +15,7 @@ export default async function cancelReservation(
 
     const [rows] = await conn.query(
       `SELECT r.id, r.reservation_type, r.makeup_credit_id, r.status FROM reservations r JOIN events e ON e.id = r.event_id JOIN class_types ct ON ct.id = e.class_type_id JOIN users u ON u.id = r.user_id WHERE r.id = ? AND ct.store_id IN (${storePh}) AND u.store_id IN (${storePh}) FOR UPDATE`,
-      [reservationId, ...storeIds, ...storeIds]
+      [reservationId, ...storeIds, ...storeIds],
     );
     const reservation = (rows as { reservation_type: string; makeup_credit_id: number | null; status: string }[])[0];
     if (!reservation) {
@@ -33,20 +29,24 @@ export default async function cancelReservation(
       return;
     }
 
-    await conn.query(
-      "UPDATE reservations SET status = 'canceled_by_admin', canceled_at = NOW() WHERE id = ?",
-      [reservationId]
-    );
+    await conn.query("UPDATE reservations SET status = 'canceled_by_admin', canceled_at = NOW() WHERE id = ?", [
+      reservationId,
+    ]);
 
     if (reservation.reservation_type === "makeup" && reservation.makeup_credit_id) {
-      await conn.query(
-        "UPDATE makeup_credits SET status = 'granted', updated_at = NOW() WHERE id = ?",
-        [reservation.makeup_credit_id]
-      );
+      await conn.query("UPDATE makeup_credits SET status = 'granted', updated_at = NOW() WHERE id = ?", [
+        reservation.makeup_credit_id,
+      ]);
     }
 
     await conn.commit();
-    void writeAuditLog({ actorType: "admin", actorId: req.session?.account?.accountId, action: "reservation.cancel_by_admin", targetType: "reservation", targetId: reservationId });
+    void writeAuditLog({
+      actorType: "admin",
+      actorId: req.session?.account?.accountId,
+      action: "reservation.cancel_by_admin",
+      targetType: "reservation",
+      targetId: reservationId,
+    });
     ok(res, { id: reservationId, status: "canceled_by_admin" });
   } catch (err) {
     await conn.rollback();

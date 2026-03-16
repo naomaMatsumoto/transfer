@@ -5,11 +5,7 @@ import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function deleteOneEvent(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function deleteOneEvent(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const eventId = Number(req.params.id);
   const storePlaceholders = ph(storeIds);
@@ -18,7 +14,7 @@ export default async function deleteOneEvent(
     await conn.beginTransaction();
     const [eventScope] = await conn.query(
       `SELECT e.id FROM events e JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePlaceholders})`,
-      [eventId, ...storeIds]
+      [eventId, ...storeIds],
     );
     if ((eventScope as unknown[]).length === 0) {
       await conn.rollback();
@@ -27,7 +23,7 @@ export default async function deleteOneEvent(
     }
     const [reservations] = await conn.query(
       "SELECT id FROM reservations WHERE event_id = ? AND status IN ('booked','attended')",
-      [eventId]
+      [eventId],
     );
     if ((reservations as unknown[]).length > 0) {
       await conn.rollback();
@@ -37,10 +33,7 @@ export default async function deleteOneEvent(
       return;
     }
     await conn.query("DELETE FROM reservations WHERE event_id = ?", [eventId]);
-    await conn.query(
-      "UPDATE makeup_credits SET source_event_id = NULL WHERE source_event_id = ?",
-      [eventId]
-    );
+    await conn.query("UPDATE makeup_credits SET source_event_id = NULL WHERE source_event_id = ?", [eventId]);
     const [result] = await conn.query("DELETE FROM events WHERE id = ?", [eventId]);
     if ((result as { affectedRows: number }).affectedRows === 0) {
       await conn.rollback();

@@ -5,11 +5,7 @@ import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function bulkStatusEvents(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function bulkStatusEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const body = req.body as { ids?: number[]; status?: "scheduled" | "canceled_by_admin" | "holiday" };
   const { ids, status } = body;
@@ -25,7 +21,7 @@ export default async function bulkStatusEvents(
   const idsPh = ph(ids);
   const [result] = await pool.query(
     `UPDATE events e JOIN class_types ct ON ct.id = e.class_type_id SET e.status = ?, e.updated_at = NOW() WHERE e.id IN (${idsPh}) AND ct.store_id IN (${storePh})`,
-    [status, ...ids, ...storeIds]
+    [status, ...ids, ...storeIds],
   );
   await writeAuditLog({
     actorType: "admin",

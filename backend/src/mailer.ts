@@ -13,7 +13,10 @@ import FormData from "form-data";
 import logger from "./logger";
 
 const MAIL_FROM = process.env.MAIL_FROM || "support@dynamo-b-studio.com";
-const FRONTEND_BASE = (process.env.FRONTEND_BASE_URL || process.env.CORS_ORIGIN || "http://localhost:3000").replace(/\/$/, "");
+const FRONTEND_BASE = (process.env.FRONTEND_BASE_URL || process.env.CORS_ORIGIN || "http://localhost:3000").replace(
+  /\/$/,
+  "",
+);
 
 function getClient(): { mg: ReturnType<InstanceType<typeof Mailgun>["client"]>; domain: string } | null {
   const apiKey = process.env.MAILGUN_API_KEY;

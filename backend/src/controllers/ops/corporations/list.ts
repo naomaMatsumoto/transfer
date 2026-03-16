@@ -4,11 +4,7 @@ import { ok } from "../../../lib/respond";
 
 const PAGE_SIZE_MAX = 200;
 
-export default async function listCorporations(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function listCorporations(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const limit = Math.min(Number(req.query.limit) || 50, PAGE_SIZE_MAX);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
   const includeDeleted = req.query.include_deleted === "1";

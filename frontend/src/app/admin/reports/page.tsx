@@ -32,7 +32,11 @@ export default function ReportsPage() {
   const { from: defFrom, to: defTo } = useMemo(defaultRange, []);
   const [from, setFrom] = useState(defFrom);
   const [to, setTo] = useState(defTo);
-  const [data, setData] = useState<{ reservationsByMonth: MonthRow[]; absencesByMonth: { month: string; absence_count: number }[]; memberStats: MemberStats } | null>(null);
+  const [data, setData] = useState<{
+    reservationsByMonth: MonthRow[];
+    absencesByMonth: { month: string; absence_count: number }[];
+    memberStats: MemberStats;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -40,7 +44,11 @@ export default function ReportsPage() {
     setLoading(true);
     setErr("");
     try {
-      const r = await adminGet<{ reservationsByMonth: MonthRow[]; absencesByMonth: { month: string; absence_count: number }[]; memberStats: MemberStats }>(`/reports/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      const r = await adminGet<{
+        reservationsByMonth: MonthRow[];
+        absencesByMonth: { month: string; absence_count: number }[];
+        memberStats: MemberStats;
+      }>(`/reports/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
       if (!r.ok) throw new Error("Failed");
       setData(r.data ?? null);
     } catch {
@@ -51,7 +59,9 @@ export default function ReportsPage() {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleCsvDownload = () => {
     const url = `${getApiBase()}/admin/reports/csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
@@ -65,11 +75,21 @@ export default function ReportsPage() {
       <div className="d-flex gap-2 align-items-end mb-4 flex-wrap">
         <div>
           <label className="form-label small">開始日</label>
-          <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
         </div>
         <div>
           <label className="form-label small">終了日</label>
-          <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
         </div>
         <button className="btn btn-primary btn-sm" onClick={load} disabled={loading}>
           {loading ? "読み込み中…" : "集計"}

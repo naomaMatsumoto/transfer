@@ -33,11 +33,11 @@ export async function findOwned<T = Record<string, unknown>>(
   corporationId: number,
   columns = "*",
 ): Promise<T | null> {
-  const [rows] = await pool.query(
-    `SELECT ${columns} FROM ${table} WHERE id = ? AND corporation_id = ?`,
-    [entityId, corporationId],
-  );
-  return ((rows as T[])[0]) ?? null;
+  const [rows] = await pool.query(`SELECT ${columns} FROM ${table} WHERE id = ? AND corporation_id = ?`, [
+    entityId,
+    corporationId,
+  ]);
+  return (rows as T[])[0] ?? null;
 }
 
 /**

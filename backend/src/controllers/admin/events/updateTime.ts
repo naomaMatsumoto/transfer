@@ -5,11 +5,7 @@ import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function updateEventTime(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updateEventTime(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const eventId = Number(req.params.id);
   const body = req.body as { startsAt?: string; endsAt?: string };
@@ -21,7 +17,7 @@ export default async function updateEventTime(
   const storePh = ph(storeIds);
   const [result] = await pool.query(
     `UPDATE events e JOIN class_types ct ON ct.id = e.class_type_id SET e.starts_at = ?, e.ends_at = ?, e.updated_at = NOW() WHERE e.id = ? AND ct.store_id IN (${storePh})`,
-    [startsAt, endsAt, eventId, ...storeIds]
+    [startsAt, endsAt, eventId, ...storeIds],
   );
   if ((result as { affectedRows: number }).affectedRows === 0) {
     notFound(res, ERR.EVENT_NOT_FOUND);

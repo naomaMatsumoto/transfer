@@ -76,7 +76,9 @@ function ToastItem({ text, type, exiting }: ToastItemProps) {
 }
 
 export function FlashToast({ msg, err, msgExiting, errExiting }: Props) {
-  useEffect(() => { injectStyle(); }, []);
+  useEffect(() => {
+    injectStyle();
+  }, []);
 
   if (typeof document === "undefined") return null;
   if (!msg && !err) return null;

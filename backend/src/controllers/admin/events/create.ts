@@ -6,11 +6,7 @@ import { ph } from "../../../lib/validate";
 import { syncEventStaff } from "../../../services/eventStaff";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function createEvent(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createEvent(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const body = req.body as {
     classTypeId?: number;
@@ -25,15 +21,16 @@ export default async function createEvent(
     return;
   }
   const placeholders = ph(storeIds);
-  const [ctRows] = await pool.query(
-    `SELECT id FROM class_types WHERE id = ? AND store_id IN (${placeholders})`,
-    [classTypeId, ...storeIds]
-  );
+  const [ctRows] = await pool.query(`SELECT id FROM class_types WHERE id = ? AND store_id IN (${placeholders})`, [
+    classTypeId,
+    ...storeIds,
+  ]);
   if ((ctRows as unknown[]).length === 0) {
     notFound(res, ERR.CLASS_TYPE_NOT_FOUND);
     return;
   }
-  const sql = "INSERT INTO events (class_type_id, starts_at, ends_at, capacity, status) VALUES (?, ?, ?, ?, 'scheduled')";
+  const sql =
+    "INSERT INTO events (class_type_id, starts_at, ends_at, capacity, status) VALUES (?, ?, ?, ?, 'scheduled')";
   const [result] = await pool.query(sql, [classTypeId, startsAt, endsAt, capacity ?? 6]);
   const insertId = (result as { insertId: number }).insertId;
 

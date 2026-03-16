@@ -105,7 +105,11 @@ export default function AdminSettingsPasswordPage() {
             </button>
           </form>
           {error && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageError}`}>{error}</p>}
-          {success && <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageSuccess}`}>パスワードを変更しました。</p>}
+          {success && (
+            <p className={`${styles.settingsFormMessage} ${styles.settingsFormMessageSuccess}`}>
+              パスワードを変更しました。
+            </p>
+          )}
         </div>
       </div>
     </div>

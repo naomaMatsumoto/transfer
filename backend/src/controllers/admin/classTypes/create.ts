@@ -15,11 +15,7 @@ function generateClassTypeCode(name: string): string {
   return "ct_" + String(Date.now());
 }
 
-export default async function createClassType(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createClassType(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const storeId = storeIds[0];
   const body = req.body as { code?: string; name?: string; description?: string };
@@ -29,12 +25,11 @@ export default async function createClassType(
     return;
   }
   const trimmedName = String(name).trim();
-  const codeToUse =
-    code && String(code).trim() ? String(code).trim() : generateClassTypeCode(trimmedName);
+  const codeToUse = code && String(code).trim() ? String(code).trim() : generateClassTypeCode(trimmedName);
   try {
     const [result] = await pool.query(
       "INSERT INTO class_types (store_id, code, name, description) VALUES (?, ?, ?, ?)",
-      [storeId, codeToUse, trimmedName, description ?? null]
+      [storeId, codeToUse, trimmedName, description ?? null],
     );
     const insertId = (result as { insertId: number }).insertId;
     await writeAuditLog({

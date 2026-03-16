@@ -3,11 +3,7 @@ import { pool } from "../../../db";
 import { ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
-export default async function listEvents(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function listEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const { from, to } = req.query;
   const storePlaceholders = ph(storeIds);
@@ -40,9 +36,9 @@ export default async function listEvents(
     GROUP BY e.id
     ORDER BY e.starts_at ASC
   `,
-    params
+    params,
   );
-  const events = rows as (Record<string, unknown>)[];
+  const events = rows as Record<string, unknown>[];
   const normalized = events.map((ev) => {
     let staff = ev.staff;
     if (staff === null || staff === undefined) staff = [];

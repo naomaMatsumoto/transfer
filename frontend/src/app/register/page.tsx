@@ -70,10 +70,13 @@ export default function MemberRegisterPage() {
       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="card shadow-sm text-center" style={{ maxWidth: "420px" }}>
           <div className="card-body p-4">
-            <div className="text-primary mb-3" style={{ fontSize: "48px" }}>✉</div>
+            <div className="text-primary mb-3" style={{ fontSize: "48px" }}>
+              ✉
+            </div>
             <h2 className="h5 mb-2">登録を受け付けました</h2>
             <p className="text-body-secondary mb-0">
-              ご登録のメールアドレスに認証リンクをお送りしました。<br />
+              ご登録のメールアドレスに認証リンクをお送りしました。
+              <br />
               メール内のリンクをクリックして、会員登録を完了してください。
             </p>
           </div>
@@ -94,7 +97,9 @@ export default function MemberRegisterPage() {
               </div>
             )}
             <div className="mb-3">
-              <label className="form-label">店舗 <span className="text-danger">*</span></label>
+              <label className="form-label">
+                店舗 <span className="text-danger">*</span>
+              </label>
               <select
                 className="form-select"
                 value={storeId}
@@ -103,15 +108,17 @@ export default function MemberRegisterPage() {
               >
                 <option value="">選択してください</option>
                 {stores.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
-              {stores.length === 0 && (
-                <p className="small text-body-secondary mt-1 mb-0">店舗を読み込み中…</p>
-              )}
+              {stores.length === 0 && <p className="small text-body-secondary mt-1 mb-0">店舗を読み込み中…</p>}
             </div>
             <div className="mb-3">
-              <label className="form-label">お名前 <span className="text-danger">*</span></label>
+              <label className="form-label">
+                お名前 <span className="text-danger">*</span>
+              </label>
               <input
                 type="text"
                 className="form-control"
@@ -132,7 +139,9 @@ export default function MemberRegisterPage() {
               />
             </div>
             <div className="mb-3">
-              <label className="form-label">メールアドレス <span className="text-danger">*</span></label>
+              <label className="form-label">
+                メールアドレス <span className="text-danger">*</span>
+              </label>
               <input
                 type="email"
                 className="form-control"

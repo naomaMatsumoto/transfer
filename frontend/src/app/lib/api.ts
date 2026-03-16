@@ -20,10 +20,7 @@ export function apiFetch(url: string, init?: RequestInit): Promise<Response> {
 export type ApiResult<T = unknown> = { ok: boolean; data?: T; status?: number };
 
 /** apiFetch を実行し、JSON パースまで行って ApiResult を返す */
-export async function apiRequest<T = unknown>(
-  url: string,
-  init?: RequestInit,
-): Promise<ApiResult<T>> {
+export async function apiRequest<T = unknown>(url: string, init?: RequestInit): Promise<ApiResult<T>> {
   try {
     const res = await apiFetch(url, init);
     const json = await res.json().catch(() => ({}));

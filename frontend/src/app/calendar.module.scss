@@ -77,9 +77,15 @@
   text-align: center;
 }
 
-.weekdaySun     { color: v.$color-sunday; }
-.weekdaySat     { color: v.$color-saturday; }
-.weekdayDefault { color: v.$color-gray-500; }
+.weekdaySun {
+  color: v.$color-sunday;
+}
+.weekdaySat {
+  color: v.$color-saturday;
+}
+.weekdayDefault {
+  color: v.$color-gray-500;
+}
 
 .dayCell {
   background-color: v.$color-white;
@@ -108,8 +114,12 @@
   margin-bottom: v.$space-1;
 }
 
-.dayNumberSun { color: v.$color-sunday; }
-.dayNumberSat { color: v.$color-saturday; }
+.dayNumberSun {
+  color: v.$color-sunday;
+}
+.dayNumberSat {
+  color: v.$color-saturday;
+}
 
 .daySlotCount {
   color: v.$color-gray-500;
@@ -160,8 +170,12 @@
   font-size: v.$font-sm + 1;
 }
 
-.eventCapacityFull      { color: v.$color-danger-darker; }
-.eventCapacityAvailable { color: v.$color-success; }
+.eventCapacityFull {
+  color: v.$color-danger-darker;
+}
+.eventCapacityAvailable {
+  color: v.$color-success;
+}
 
 .badgeRow {
   align-items: center;
@@ -176,9 +190,17 @@
   padding: v.$space-1 v.$space-2;
 }
 
-.badgeHoliday  { background-color: v.$color-gray-200; }
-.badgeCanceled { background-color: v.$color-danger-light; color: v.$color-danger-darker; }
-.badgeReserved { background-color: v.$color-success-pale; color: v.$color-success-text; }
+.badgeHoliday {
+  background-color: v.$color-gray-200;
+}
+.badgeCanceled {
+  background-color: v.$color-danger-light;
+  color: v.$color-danger-darker;
+}
+.badgeReserved {
+  background-color: v.$color-success-pale;
+  color: v.$color-success-text;
+}
 
 .actionRow {
   display: flex;

@@ -5,11 +5,7 @@ import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
 import { writeAuditLog } from "../../../lib/auditLog";
 import { isValidPassword } from "../../../lib/validate";
 
-export default async function updatePassword(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function updatePassword(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const accountId = req.session?.account?.accountId;
   if (accountId == null) {
     unauthorized(res);
@@ -25,10 +21,7 @@ export default async function updatePassword(
     badRequest(res, "NEW_PASSWORD_TOO_SHORT");
     return;
   }
-  const [rows] = await pool.query(
-    "SELECT password_hash FROM accounts WHERE id = ?",
-    [accountId]
-  );
+  const [rows] = await pool.query("SELECT password_hash FROM accounts WHERE id = ?", [accountId]);
   const account = (rows as { password_hash: string }[])[0];
   if (!account) {
     notFound(res, "NOT_FOUND");

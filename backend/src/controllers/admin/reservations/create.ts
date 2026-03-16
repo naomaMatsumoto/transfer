@@ -5,11 +5,7 @@ import { badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 import { writeAuditLog } from "../../../lib/auditLog";
 
-export default async function createReservation(
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): Promise<void> {
+export default async function createReservation(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const body = req.body as {
     userId?: number;
@@ -36,7 +32,7 @@ export default async function createReservation(
 
     const [eventRows] = await conn.query(
       `SELECT e.id, e.capacity, e.status, COALESCE(SUM(CASE WHEN r.status IN ('booked','attended') THEN 1 ELSE 0 END), 0) AS reserved_count FROM events e LEFT JOIN reservations r ON r.event_id = e.id JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePh}) GROUP BY e.id FOR UPDATE`,
-      [eventId, ...storeIds]
+      [eventId, ...storeIds],
     );
     const event = (eventRows as { id: number; capacity: number; reserved_count: number }[])[0];
     if (!event) {
@@ -45,10 +41,10 @@ export default async function createReservation(
       return;
     }
 
-    const [userRows] = await conn.query(
-      `SELECT id FROM users WHERE id = ? AND store_id IN (${storePh})`,
-      [userId, ...storeIds]
-    );
+    const [userRows] = await conn.query(`SELECT id FROM users WHERE id = ? AND store_id IN (${storePh})`, [
+      userId,
+      ...storeIds,
+    ]);
     if ((userRows as unknown[]).length === 0) {
       await conn.rollback();
       notFound(res, ERR.EVENT_NOT_FOUND);
@@ -63,7 +59,7 @@ export default async function createReservation(
 
     const [existing] = await conn.query(
       "SELECT id FROM reservations WHERE user_id = ? AND event_id = ? AND status IN ('booked','attended') FOR UPDATE",
-      [userId, eventId]
+      [userId, eventId],
     );
     if ((existing as unknown[]).length > 0) {
       await conn.rollback();
@@ -75,7 +71,7 @@ export default async function createReservation(
     if (reservationType === "makeup") {
       const [credits] = await conn.query(
         "SELECT id, status FROM makeup_credits WHERE id = ? AND user_id = ? FOR UPDATE",
-        [makeupCreditId, userId]
+        [makeupCreditId, userId],
       );
       const credit = (credits as { id: number; status: string }[])[0];
       if (!credit || credit.status !== "granted") {
@@ -88,14 +84,13 @@ export default async function createReservation(
 
     const [result] = await conn.query(
       "INSERT INTO reservations (user_id, event_id, reservation_type, makeup_credit_id, status, created_at) VALUES (?, ?, ?, ?, 'booked', NOW())",
-      [userId, eventId, reservationType, makeupIdToUse]
+      [userId, eventId, reservationType, makeupIdToUse],
     );
 
     if (reservationType === "makeup" && makeupIdToUse) {
-      await conn.query(
-        "UPDATE makeup_credits SET status = 'consumed', updated_at = NOW() WHERE id = ?",
-        [makeupIdToUse]
-      );
+      await conn.query("UPDATE makeup_credits SET status = 'consumed', updated_at = NOW() WHERE id = ?", [
+        makeupIdToUse,
+      ]);
     }
 
     const insertId = (result as { insertId: number }).insertId;
