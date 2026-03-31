@@ -3,18 +3,19 @@ import bcrypt from "bcrypt";
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { parseIntParam, findOwned, opsAudit } from "../../../lib/opsHelpers";
+import { badRequest, notFound, ok } from "../../../lib/respond";
 
 export default async function resetPassword(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corp = req.corporation!;
   const accountId = parseIntParam(req, "accountId");
   if (!accountId) {
-    res.status(400).json({ error: "INVALID_ID" });
+    badRequest(res, "INVALID_ID");
     return;
   }
 
   const account = await findOwned("accounts", accountId, corp.id, "id, email");
   if (!account) {
-    res.status(404).json({ error: "ACCOUNT_NOT_FOUND" });
+    notFound(res, "ACCOUNT_NOT_FOUND");
     return;
   }
 
@@ -22,5 +23,5 @@ export default async function resetPassword(req: Request, res: Response, _next: 
   const hashed = await bcrypt.hash(newPw, 10);
   await pool.query("UPDATE accounts SET password_hash = ? WHERE id = ?", [hashed, accountId]);
   await opsAudit(req, "account.resetPassword", "account", accountId);
-  res.json({ newPassword: newPw });
+  ok(res, { newPassword: newPw });
 }

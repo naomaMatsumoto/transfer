@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, created } from "../../../lib/respond";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function createStaff(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -22,7 +22,7 @@ export default async function createStaff(req: Request, res: Response, _next: Ne
   const insertId = (result as { insertId: number }).insertId;
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "staff.create",
     targetType: "staff",
     targetId: insertId,

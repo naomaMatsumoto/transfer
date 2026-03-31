@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/imaji/Documents/workspace/transfer/lp/src/app/globals.css"],"sourcesContent":["*,\r\n*::before,\r\n*::after {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\n:root {\r\n  --color-primary: #4f46e5;\r\n  --color-primary-dark: #3730a3;\r\n  --color-accent: #10b981;\r\n  --color-text: #111827;\r\n  --color-muted: #6b7280;\r\n  --color-bg: #ffffff;\r\n  --color-surface: #f9fafb;\r\n  --color-border: #e5e7eb;\r\n  --font-sans: \"Hiragino Kaku Gothic ProN\", \"Hiragino Sans\", Meiryo, sans-serif;\r\n  --radius: 12px;\r\n  --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);\r\n}\r\n\r\nhtml {\r\n  scroll-behavior: smooth;\r\n}\r\n\r\nbody {\r\n  font-family: var(--font-sans);\r\n  color: var(--color-text);\r\n  background: var(--color-bg);\r\n  line-height: 1.7;\r\n  -webkit-font-smoothing: antialiased;\r\n}\r\n\r\na {\r\n  color: inherit;\r\n  text-decoration: none;\r\n}\r\n\r\nimg {\r\n  max-width: 100%;\r\n  display: block;\r\n}\r\n"],"names":[],"mappings":"AAAA;;;;;;AAQA;;;;;;;;;;;;;;AAcA;;;;AAIA;;;;;;;;AAQA;;;;;AAKA"}}]
+}

@@ -47,6 +47,17 @@ services:
     ports:
       - "3000:3000"
 
+  lp:
+    build:
+      context: ./lp
+      dockerfile: Dockerfile
+    container_name: makeup-lp
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+
 volumes:
   db_data:
 

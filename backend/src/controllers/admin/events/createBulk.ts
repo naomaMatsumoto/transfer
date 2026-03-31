@@ -3,7 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, notFound, created } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function createBulkEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -77,7 +77,7 @@ export default async function createBulkEvents(req: Request, res: Response, _nex
     const firstId = (result as { insertId: number }).insertId;
     const createdEvents = eventRows.map(([dateStr], i) => ({ id: firstId + i, date: dateStr }));
 
-    // event_staff を一括 INSERT（staffIds が指定されている場合）
+    // staffIds が指定されている場合、event_staff を一括 INSERT
     const rawStaffIds = Array.isArray(staffIds)
       ? [...new Set(staffIds.filter((id) => Number.isInteger(id) && (id as number) > 0) as number[])]
       : [];
@@ -102,7 +102,7 @@ export default async function createBulkEvents(req: Request, res: Response, _nex
 
     await writeAuditLog({
       actorType: "admin",
-      actorId: req.session?.account?.accountId ?? null,
+      actorId: adminActorId(req),
       action: "event.create_bulk",
       targetType: "event",
       targetId: null,

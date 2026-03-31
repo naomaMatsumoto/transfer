@@ -1,3 +1,4 @@
+import { type Request } from "express";
 import { STAGE_VALUES, isValidEmail } from "../constants";
 
 export type StageValue = (typeof STAGE_VALUES)[number];
@@ -23,6 +24,23 @@ export function normalizeStage(v: unknown): StageValue {
     return v as StageValue;
   }
   return "other";
+}
+
+/**
+ * リクエストボディの生の配列から正の整数 ID のみを抽出する。
+ * 文字列 "1" も数値に変換する。
+ */
+export function parseIds(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((id) => (typeof id === "string" ? parseInt(id, 10) : Number(id)))
+    .filter((n) => Number.isInteger(n) && n > 0);
+}
+
+/** req.params から正の整数パラメータを取得。不正なら null を返す。 */
+export function parseIntParam(req: Request, name: string): number | null {
+  const v = Number(req.params[name]);
+  return Number.isInteger(v) && v > 0 ? v : null;
 }
 
 /** SQL IN句用プレースホルダ生成: [?,?,?] */

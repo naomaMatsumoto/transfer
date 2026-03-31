@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, ok } from "../../lib/respond";
+import { regenerateSession } from "../../lib/session";
 
 export default async function verifyMember(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const token = (req.query.token as string)?.trim();
@@ -38,9 +39,8 @@ export default async function verifyMember(req: Request, res: Response, _next: N
     conn.release();
   }
 
-  if (req.session) {
-    req.session.memberId = row.user_id;
-  }
+  await regenerateSession(req);
+  req.session.memberId = row.user_id;
 
   ok(res, {
     message: "メールアドレスの認証が完了しました。会員登録が完了しました。",

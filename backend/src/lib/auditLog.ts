@@ -1,7 +1,13 @@
+import { type Request } from "express";
 import { pool } from "../db";
 import logger from "../logger";
 
 export type ActorType = "admin" | "member" | "platform" | "system";
+
+/** 管理者リクエストから actorId を取得する */
+export function adminActorId(req: Request): number | null {
+  return req.session?.account?.accountId ?? null;
+}
 
 export async function writeAuditLog(params: {
   actorType: ActorType;

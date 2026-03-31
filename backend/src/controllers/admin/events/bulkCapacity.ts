@@ -3,7 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function bulkCapacityEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -21,7 +21,7 @@ export default async function bulkCapacityEvents(req: Request, res: Response, _n
   );
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "event.bulk_capacity",
     targetType: "event",
     targetId: null,

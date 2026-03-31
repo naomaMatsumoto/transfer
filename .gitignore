@@ -31,3 +31,4 @@ Thumbs.db
 # ─── Misc ────────────────────────────────────────────────────
 *.pem
 .vercel
+lp/.next/dev/cache/

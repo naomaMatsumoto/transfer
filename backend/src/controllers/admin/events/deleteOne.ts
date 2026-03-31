@@ -2,21 +2,22 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, notFound, ok } from "../../../lib/respond";
-import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { parseIntParam } from "../../../lib/validate";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
+import { findEventInStore } from "../../../lib/eventAccess";
 
 export default async function deleteOneEvent(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
-  const eventId = Number(req.params.id);
-  const storePlaceholders = ph(storeIds);
+  const eventId = parseIntParam(req, "id");
+  if (!eventId) {
+    notFound(res, ERR.EVENT_NOT_FOUND);
+    return;
+  }
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [eventScope] = await conn.query(
-      `SELECT e.id FROM events e JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePlaceholders})`,
-      [eventId, ...storeIds],
-    );
-    if ((eventScope as unknown[]).length === 0) {
+    const ownedId = await findEventInStore(eventId, storeIds);
+    if (!ownedId) {
       await conn.rollback();
       notFound(res, ERR.EVENT_NOT_FOUND);
       return;
@@ -43,7 +44,7 @@ export default async function deleteOneEvent(req: Request, res: Response, _next:
     await conn.commit();
     await writeAuditLog({
       actorType: "admin",
-      actorId: req.session?.account?.accountId ?? null,
+      actorId: adminActorId(req),
       action: "event.delete",
       targetType: "event",
       targetId: eventId,

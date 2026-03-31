@@ -2,18 +2,18 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { notFound, ok } from "../../../lib/respond";
-import { ph } from "../../../lib/validate";
+import { parseIntParam } from "../../../lib/validate";
+import { findEventInStore } from "../../../lib/eventAccess";
 
 export default async function getEventStaff(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
-  const eventId = Number(req.params.id);
-  const storePh = ph(storeIds);
-  const [eventRow] = await pool.query(
-    `SELECT e.id FROM events e JOIN class_types ct ON ct.id = e.class_type_id WHERE e.id = ? AND ct.store_id IN (${storePh})`,
-    [eventId, ...storeIds],
-  );
-  const events = eventRow as { id: number }[];
-  if (events.length === 0) {
+  const eventId = parseIntParam(req, "id");
+  if (!eventId) {
+    notFound(res, ERR.EVENT_NOT_FOUND);
+    return;
+  }
+  const ownedId = await findEventInStore(eventId, storeIds);
+  if (!ownedId) {
     notFound(res, ERR.EVENT_NOT_FOUND);
     return;
   }

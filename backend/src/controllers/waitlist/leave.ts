@@ -1,17 +1,16 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { writeAuditLog } from "../../lib/auditLog";
-import { unauthorized, badRequest, notFound, ok } from "../../lib/respond";
+import { badRequest, notFound, ok } from "../../lib/respond";
+import { getMemberId } from "../../lib/session";
+import { parseIntParam } from "../../lib/validate";
 
 export default async function leaveWaitlist(req: Request, res: Response, _next: NextFunction): Promise<void> {
-  const memberId = req.session?.memberId;
-  if (memberId == null || typeof memberId !== "number") {
-    unauthorized(res);
-    return;
-  }
+  const memberId = getMemberId(req, res);
+  if (!memberId) return;
 
-  const eventId = Number(req.params.eventId);
-  if (!Number.isInteger(eventId) || eventId <= 0) {
+  const eventId = parseIntParam(req, "eventId");
+  if (!eventId) {
     badRequest(res, "INVALID_ID");
     return;
   }

@@ -3,7 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function revokeMakeupCredit(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -19,7 +19,7 @@ export default async function revokeMakeupCredit(req: Request, res: Response, _n
   }
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "credit.revoke",
     targetType: "credit",
     targetId: creditId,

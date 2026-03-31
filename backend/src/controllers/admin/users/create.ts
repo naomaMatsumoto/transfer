@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { ERR, isValidEmail } from "../../../constants";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 import { type InsertResult, isMysqlError } from "../../../types/db";
 import { badRequest, created } from "../../../lib/respond";
 import { optStr, normalizeStage } from "../../../lib/validate";

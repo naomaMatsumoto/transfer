@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, unauthorized, forbidden, ok } from "../../lib/respond";
+import { regenerateSession } from "../../lib/session";
 
 export default async function membersLogin(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as { email?: string; password?: string };
@@ -37,8 +38,7 @@ export default async function membersLogin(req: Request, res: Response, _next: N
     return;
   }
 
-  if (req.session) {
-    req.session.memberId = user.id;
-  }
+  await regenerateSession(req);
+  req.session.memberId = user.id;
   ok(res, { id: user.id });
 }

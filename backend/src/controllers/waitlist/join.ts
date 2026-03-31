@@ -1,15 +1,13 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../db";
 import { writeAuditLog } from "../../lib/auditLog";
-import { unauthorized, badRequest, notFound, created } from "../../lib/respond";
+import { badRequest, notFound, created } from "../../lib/respond";
 import { isMysqlError } from "../../types/db";
+import { getMemberId } from "../../lib/session";
 
 export default async function joinWaitlist(req: Request, res: Response, _next: NextFunction): Promise<void> {
-  const memberId = req.session?.memberId;
-  if (memberId == null || typeof memberId !== "number") {
-    unauthorized(res);
-    return;
-  }
+  const memberId = getMemberId(req, res);
+  if (!memberId) return;
 
   const { eventId } = req.body as { eventId?: number };
   if (!eventId) {

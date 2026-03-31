@@ -273,6 +273,20 @@ export async function ensureAuthTables(): Promise<void> {
         CONSTRAINT fk_event_staff_staff FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
       )
     `);
+    // stores.booking_deadline_days / cancel_deadline_hours（店舗設定）
+    const [bdCol] = await pool.query(
+      "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stores' AND COLUMN_NAME = 'booking_deadline_days' LIMIT 1",
+    );
+    if ((bdCol as unknown[]).length === 0) {
+      await pool.query(
+        "ALTER TABLE stores ADD COLUMN booking_deadline_days INT NULL DEFAULT NULL COMMENT '予約締め切り（日前）'",
+      );
+      await pool.query(
+        "ALTER TABLE stores ADD COLUMN cancel_deadline_hours INT NULL DEFAULT NULL COMMENT 'キャンセル締め切り（時間前）'",
+      );
+      logger.info("Added booking_deadline_days, cancel_deadline_hours to stores");
+    }
+
     // 既存DBへのインデックス追加（新規インストールは init.sql で対応済み）
     await ensureIndex("stores", "idx_stores_corporation_id", "corporation_id");
     await ensureIndex("users", "idx_users_store_id", "store_id");

@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, created } from "../../../lib/respond";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 import { isMysqlError } from "../../../types/db";
 
 function generateClassTypeCode(name: string): string {
@@ -34,7 +34,7 @@ export default async function createClassType(req: Request, res: Response, _next
     const insertId = (result as { insertId: number }).insertId;
     await writeAuditLog({
       actorType: "admin",
-      actorId: req.session?.account?.accountId ?? null,
+      actorId: adminActorId(req),
       action: "class_type.create",
       targetType: "class_type",
       targetId: insertId,

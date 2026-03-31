@@ -3,7 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function updateStaff(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -31,7 +31,7 @@ export default async function updateStaff(req: Request, res: Response, _next: Ne
   }
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "staff.update",
     targetType: "staff",
     targetId: id,

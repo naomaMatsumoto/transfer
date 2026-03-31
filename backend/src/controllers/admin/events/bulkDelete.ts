@@ -2,18 +2,13 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, ok } from "../../../lib/respond";
-import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { ph, parseIds } from "../../../lib/validate";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function bulkDeleteEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const body = req.body as { ids?: unknown; force?: boolean };
-  const raw = body.ids;
-  const ids = Array.isArray(raw)
-    ? raw
-        .map((id) => (typeof id === "string" ? parseInt(id, 10) : Number(id)))
-        .filter((n) => Number.isInteger(n) && n > 0)
-    : [];
+  const ids = parseIds(body.ids);
   const force = body.force === true;
   if (ids.length === 0) {
     badRequest(res, ERR.EVENT_IDS_REQUIRED);
@@ -59,7 +54,7 @@ export default async function bulkDeleteEvents(req: Request, res: Response, _nex
     await conn.commit();
     await writeAuditLog({
       actorType: "admin",
-      actorId: req.session?.account?.accountId ?? null,
+      actorId: adminActorId(req),
       action: "event.bulk_delete",
       targetType: "event",
       targetId: null,

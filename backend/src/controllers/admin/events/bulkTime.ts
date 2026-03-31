@@ -3,7 +3,7 @@ import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function bulkTimeEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -52,7 +52,7 @@ export default async function bulkTimeEvents(req: Request, res: Response, _next:
   }
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "event.bulk_time",
     targetType: "event",
     targetId: null,

@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
 
@@ -40,9 +40,9 @@ export default async function cancelReservation(req: Request, res: Response, _ne
     }
 
     await conn.commit();
-    void writeAuditLog({
+    await writeAuditLog({
       actorType: "admin",
-      actorId: req.session?.account?.accountId,
+      actorId: adminActorId(req),
       action: "reservation.cancel_by_admin",
       targetType: "reservation",
       targetId: reservationId,

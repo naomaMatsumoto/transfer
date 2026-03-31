@@ -5,6 +5,35 @@
   padding: v.$space-6;
 }
 
+.headerBack {
+  margin-bottom: v.$space-2;
+}
+
+.headerBackLink {
+  color: v.$color-gray-500;
+  font-size: v.$font-lg;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.loginPrompt {
+  color: v.$color-gray-500;
+  font-size: v.$font-lg;
+  margin-top: -v.$space-2;
+}
+
+.loginPromptLink {
+  color: v.$color-gray-500;
+  text-decoration: underline;
+
+  &:hover {
+    color: v.$color-gray-700;
+  }
+}
+
 .title {
   font-size: v.$font-4xl;
   font-weight: 700;

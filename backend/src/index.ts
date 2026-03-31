@@ -1,5 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from "express";
+import helmet from "helmet";
 import cors from "cors";
+import morgan from "morgan";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require("cookie-parser");
 import session from "express-session";
@@ -8,6 +10,7 @@ import dotenv from "dotenv";
 import logger from "./logger";
 import router from "./router";
 import { ensureAuthTables } from "./ensureAuthTables";
+import { runMigrations } from "./db/migrate";
 
 dotenv.config();
 
@@ -29,6 +32,13 @@ const sessionStore = new MySQLSessionStore({
 const app = express();
 const port = process.env.PORT || 4000;
 
+app.use(helmet());
+app.use(
+  morgan("combined", {
+    stream: { write: (msg: string) => logger.http(msg.trimEnd()) },
+    skip: (_req, res) => res.statusCode < 400 && process.env.NODE_ENV === "production",
+  }),
+);
 app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:3000", credentials: true }));
 app.use(cookieParser());
 app.use(
@@ -45,7 +55,7 @@ app.use(
     },
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path.startsWith("/admin") || req.path.startsWith("/ops")) {
@@ -72,6 +82,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 
 (async () => {
   await ensureAuthTables();
+  await runMigrations();
   const store = sessionStore as { onReady?: () => Promise<void> };
   if (typeof store.onReady === "function") {
     await store.onReady();

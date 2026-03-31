@@ -2,12 +2,16 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ERR } from "../../../constants";
 import { badRequest, notFound, ok } from "../../../lib/respond";
-import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { ph, parseIntParam } from "../../../lib/validate";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function updateEventStatus(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
-  const eventId = Number(req.params.id);
+  const eventId = parseIntParam(req, "id");
+  if (!eventId) {
+    notFound(res, ERR.EVENT_NOT_FOUND);
+    return;
+  }
   const body = req.body as { status?: "scheduled" | "canceled_by_admin" | "holiday" };
   const { status } = body;
   if (!status || !["scheduled", "canceled_by_admin", "holiday"].includes(status)) {
@@ -25,7 +29,7 @@ export default async function updateEventStatus(req: Request, res: Response, _ne
   }
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "event.update_status",
     targetType: "event",
     targetId: eventId,

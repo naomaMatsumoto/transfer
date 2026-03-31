@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 import { isValidPassword } from "../../../lib/validate";
 
 export default async function updatePassword(req: Request, res: Response, _next: NextFunction): Promise<void> {
@@ -36,7 +36,7 @@ export default async function updatePassword(req: Request, res: Response, _next:
   await pool.query("UPDATE accounts SET password_hash = ?, updated_at = NOW() WHERE id = ?", [hash, accountId]);
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "settings.update_password",
     targetType: "account",
     targetId: req.session?.account?.accountId ?? null,

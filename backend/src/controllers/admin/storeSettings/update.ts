@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 import { badRequest, ok } from "../../../lib/respond";
 
 export default async function updateStoreSettings(req: Request, res: Response, _next: NextFunction): Promise<void> {
@@ -28,9 +28,9 @@ export default async function updateStoreSettings(req: Request, res: Response, _
 
   params.push(storeIds[0] as unknown as number);
   await pool.query(`UPDATE stores SET ${updates.join(", ")} WHERE id = ?`, params);
-  void writeAuditLog({
+  await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId,
+    actorId: adminActorId(req),
     action: "store_settings.update",
     targetType: "store",
     targetId: storeIds[0],

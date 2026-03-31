@@ -1,6 +1,11 @@
 import winston from "winston";
 
+// http レベルを info と debug の間に追加（morgan アクセスログ用）
+const HTTP_LEVEL = "http";
+winston.addColors({ [HTTP_LEVEL]: "cyan" });
+
 const logger = winston.createLogger({
+  levels: { ...winston.config.npm.levels, [HTTP_LEVEL]: 4 },
   level: process.env.LOG_LEVEL || "info",
   format: winston.format.combine(
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),

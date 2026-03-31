@@ -4,6 +4,7 @@ import { pool } from "../../db";
 import { ERR } from "../../constants";
 import { badRequest, unauthorized, serverError, ok } from "../../lib/respond";
 import { normalizeEmail } from "../../lib/validate";
+import { regenerateSession } from "../../lib/session";
 
 export default async function login(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as { email?: string; password?: string };
@@ -32,6 +33,7 @@ export default async function login(req: Request, res: Response, _next: NextFunc
     serverError(res, "SESSION_NOT_AVAILABLE");
     return;
   }
+  await regenerateSession(req);
   req.session.account = {
     accountId: account.id,
     corporationId: account.corporation_id,

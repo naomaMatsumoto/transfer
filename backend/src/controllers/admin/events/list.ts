@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
+import { safeJsonParse } from "../../../lib/safeJson";
 
 export default async function listEvents(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -39,17 +40,9 @@ export default async function listEvents(req: Request, res: Response, _next: Nex
     params,
   );
   const events = rows as Record<string, unknown>[];
-  const normalized = events.map((ev) => {
-    let staff = ev.staff;
-    if (staff === null || staff === undefined) staff = [];
-    if (typeof staff === "string") {
-      try {
-        staff = JSON.parse(staff) as { id: number; name: string }[];
-      } catch {
-        staff = [];
-      }
-    }
-    return { ...ev, staff };
-  });
+  const normalized = events.map((ev) => ({
+    ...ev,
+    staff: safeJsonParse<{ id: number; name: string }[]>(ev.staff, []),
+  }));
   ok(res, normalized);
 }

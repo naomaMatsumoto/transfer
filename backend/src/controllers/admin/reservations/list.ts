@@ -2,17 +2,13 @@ import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-
-const DEFAULT_LIMIT = 50;
+import { parsePagination } from "../../../lib/paginate";
 
 export default async function listReservations(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
   const storePh = ph(storeIds);
   const { eventId, userId, page: pageStr, limit: limitStr } = req.query;
-
-  const page = Math.max(1, parseInt(String(pageStr ?? "1"), 10) || 1);
-  const limit = Math.min(200, Math.max(1, parseInt(String(limitStr ?? String(DEFAULT_LIMIT)), 10) || DEFAULT_LIMIT));
-  const offset = (page - 1) * limit;
+  const { page, limit, offset } = parsePagination(pageStr, limitStr, 50, 200);
 
   const conditions: string[] = [`(ct.store_id IN (${storePh}) AND u.store_id IN (${storePh}))`];
   const filterParams: unknown[] = [...storeIds, ...storeIds];

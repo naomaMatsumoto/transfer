@@ -4,7 +4,7 @@ import { ERR } from "../../../constants";
 import { type UpdateResult, isMysqlError } from "../../../types/db";
 import { badRequest, notFound, ok } from "../../../lib/respond";
 import { ph } from "../../../lib/validate";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function updateClassType(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const storeIds = req.storeIds!;
@@ -49,7 +49,7 @@ export default async function updateClassType(req: Request, res: Response, _next
     }
     await writeAuditLog({
       actorType: "admin",
-      actorId: req.session?.account?.accountId ?? null,
+      actorId: adminActorId(req),
       action: "class_type.update",
       targetType: "class_type",
       targetId: id,

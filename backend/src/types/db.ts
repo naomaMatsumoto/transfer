@@ -22,3 +22,10 @@ export interface MysqlError extends Error {
 export function isMysqlError(e: unknown): e is MysqlError {
   return e instanceof Error && "code" in e;
 }
+
+export interface ListResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}

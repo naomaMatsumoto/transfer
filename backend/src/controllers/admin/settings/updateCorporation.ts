@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { pool } from "../../../db";
 import { unauthorized, badRequest, notFound, ok } from "../../../lib/respond";
-import { writeAuditLog } from "../../../lib/auditLog";
+import { writeAuditLog, adminActorId } from "../../../lib/auditLog";
 
 export default async function updateCorporationName(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const corporationId = req.session?.account?.corporationId;
@@ -25,7 +25,7 @@ export default async function updateCorporationName(req: Request, res: Response,
   }
   await writeAuditLog({
     actorType: "admin",
-    actorId: req.session?.account?.accountId ?? null,
+    actorId: adminActorId(req),
     action: "settings.update_corporation",
     targetType: "corporation",
     targetId: req.session?.account?.corporationId ?? null,

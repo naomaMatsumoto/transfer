@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcrypt";
 import { pool } from "../../../db";
 import { badRequest, unauthorized, serverError, ok } from "../../../lib/respond";
+import { regenerateSession } from "../../../lib/session";
 
 export default async function opsLogin(req: Request, res: Response, _next: NextFunction): Promise<void> {
   const body = req.body as { email?: string; password?: string };
@@ -28,6 +29,7 @@ export default async function opsLogin(req: Request, res: Response, _next: NextF
     serverError(res, "SESSION_NOT_AVAILABLE");
     return;
   }
+  await regenerateSession(req);
   req.session.platformAdmin = { id: admin.id, email: admin.email };
   ok(res, {
     id: admin.id,
